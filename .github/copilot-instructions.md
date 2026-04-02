@@ -17,7 +17,7 @@ The target audience is game developers building procedural content for the Kaiju
 
 2. **Determinism Is Sacred**: The same `Params` (including `Seed`) must always produce a bit-identical `Mesh`. Never introduce non-deterministic operations (e.g., map iteration order, goroutine scheduling, `math/rand` global state, time-based values) into the generation path. The PRNG (`splitmix64`) must be created fresh per `Generate` call from the seed and used sequentially.
 
-3. **Kaiju Vertex Layout Compatibility**: The `Vertex` struct in `mesh.go` mirrors `kaijuengine.com/rendering.Vertex` field-for-field. Never reorder, rename, or add fields to `Vertex` without verifying compatibility with the Kaiju engine's expected memory layout. All vertices must set `Color` to `ColorGray` (mid-grey, fully opaque) as the default material colour.
+3. **Kaiju Vertex Layout Compatibility**: The `Vertex` struct in `mesh.go` mirrors `kaijuengine.com/rendering.Vertex` field-for-field. Never reorder, rename, or add fields to `Vertex` without verifying compatibility with the Kaiju engine's expected memory layout. All vertices must set `Color` to `ColorGray` (mid-grey, fully opaque) as the default material color.
 
 4. **Enum-Based Parameter Design**: All character traits (`Species`, `Height`, `Build`, `Proportions`, `Phenotype`, `Age`, `Posture`, facial features, body dimensions) are `int`-typed enums with `iota` constants. When adding new enum values, always append them to the end of the existing `const` block to preserve existing ordinal values. Update `Validate()` in `params.go` to cover the new range. Include the new value in the mesh key format string in `generator.go`.
 

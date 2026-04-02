@@ -1,6 +1,6 @@
 # Project Overview
 
-`unpeople` is a Go library for deterministic procedural generation of humanoid character meshes. Given a seed and a descriptive parameter set (species, height, build, age, facial features, etc.), the `Generator` always produces an identical 3D mesh, making it ideal for open-world games where characters must be reproducible from a saved seed. The output `Mesh` type is layout-compatible with the Kaiju game engine's `rendering.Vertex` / `rendering.Mesh` structures for direct integration with the Kaiju rendering pipeline.
+`unpeople` is a Go library for deterministic procedural generation of humanoid character meshes. Given a seed and a descriptive parameter set (species, height, build, age, facial features, etc.), the `Generator` always produces an identical 3D mesh, making it ideal for open-world games where characters must be reproducible from a saved seed. The output `Mesh` type is layout-compatible with the Kaiju game engine's `rendering.Vertex` / `rendering.Mesh` structures, but Go's type system still requires an explicit conversion or copy into Kaiju types before use in the rendering pipeline.
 
 The target audience is game developers building procedural content for the Kaiju engine or similar Go-based game engines. Typical use cases include populating open worlds with varied NPC humanoids, generating deterministic character appearances from compact seed data, and prototyping character silhouettes across fantasy species (Human, Elf, Dwarf, Gnome, Halfling, Goblin, Kobold, Orc, Troll, Ogre). The library is pure Go with zero external dependencies—it uses only the standard library and a custom SplitMix64 PRNG to guarantee cross-version determinism.
 
@@ -21,7 +21,7 @@ The target audience is game developers building procedural content for the Kaiju
 
 4. **Enum-Based Parameter Design**: All character traits (`Species`, `Height`, `Build`, `Proportions`, `Phenotype`, `Age`, `Posture`, facial features, body dimensions) are `int`-typed enums with `iota` constants. When adding new enum values, always append them to the end of the existing `const` block to preserve existing ordinal values. Update `Validate()` in `params.go` to cover the new range. Include the new value in the mesh key format string in `generator.go`.
 
-5. **Primitive-Based Geometry Assembly**: The mesh is built from geometric primitives—`generateEllipsoid`, `generateCylinder`, and `generateBox` in `primitive.go`. Body parts are positioned and sized via the `bodyLayout` struct (`basemesh.go`). Transformations are applied as multiplicative scale factors on layout fields in `transforms.go`. When adding new body parts, add layout fields to `bodyLayout`, update `defaultBodyLayout()`, update both `scaleAll` and `scaleHeight` helpers, and append geometry in `buildMesh`.
+5. **Primitive-Based Geometry Assembly**: The mesh is built from geometric primitives—`generateEllipsoid`, `generateCylinder`, and `generateBox` in `primitive.go`. Body parts are positioned and sized via the `bodyLayout` struct (`basemesh.go`). Transformations in `transforms.go` are applied as multiplicative scale factors and positional offsets on layout fields. When adding new body parts, add layout fields to `bodyLayout`, update `defaultBodyLayout()`, update both `scaleAll` and `scaleHeight` helpers, and append geometry in `buildMesh`.
 
 6. **Table-Driven Tests for All Enum Ranges**: Every enum type must have a test that iterates through all valid values and verifies `Generate` succeeds. Follow the pattern in `TestAllSpecies`, `TestAllHeights`, `TestAllBuilds`, and `TestAllAges`. When adding new parameters or enum values, add corresponding test coverage in `generator_test.go`.
 
@@ -51,13 +51,3 @@ The target audience is game developers building procedural content for the Kaiju
 
 - **Documentation**: Every exported type, function, and constant must have a Go doc comment. Internal functions should have brief comments explaining their geometric purpose. The `ROADMAP.md` and `GAPS.md` files should be updated when features are completed or new limitations are discovered.
 
-## Networking Best Practices (for Go projects)
-
-When declaring network variables, always use interface types:
-- Never use `net.UDPAddr`, `net.IPAddr`, or `net.TCPAddr`. Use `net.Addr` only instead.
-- Never use `net.UDPConn`, use `net.PacketConn` instead
-- Never use `net.TCPConn`, use `net.Conn` instead
-- Never use `net.UDPListener` or `net.TCPListener`, use `net.Listener` instead
-- Never use a type switch or type assertion to convert from an interface type to a concrete type. Use the interface methods instead.
-
-This approach enhances testability and flexibility when working with different network implementations or mocks.

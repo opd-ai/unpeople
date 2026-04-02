@@ -58,6 +58,49 @@ func TestDifferentSeedsDifferentKey(t *testing.T) {
 	}
 }
 
+// TestKeyUniqueness verifies that changing any geometry-affecting parameter
+// that was previously absent from the key produces a different key.
+func TestKeyUniqueness(t *testing.T) {
+	g := unpeople.NewGenerator()
+	base := unpeople.DefaultParams()
+	base.Seed = 0
+
+	baseM, err := g.Generate(base)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	variants := []struct {
+		name   string
+		mutate func(*unpeople.Params)
+	}{
+		{"FaceShape", func(p *unpeople.Params) { p.FaceShape = unpeople.FaceShapeSquare }},
+		{"Jaw", func(p *unpeople.Params) { p.Jaw = unpeople.JawProminent }},
+		{"Brow", func(p *unpeople.Params) { p.Brow = unpeople.BrowHeavy }},
+		{"Ears", func(p *unpeople.Params) { p.Ears = unpeople.EarsLarge }},
+		{"ShoulderWidth", func(p *unpeople.Params) { p.ShoulderWidth = unpeople.ShoulderWidthBroad }},
+		{"HipWidth", func(p *unpeople.Params) { p.HipWidth = unpeople.HipWidthWide }},
+		{"LimbLength", func(p *unpeople.Params) { p.LimbLength = unpeople.LimbLengthLong }},
+		{"NeckLength", func(p *unpeople.Params) { p.NeckLength = unpeople.NeckLengthLong }},
+		{"HandSize", func(p *unpeople.Params) { p.HandSize = unpeople.HandSizeLarge }},
+		{"FingerLength", func(p *unpeople.Params) { p.FingerLength = unpeople.FingerLengthLong }},
+		{"FootSize", func(p *unpeople.Params) { p.FootSize = unpeople.FootSizeLarge }},
+	}
+
+	for _, v := range variants {
+		p := unpeople.DefaultParams()
+		v.mutate(&p)
+		m, err := g.Generate(p)
+		if err != nil {
+			t.Errorf("%s: Generate failed: %v", v.name, err)
+			continue
+		}
+		if m.Key == baseM.Key {
+			t.Errorf("%s: key unchanged after param mutation: %q", v.name, m.Key)
+		}
+	}
+}
+
 // ─── Mesh validity ───────────────────────────────────────────────────────────
 
 func TestMeshIsValid(t *testing.T) {
@@ -189,7 +232,11 @@ func TestValidateRejectsOutOfRange(t *testing.T) {
 // ─── Performance ─────────────────────────────────────────────────────────────
 
 // TestPerformance ensures a single Generate call completes in under 100 ms.
+// Skipped when -short is set to avoid flakiness on slow/loaded CI runners.
 func TestPerformance(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping timing test in short mode")
+	}
 	g := unpeople.NewGenerator()
 	p := unpeople.DefaultParams()
 	p.Seed = 7777

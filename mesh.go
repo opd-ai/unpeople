@@ -3,8 +3,12 @@ package unpeople
 import "math"
 
 // ─── Vector / Color types ─────────────────────────────────────────────────────
-// These mirror the layout of kaiju's matrix.Vec2/Vec3/Vec4/Vec4i/Color so that
-// a Mesh produced here can be consumed directly by kaiju's rendering.NewMesh.
+// These types are layout-compatible with kaiju's matrix.Vec2/Vec3/Vec4/Vec4i/Color.
+// Because Go's type system does not allow passing []unpeople.Vertex where
+// []rendering.Vertex is expected, callers must copy or unsafely reinterpret the
+// slice when integrating with the Kaiju rendering API directly.
+// See the package-level ToKaijuVertices helper (to be added in Phase 6) for a
+// safe conversion path once the Kaiju module is directly importable.
 
 // Vec2 is a 2-component float32 vector (matches kaiju's matrix.Vec2).
 type Vec2 [2]float32
@@ -26,8 +30,10 @@ var ColorGray = Color{0.5, 0.5, 0.5, 1.0}
 
 // ─── Vertex ──────────────────────────────────────────────────────────────────
 
-// Vertex matches the memory layout of kaiju's rendering.Vertex exactly.
-// Kaiju's rendering.NewMesh accepts a []Vertex and []uint32 with this layout.
+// Vertex is layout-compatible with kaiju's rendering.Vertex (same field order
+// and types).  To pass a []Vertex to kaiju's rendering.NewMesh, callers must
+// perform an explicit element-wise copy into a []rendering.Vertex slice, or use
+// an unsafe reinterpret cast after verifying struct sizes match.
 type Vertex struct {
 	Position     Vec3
 	Normal       Vec3
@@ -41,8 +47,9 @@ type Vertex struct {
 
 // ─── Mesh ────────────────────────────────────────────────────────────────────
 
-// Mesh holds the generated geometry ready for use with kaiju's
-// rendering.NewMesh(key, vertices, indices).
+// Mesh holds the generated geometry in a format layout-compatible with kaiju's
+// rendering.NewMesh(key, vertices, indices).  An explicit type conversion is
+// required before passing to the Kaiju API; see the Vertex comment above.
 type Mesh struct {
 	// Key is a unique string that identifies this mesh variant inside the
 	// Kaiju engine's mesh cache.

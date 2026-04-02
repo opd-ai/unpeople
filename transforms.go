@@ -1,12 +1,10 @@
 package unpeople
 
-import "math/rand"
-
 // computeBodyLayout derives a fully-specified bodyLayout from Params.
 // The seeded rng is used only for small stochastic details that the caller
 // cannot observe individually (e.g. posture micro-offsets); every observable
 // aspect of the layout is derived deterministically from the named parameters.
-func computeBodyLayout(p *Params, rng *rand.Rand) bodyLayout {
+func computeBodyLayout(p *Params, rng *splitmix64) bodyLayout {
 	l := defaultBodyLayout()
 
 	applySpecies(&l, p.Species)
@@ -351,6 +349,11 @@ func applyHandSize(l *bodyLayout, hs HandSize, fl FingerLength) {
 	case FingerLengthShort:
 		l.handHH *= 0.85
 	}
+
+	// After any change to handHH, recompute the Y centre so that the top of
+	// the hand box stays flush with the wrist (forearm bottom attachment).
+	l.handCenterL[1] = l.forearmBottomL[1] - l.handHH
+	l.handCenterR[1] = l.forearmBottomR[1] - l.handHH
 }
 
 // ─── Foot Size ───────────────────────────────────────────────────────────────
@@ -424,7 +427,7 @@ func applyFacialFeatures(l *bodyLayout, fs FaceShape, j Jaw, br Brow, e Ears) {
 
 // ─── Posture ─────────────────────────────────────────────────────────────────
 
-func applyPosture(l *bodyLayout, p Posture, rng *rand.Rand) {
+func applyPosture(l *bodyLayout, p Posture, rng *splitmix64) {
 	jitter := (rng.Float32() - 0.5) * 0.003
 	switch p {
 	case PostureUpright, PostureRigid:

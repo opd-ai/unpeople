@@ -27,21 +27,24 @@
 
 ## Implementation Steps
 
-### Step 1: Add Missing Enum Test Coverage
+### Step 1: Add Missing Enum Test Coverage ✅
+- [x] **Resolved**
 - **Deliverable**: Add `TestAllProportions`, `TestAllPhenotypes`, `TestAllPostures`, `TestAllFaceShapes`, `TestAllJaws`, `TestAllBrows`, `TestAllEars`, `TestAllShoulderWidths`, `TestAllHipWidths`, `TestAllLimbLengths`, `TestAllNeckLengths`, `TestAllHandSizes`, `TestAllFingerLengths`, `TestAllFootSizes` to `generator_test.go`
 - **Dependencies**: None
 - **Goal Impact**: Completes ROADMAP Phase 1 claim of "all enums" test coverage
 - **Acceptance**: All new tests pass; `go test ./... -v` shows 24+ passing tests (was 10)
 - **Validation**: `go test ./... -v 2>&1 | grep -c PASS`
 
-### Step 2: Fix ProportionsHeroic Leg Elongation
+### Step 2: Fix ProportionsHeroic Leg Elongation ✅
+- [x] **Resolved**
 - **Deliverable**: Modify `applyProportions()` in `transforms.go` to add `scaleLimbs(l, 1.08)` within `case ProportionsHeroic:`
 - **Dependencies**: Step 1 (TestAllProportions must exist to verify)
 - **Goal Impact**: Closes GAPS.md "Heroic Proportions Missing Leg Elongation"
 - **Acceptance**: `TestAllProportions` passes; heroic characters have visually longer legs (8% increase)
 - **Validation**: `go test ./... -run TestAllProportions -v`
 
-### Step 3: Fix ProportionsCaricature Extremity Reduction
+### Step 3: Fix ProportionsCaricature Extremity Reduction ✅
+- [x] **Resolved**
 - **Deliverable**: Modify `applyProportions()` in `transforms.go` to add hand/foot reduction within `case ProportionsCaricature:`:
   ```go
   l.handHW *= 0.85
@@ -55,7 +58,8 @@
 - **Acceptance**: `TestAllProportions` passes; caricature characters have smaller hands/feet
 - **Validation**: `go test ./... -run TestAllProportions -v`
 
-### Step 4: Refactor Validate() to Table-Driven
+### Step 4: Refactor Validate() to Table-Driven ✅
+- [x] **Resolved**
 - **Deliverable**: Replace 18 sequential if-statements in `params.go:Validate()` with table-driven validation using a slice of `{name, val, min, max}` structs
 - **Dependencies**: None
 - **Goal Impact**: Reduces cyclomatic complexity from 19 to ~3; improves maintainability
@@ -63,6 +67,7 @@
 - **Validation**: `go-stats-generator analyze . --skip-tests --format json 2>/dev/null | jq -r '.functions[] | select(.name == "Validate") | .complexity.cyclomatic'` returns value ≤ 10
 
 ### Step 5: Reduce Scale Helper Duplication
+- [ ] **Pending**
 - **Deliverable**: Create a unified field accessor mechanism in `transforms.go` that `scaleAll`, `scaleHeight`, and `scaleLimbs` can share. Options:
   - (A) Extract common field lists to data tables
   - (B) Use a helper that accepts field pointers
@@ -72,6 +77,7 @@
 - **Validation**: `go-stats-generator analyze . --skip-tests --format json 2>/dev/null | jq -r '.duplication.duplication_ratio'` returns value < 0.15
 
 ### Step 6: Pre-allocate Slices in Primitives
+- [ ] **Pending**
 - **Deliverable**: Modify `generateEllipsoid`, `generateCylinder`, `generateBox` in `primitive.go` to pre-allocate vertex/index slices using `make([]Vertex, 0, capacity)`
 - **Dependencies**: None
 - **Goal Impact**: Addresses performance anti-patterns flagged by go-stats-generator; reduces GC pressure
@@ -79,6 +85,7 @@
 - **Validation**: `go test -bench=BenchmarkGenerate -benchmem ./... 2>&1 | grep allocs`
 
 ### Step 7: Pre-allocate Slice in meshBuilder.append
+- [ ] **Pending**
 - **Deliverable**: Modify `meshBuilder.append()` in `mesh.go` to pre-allocate indices slice capacity
 - **Dependencies**: None
 - **Goal Impact**: Addresses "append() in loop without pre-allocation" anti-pattern
@@ -86,6 +93,7 @@
 - **Validation**: `go test ./... -v`
 
 ### Step 8: Add Age × Species Interaction for Child Proportions
+- [ ] **Pending**
 - **Deliverable**: Modify `applyAge()` in `transforms.go` to add species-aware head scaling for `AgeChild` and `AgeToddler`
 - **Dependencies**: Step 1 (TestAllAges covers this)
 - **Goal Impact**: Addresses GAPS.md "Age × Species Interaction Missing"
@@ -93,6 +101,7 @@
 - **Validation**: `go test ./... -run TestAllAges -v`
 
 ### Step 9: Add Posture × Age Interaction
+- [ ] **Pending**
 - **Deliverable**: Modify `applyPosture()` in `transforms.go` to auto-adjust posture for `AgeDecrepit`/`AgeElderly` when `PostureUpright` is set
 - **Dependencies**: Step 1 (TestAllPostures covers this)
 - **Goal Impact**: Addresses GAPS.md "Posture × Age Interaction Missing"
@@ -100,6 +109,7 @@
 - **Validation**: `go test ./... -run TestAllPostures -v`
 
 ### Step 10: Document Phase 2 Prerequisites in ROADMAP.md
+- [ ] **Pending**
 - **Deliverable**: Update `ROADMAP.md` Phase 2 section to list technical prerequisites discovered during this work:
   - Need vertex merging algorithm for topology upgrade
   - Need face mesh vertex positions for facial morphing

@@ -217,24 +217,16 @@ func quatRotateVec3(q Vec4, v Vec3) Vec3 {
 	return vec3Add(vec3Add(v, vec3Scale(t, q[3])), vec3Cross(qv, t))
 }
 
-// computeJointPositions sets joint positions based on body layout.
-func computeJointPositions(skel *Skeleton, l bodyLayout) {
-	// Root at ground level
-	skel.Joints[JointRoot].Position = Vec3{0, 0, 0}
-
-	// Hips at hip center (midpoint between hipsTop and hipsBottom)
-	hipsCenterY := (l.hipsTop[1] + l.hipsBottom[1]) / 2.0
-	skel.Joints[JointHips].Position = Vec3{0, hipsCenterY, 0}
-
-	// Spine chain
+// computeSpineChain sets positions for the spine, neck, and head joints.
+func computeSpineChain(skel *Skeleton, l bodyLayout) {
 	spineBaseY := l.abdomenBottom[1]
 	chestCenterY := (l.chestTop[1] + l.chestBottom[1]) / 2.0
 	spineStep := (chestCenterY - spineBaseY) / 3.0
+
 	skel.Joints[JointSpine].Position = Vec3{0, spineBaseY + spineStep, 0}
 	skel.Joints[JointSpine1].Position = Vec3{0, spineBaseY + spineStep*2, 0}
 	skel.Joints[JointSpine2].Position = Vec3{0, chestCenterY, 0}
 
-	// Neck center
 	neckCenterY := (l.neckTop[1] + l.neckBottom[1]) / 2.0
 	skel.Joints[JointNeck].Position = Vec3{0, neckCenterY, 0}
 	skel.Joints[JointHead].Position = l.headCenter
@@ -243,40 +235,61 @@ func computeJointPositions(skel *Skeleton, l bodyLayout) {
 		l.headCenter[1] + l.headRY,
 		l.headCenter[2],
 	}
+}
 
-	// Left arm chain - shoulders attach at chest top
-	skel.Joints[JointLeftShoulder].Position = Vec3{-l.chestRX, l.chestTop[1], 0}
-	skel.Joints[JointLeftUpperArm].Position = l.upperArmTopL
-	skel.Joints[JointLeftForearm].Position = l.forearmTopL
-	skel.Joints[JointLeftHand].Position = l.handCenterL
-	computeFingerJoints(skel, l, true)
-
-	// Right arm chain
-	skel.Joints[JointRightShoulder].Position = Vec3{l.chestRX, l.chestTop[1], 0}
-	skel.Joints[JointRightUpperArm].Position = l.upperArmTopR
-	skel.Joints[JointRightForearm].Position = l.forearmTopR
-	skel.Joints[JointRightHand].Position = l.handCenterR
-	computeFingerJoints(skel, l, false)
-
-	// Left leg chain
-	skel.Joints[JointLeftUpperLeg].Position = l.upperLegTopL
-	skel.Joints[JointLeftLowerLeg].Position = l.lowerLegTopL
-	skel.Joints[JointLeftFoot].Position = l.footCenterL
-	skel.Joints[JointLeftToe].Position = Vec3{
-		l.footCenterL[0],
-		l.footCenterL[1],
-		l.footCenterL[2] + l.footHD*0.8,
+// computeArmChain sets positions for one arm's joints.
+func computeArmChain(skel *Skeleton, l bodyLayout, isLeft bool) {
+	if isLeft {
+		skel.Joints[JointLeftShoulder].Position = Vec3{-l.chestRX, l.chestTop[1], 0}
+		skel.Joints[JointLeftUpperArm].Position = l.upperArmTopL
+		skel.Joints[JointLeftForearm].Position = l.forearmTopL
+		skel.Joints[JointLeftHand].Position = l.handCenterL
+	} else {
+		skel.Joints[JointRightShoulder].Position = Vec3{l.chestRX, l.chestTop[1], 0}
+		skel.Joints[JointRightUpperArm].Position = l.upperArmTopR
+		skel.Joints[JointRightForearm].Position = l.forearmTopR
+		skel.Joints[JointRightHand].Position = l.handCenterR
 	}
+	computeFingerJoints(skel, l, isLeft)
+}
 
-	// Right leg chain
-	skel.Joints[JointRightUpperLeg].Position = l.upperLegTopR
-	skel.Joints[JointRightLowerLeg].Position = l.lowerLegTopR
-	skel.Joints[JointRightFoot].Position = l.footCenterR
-	skel.Joints[JointRightToe].Position = Vec3{
-		l.footCenterR[0],
-		l.footCenterR[1],
-		l.footCenterR[2] + l.footHD*0.8,
+// computeLegChain sets positions for one leg's joints.
+func computeLegChain(skel *Skeleton, l bodyLayout, isLeft bool) {
+	if isLeft {
+		skel.Joints[JointLeftUpperLeg].Position = l.upperLegTopL
+		skel.Joints[JointLeftLowerLeg].Position = l.lowerLegTopL
+		skel.Joints[JointLeftFoot].Position = l.footCenterL
+		skel.Joints[JointLeftToe].Position = Vec3{
+			l.footCenterL[0],
+			l.footCenterL[1],
+			l.footCenterL[2] + l.footHD*0.8,
+		}
+	} else {
+		skel.Joints[JointRightUpperLeg].Position = l.upperLegTopR
+		skel.Joints[JointRightLowerLeg].Position = l.lowerLegTopR
+		skel.Joints[JointRightFoot].Position = l.footCenterR
+		skel.Joints[JointRightToe].Position = Vec3{
+			l.footCenterR[0],
+			l.footCenterR[1],
+			l.footCenterR[2] + l.footHD*0.8,
+		}
 	}
+}
+
+// computeJointPositions sets joint positions based on body layout.
+func computeJointPositions(skel *Skeleton, l bodyLayout) {
+	// Root at ground level
+	skel.Joints[JointRoot].Position = Vec3{0, 0, 0}
+
+	// Hips at hip center
+	hipsCenterY := (l.hipsTop[1] + l.hipsBottom[1]) / 2.0
+	skel.Joints[JointHips].Position = Vec3{0, hipsCenterY, 0}
+
+	computeSpineChain(skel, l)
+	computeArmChain(skel, l, true)
+	computeArmChain(skel, l, false)
+	computeLegChain(skel, l, true)
+	computeLegChain(skel, l, false)
 }
 
 // computeFingerJoints calculates finger joint positions.
@@ -571,21 +584,32 @@ func (s *Skeleton) TotalBoneCount() int {
 	return count
 }
 
+// validateJointParent checks that a joint's parent reference is valid.
+func validateJointParent(j *Joint, jointCount int) error {
+	if j.ParentID >= 0 && int(j.ParentID) >= jointCount {
+		return fmt.Errorf("joint %s has invalid parent ID %d", j.Name, j.ParentID)
+	}
+	return nil
+}
+
+// validateJointIndex checks that a joint's ID matches its array index.
+func validateJointIndex(j *Joint, expectedIndex int) error {
+	if int(j.ID) != expectedIndex {
+		return fmt.Errorf("joint at index %d has mismatched ID %d", expectedIndex, j.ID)
+	}
+	return nil
+}
+
 // Validate checks that the skeleton hierarchy is consistent.
 func (s *Skeleton) Validate() error {
 	for i := range s.Joints {
 		j := &s.Joints[i]
 
-		// Check parent reference is valid
-		if j.ParentID >= 0 {
-			if int(j.ParentID) >= len(s.Joints) {
-				return fmt.Errorf("joint %s has invalid parent ID %d", j.Name, j.ParentID)
-			}
+		if err := validateJointParent(j, len(s.Joints)); err != nil {
+			return err
 		}
-
-		// Check that joint ID matches index
-		if int(j.ID) != i {
-			return fmt.Errorf("joint at index %d has mismatched ID %d", i, j.ID)
+		if err := validateJointIndex(j, i); err != nil {
+			return err
 		}
 	}
 	return nil

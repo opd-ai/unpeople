@@ -27,22 +27,29 @@ func computeBodyLayout(p *Params, rng *splitmix64) bodyLayout {
 
 // ─── Species ─────────────────────────────────────────────────────────────────
 
-func applySpecies(l *bodyLayout, s Species) {
+// applyElfTraits applies slender, tall proportions for elves.
+func applyElfTraits(l *bodyLayout) {
+	scaleAll(l, 1.05)
+	l.headRX *= 0.93
+	l.headRZ *= 0.93
+	l.hipsRX *= 0.92
+	l.upperLegRadius *= 0.88
+	l.lowerLegRadius *= 0.85
+}
+
+// applyDwarfTraits applies stocky, compact proportions for dwarves.
+func applyDwarfTraits(l *bodyLayout) {
+	scaleHeight(l, 0.77)
+	l.chestRX *= 1.25
+	l.hipsRX *= 1.15
+	l.upperArmRadius *= 1.20
+	l.upperLegRadius *= 1.20
+	l.lowerLegRadius *= 1.15
+}
+
+// applySmallSpeciesTraits applies traits for gnome, halfling, goblin, kobold.
+func applySmallSpeciesTraits(l *bodyLayout, s Species) {
 	switch s {
-	case SpeciesElf:
-		scaleAll(l, 1.05)
-		l.headRX *= 0.93
-		l.headRZ *= 0.93
-		l.hipsRX *= 0.92
-		l.upperLegRadius *= 0.88
-		l.lowerLegRadius *= 0.85
-	case SpeciesDwarf:
-		scaleHeight(l, 0.77)
-		l.chestRX *= 1.25
-		l.hipsRX *= 1.15
-		l.upperArmRadius *= 1.20
-		l.upperLegRadius *= 1.20
-		l.lowerLegRadius *= 1.15
 	case SpeciesGnome:
 		scaleHeight(l, 0.62)
 		l.headRX *= 1.15
@@ -62,6 +69,12 @@ func applySpecies(l *bodyLayout, s Species) {
 		scaleHeight(l, 0.65)
 		l.headRX *= 0.88
 		l.headRY *= 0.90
+	}
+}
+
+// applyLargeSpeciesTraits applies traits for orc, troll, ogre.
+func applyLargeSpeciesTraits(l *bodyLayout, s Species) {
+	switch s {
 	case SpeciesOrc:
 		l.chestRX *= 1.25
 		l.chestRZ *= 1.20
@@ -84,6 +97,19 @@ func applySpecies(l *bodyLayout, s Species) {
 		l.neckRadius *= 1.60
 		l.headRX *= 1.20
 		l.headRY *= 1.15
+	}
+}
+
+func applySpecies(l *bodyLayout, s Species) {
+	switch s {
+	case SpeciesElf:
+		applyElfTraits(l)
+	case SpeciesDwarf:
+		applyDwarfTraits(l)
+	case SpeciesGnome, SpeciesHalfling, SpeciesGoblin, SpeciesKobold:
+		applySmallSpeciesTraits(l, s)
+	case SpeciesOrc, SpeciesTroll, SpeciesOgre:
+		applyLargeSpeciesTraits(l, s)
 	}
 }
 
@@ -245,22 +271,23 @@ func applyPhenotype(l *bodyLayout, p Phenotype) {
 
 // ─── Age ─────────────────────────────────────────────────────────────────────
 
-// applyAge modifies the body layout based on the character's age stage.
-// Species-specific head scaling is applied for AgeChild and AgeToddler.
-func applyAge(l *bodyLayout, a Age, s Species) {
-	// Species-specific head scale multiplier for child proportions.
-	// Smaller species (Gnome, Halfling, Kobold, Goblin) have proportionally
-	// larger heads as children to match real-world neoteny patterns.
-	childHeadMult := float32(1.0)
+// childHeadMultiplier returns species-specific head scaling for child proportions.
+// Smaller species have proportionally larger heads as children (neoteny).
+func childHeadMultiplier(s Species) float32 {
 	switch s {
 	case SpeciesGnome, SpeciesHalfling:
-		childHeadMult = 1.08
+		return 1.08
 	case SpeciesKobold, SpeciesGoblin:
-		childHeadMult = 1.06
+		return 1.06
 	case SpeciesOgre, SpeciesTroll:
-		childHeadMult = 0.95 // Large species have proportionally smaller child heads
+		return 0.95 // Large species have proportionally smaller child heads
+	default:
+		return 1.0
 	}
+}
 
+// applyElderlyAge applies body modifications for elderly age stages.
+func applyElderlyAge(l *bodyLayout, a Age) {
 	switch a {
 	case AgeDecrepit:
 		scaleAll(l, 0.94)
@@ -273,8 +300,12 @@ func applyAge(l *bodyLayout, a Age, s Species) {
 		l.upperLegRadius *= 0.85
 	case AgeOld:
 		l.chestRX *= 0.95
-	case AgeAdult:
-		// default
+	}
+}
+
+// applyYoungAge applies body modifications for young age stages.
+func applyYoungAge(l *bodyLayout, a Age, childHeadMult float32) {
+	switch a {
 	case AgeYouth:
 		scaleAll(l, 0.95)
 		l.headRX *= 1.03
@@ -293,6 +324,19 @@ func applyAge(l *bodyLayout, a Age, s Species) {
 		l.headRX *= 1.35 * childHeadMult
 		l.headRY *= 1.40 * childHeadMult
 		l.headRZ *= 1.35 * childHeadMult
+	}
+}
+
+// applyAge modifies the body layout based on the character's age stage.
+// Species-specific head scaling is applied for AgeChild and AgeToddler.
+func applyAge(l *bodyLayout, a Age, s Species) {
+	switch a {
+	case AgeDecrepit, AgeElderly, AgeOld:
+		applyElderlyAge(l, a)
+	case AgeAdult:
+		// default - no modifications
+	case AgeYouth, AgeTeen, AgeChild, AgeToddler:
+		applyYoungAge(l, a, childHeadMultiplier(s))
 	}
 }
 

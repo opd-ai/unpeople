@@ -555,26 +555,35 @@ func fractalNoise(u, v float32, octaves int, seed int64) float32 {
 	return total / maxValue
 }
 
-// voronoiNoise generates cell-like noise for spots and other features.
-func voronoiNoise(u, v float32, seed int64) float32 {
-	// Grid cell
-	iu := int(math.Floor(float64(u)))
-	iv := int(math.Floor(float64(v)))
-	fu := u - float32(iu)
-	fv := v - float32(iv)
+// computeVoronoiCellPoint returns a random point position within a cell.
+func computeVoronoiCellPoint(dx, dy, iu, iv int, seed int64) (float32, float32) {
+	px := float32(dx) + hashToFloat(iu+dx, iv+dy, seed)*0.5 + 0.5
+	py := float32(dy) + hashToFloat(iu+dx, iv+dy, seed+1)*0.5 + 0.5
+	return px, py
+}
 
-	// Search neighborhood for closest feature point
+// computeVoronoiMinDist finds minimum distance to feature points in the 3x3 neighborhood.
+func computeVoronoiMinDist(iu, iv int, fu, fv float32, seed int64) float32 {
 	minDist := float32(2.0)
 	for dx := -1; dx <= 1; dx++ {
 		for dy := -1; dy <= 1; dy++ {
-			// Random point in neighboring cell
-			px := float32(dx) + hashToFloat(iu+dx, iv+dy, seed)*0.5 + 0.5
-			py := float32(dy) + hashToFloat(iu+dx, iv+dy, seed+1)*0.5 + 0.5
+			px, py := computeVoronoiCellPoint(dx, dy, iu, iv, seed)
 			d := (fu-px)*(fu-px) + (fv-py)*(fv-py)
 			if d < minDist {
 				minDist = d
 			}
 		}
 	}
+	return minDist
+}
+
+// voronoiNoise generates cell-like noise for spots and other features.
+func voronoiNoise(u, v float32, seed int64) float32 {
+	iu := int(math.Floor(float64(u)))
+	iv := int(math.Floor(float64(v)))
+	fu := u - float32(iu)
+	fv := v - float32(iv)
+
+	minDist := computeVoronoiMinDist(iu, iv, fu, fv, seed)
 	return float32(math.Sqrt(float64(minDist)))
 }

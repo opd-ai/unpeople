@@ -38,20 +38,30 @@ func ComputeSkinningWeights(mesh *Mesh, skel *Skeleton, params SkinningParams) {
 	}
 }
 
+// computeJointInfluence calculates the influence of a single joint on a vertex.
+// Returns the influence if significant (weight > 0.001), otherwise returns nil.
+func computeJointInfluence(joint *Joint, pos Vec3, maxDist float32, params SkinningParams, skel *Skeleton) *jointInfluence {
+	dist := vec3Len(vec3Sub(pos, joint.Position))
+	if dist >= maxDist {
+		return nil
+	}
+
+	weight := computeInfluenceWeight(dist, params.FalloffRadius, joint.ID, skel)
+	if weight <= 0.001 {
+		return nil
+	}
+
+	return &jointInfluence{jointID: joint.ID, weight: weight}
+}
+
 // collectJointInfluences gathers all significant joint influences for a vertex.
 func collectJointInfluences(pos Vec3, skel *Skeleton, params SkinningParams) []jointInfluence {
 	influences := make([]jointInfluence, 0, len(skel.Joints))
 	maxDist := params.FalloffRadius * 3
 
 	for i := range skel.Joints {
-		joint := &skel.Joints[i]
-		dist := vec3Len(vec3Sub(pos, joint.Position))
-
-		if dist < maxDist {
-			weight := computeInfluenceWeight(dist, params.FalloffRadius, joint.ID, skel)
-			if weight > 0.001 {
-				influences = append(influences, jointInfluence{jointID: joint.ID, weight: weight})
-			}
+		if inf := computeJointInfluence(&skel.Joints[i], pos, maxDist, params, skel); inf != nil {
+			influences = append(influences, *inf)
 		}
 	}
 	return influences

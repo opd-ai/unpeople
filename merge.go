@@ -46,24 +46,32 @@ func (g *spatialGrid) keyFor(pos Vec3) gridKey {
 	}
 }
 
+// neighborhoodOffsets returns all 27 offsets for a 3×3×3 grid search.
+func neighborhoodOffsets() []gridKey {
+	offsets := make([]gridKey, 0, 27)
+	for dx := int32(-1); dx <= 1; dx++ {
+		for dy := int32(-1); dy <= 1; dy++ {
+			for dz := int32(-1); dz <= 1; dz++ {
+				offsets = append(offsets, gridKey{x: dx, y: dy, z: dz})
+			}
+		}
+	}
+	return offsets
+}
+
 // findWithinEpsilon returns all vertex indices within epsilon distance of pos.
 // It checks the cell containing pos and all 26 neighboring cells.
 func (g *spatialGrid) findWithinEpsilon(pos Vec3, epsilon float32, verts []Vertex) []int {
 	centerKey := g.keyFor(pos)
 	var result []int
 
-	// Check 3×3×3 neighborhood (27 cells including center)
-	for dx := int32(-1); dx <= 1; dx++ {
-		for dy := int32(-1); dy <= 1; dy++ {
-			for dz := int32(-1); dz <= 1; dz++ {
-				key := gridKey{
-					x: centerKey.x + dx,
-					y: centerKey.y + dy,
-					z: centerKey.z + dz,
-				}
-				result = g.appendMatchingVertices(key, pos, epsilon, verts, result)
-			}
+	for _, offset := range neighborhoodOffsets() {
+		key := gridKey{
+			x: centerKey.x + offset.x,
+			y: centerKey.y + offset.y,
+			z: centerKey.z + offset.z,
 		}
+		result = g.appendMatchingVertices(key, pos, epsilon, verts, result)
 	}
 
 	return result
@@ -103,6 +111,27 @@ func initMergeState(verts []Vertex) (mergeMap []int, normalSum []Vec3, normalCou
 	return mergeMap, normalSum, normalCount
 }
 
+// shouldMerge checks if vertex j should be merged into vertex i.
+func shouldMerge(i, j int, mergeMap []int) bool {
+	return j > i && mergeMap[j] == j
+}
+
+// mergeVertexInto merges vertex j into vertex i, updating merge maps and normal accumulators.
+func mergeVertexInto(i, j int, verts []Vertex, mergeMap []int, normalSum []Vec3, normalCount []int) {
+	mergeMap[j] = i
+	normalSum[i] = vec3Add(normalSum[i], verts[j].Normal)
+	normalCount[i]++
+}
+
+// processMergeCandidates handles all merge candidates for a single vertex.
+func processMergeCandidates(i int, nearby []int, verts []Vertex, mergeMap []int, normalSum []Vec3, normalCount []int) {
+	for _, j := range nearby {
+		if shouldMerge(i, j, mergeMap) {
+			mergeVertexInto(i, j, verts, mergeMap, normalSum, normalCount)
+		}
+	}
+}
+
 // findAndMergeVertices processes vertices to find merge candidates.
 func findAndMergeVertices(grid *spatialGrid, verts []Vertex, epsilon float32, mergeMap []int, normalSum []Vec3, normalCount []int) {
 	for i := range verts {
@@ -111,16 +140,7 @@ func findAndMergeVertices(grid *spatialGrid, verts []Vertex, epsilon float32, me
 		}
 
 		nearby := grid.findWithinEpsilon(verts[i].Position, epsilon, verts)
-		for _, j := range nearby {
-			if j <= i || mergeMap[j] != j {
-				continue // Skip self, earlier vertices, and already-merged vertices
-			}
-
-			// Merge vertex j into vertex i
-			mergeMap[j] = i
-			normalSum[i] = vec3Add(normalSum[i], verts[j].Normal)
-			normalCount[i]++
-		}
+		processMergeCandidates(i, nearby, verts, mergeMap, normalSum, normalCount)
 	}
 }
 

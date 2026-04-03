@@ -2006,3 +2006,141 @@ func TestSkinningAllSpecies(t *testing.T) {
 		}
 	}
 }
+
+// ─── Morph Target Tests ──────────────────────────────────────────────────────
+
+// TestMorphTargetGeneration verifies morph targets are generated correctly.
+func TestMorphTargetGeneration(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithMorphs(p)
+	if err != nil {
+		t.Fatalf("GenerateWithMorphs failed: %v", err)
+	}
+
+	if result.Morphs == nil {
+		t.Fatal("Morphs is nil")
+	}
+	if len(result.Morphs.Targets) == 0 {
+		t.Error("No morph targets generated")
+	}
+}
+
+// TestMorphTargetOffsetCount verifies offset arrays match vertex count.
+func TestMorphTargetOffsetCount(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithMorphs(p)
+	if err != nil {
+		t.Fatalf("GenerateWithMorphs failed: %v", err)
+	}
+
+	vertexCount := len(result.Mesh.Vertices)
+	for _, target := range result.Morphs.Targets {
+		if len(target.Offsets) != vertexCount {
+			t.Errorf("morph target %s has %d offsets (expected %d)",
+				target.Name, len(target.Offsets), vertexCount)
+		}
+	}
+}
+
+// TestMorphTargetSmile verifies smile morph exists and has reasonable offsets.
+func TestMorphTargetSmile(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithMorphs(p)
+	if err != nil {
+		t.Fatalf("GenerateWithMorphs failed: %v", err)
+	}
+
+	smile := result.Morphs.GetTarget(unpeople.MorphSmile)
+	if smile == nil {
+		t.Fatal("Smile morph target not found")
+	}
+	if smile.Name != "smile" {
+		t.Errorf("unexpected smile morph name: %s", smile.Name)
+	}
+
+	// At least some vertices should have non-zero offsets
+	hasNonZero := false
+	for _, offset := range smile.Offsets {
+		if offset[0] != 0 || offset[1] != 0 || offset[2] != 0 {
+			hasNonZero = true
+			break
+		}
+	}
+	if !hasNonZero {
+		t.Error("Smile morph has no non-zero offsets")
+	}
+}
+
+// TestMorphTargetBreathing verifies breathing morphs exist.
+func TestMorphTargetBreathing(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithMorphs(p)
+	if err != nil {
+		t.Fatalf("GenerateWithMorphs failed: %v", err)
+	}
+
+	breathIn := result.Morphs.GetTarget(unpeople.MorphBreathIn)
+	breathOut := result.Morphs.GetTarget(unpeople.MorphBreathOut)
+
+	if breathIn == nil {
+		t.Error("BreathIn morph target not found")
+	}
+	if breathOut == nil {
+		t.Error("BreathOut morph target not found")
+	}
+}
+
+// TestMorphTargetNames verifies target names are populated.
+func TestMorphTargetNames(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithMorphs(p)
+	if err != nil {
+		t.Fatalf("GenerateWithMorphs failed: %v", err)
+	}
+
+	names := result.Morphs.TargetNames()
+	if len(names) == 0 {
+		t.Error("No morph target names returned")
+	}
+	for _, name := range names {
+		if name == "" {
+			t.Error("Empty morph target name found")
+		}
+	}
+}
+
+// TestApplyMorphTarget verifies applying morph target to mesh vertices.
+func TestApplyMorphTarget(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithMorphs(p)
+	if err != nil {
+		t.Fatalf("GenerateWithMorphs failed: %v", err)
+	}
+
+	// Apply smile morph
+	unpeople.ApplyMorphTargetToVertex(result.Mesh, result.Morphs, unpeople.MorphSmile)
+
+	// Check that at least some vertices have MorphTarget set
+	hasNonZero := false
+	for _, v := range result.Mesh.Vertices {
+		if v.MorphTarget[0] != 0 || v.MorphTarget[1] != 0 || v.MorphTarget[2] != 0 {
+			hasNonZero = true
+			break
+		}
+	}
+	if !hasNonZero {
+		t.Error("No vertices have MorphTarget set after apply")
+	}
+}

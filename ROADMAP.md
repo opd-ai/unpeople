@@ -80,7 +80,7 @@ and must be addressed before or during Phase 2 implementation:
   shoulders/hips → limb chains) matching the generated mesh.
 - [x] **Vertex skinning weights** – Populate the `JointIds` / `JointWeights`
   fields in every `Vertex` so the mesh can be animated in Kaiju.
-- [ ] **MorphTarget support** – Fill `Vertex.MorphTarget` for blend-shape
+- [x] **MorphTarget support** – Fill `Vertex.MorphTarget` for blend-shape
   animation (facial expressions, breathing, etc.).
 - [ ] **Animation-ready T-pose export** – Ensure the generated skeleton
   conforms to industry-standard bind-pose conventions.

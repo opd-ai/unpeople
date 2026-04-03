@@ -68,6 +68,27 @@ func resolveWorkerCount(requested, numJobs int) int {
 	return workers
 }
 
+// processNextJob attempts to process the next job from the channel.
+// Returns false if the context is cancelled or the jobs channel is closed.
+func (bg *BatchGenerator) processNextJob(
+	ctx context.Context,
+	jobs <-chan int,
+	params []Params,
+	opts BatchOptions,
+	results []BatchResult,
+) bool {
+	select {
+	case <-ctx.Done():
+		return false
+	case idx, ok := <-jobs:
+		if !ok {
+			return false
+		}
+		bg.processJob(idx, params[idx], opts.IncludeMaterial, &results[idx])
+		return true
+	}
+}
+
 // spawnBatchWorker starts a single worker goroutine that processes jobs from the channel.
 func (bg *BatchGenerator) spawnBatchWorker(
 	ctx context.Context,
@@ -78,16 +99,7 @@ func (bg *BatchGenerator) spawnBatchWorker(
 	results []BatchResult,
 ) {
 	defer wg.Done()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case idx, ok := <-jobs:
-			if !ok {
-				return
-			}
-			bg.processJob(idx, params[idx], opts.IncludeMaterial, &results[idx])
-		}
+	for bg.processNextJob(ctx, jobs, params, opts, results) {
 	}
 }
 

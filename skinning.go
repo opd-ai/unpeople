@@ -38,51 +38,60 @@ func ComputeSkinningWeights(mesh *Mesh, skel *Skeleton, params SkinningParams) {
 	}
 }
 
-// computeVertexWeights calculates the skinning weights for a single vertex.
-func computeVertexWeights(v *Vertex, skel *Skeleton, params SkinningParams) {
-	// Find the closest joints and their influence weights
+// collectJointInfluences gathers all significant joint influences for a vertex.
+func collectJointInfluences(pos Vec3, skel *Skeleton, params SkinningParams) []jointInfluence {
 	influences := make([]jointInfluence, 0, len(skel.Joints))
+	maxDist := params.FalloffRadius * 3
 
 	for i := range skel.Joints {
 		joint := &skel.Joints[i]
+		dist := vec3Len(vec3Sub(pos, joint.Position))
 
-		// Calculate distance from vertex to joint
-		dist := vec3Len(vec3Sub(v.Position, joint.Position))
-
-		// Calculate influence based on distance (exponential falloff)
-		if dist < params.FalloffRadius*3 { // Only consider nearby joints
+		if dist < maxDist {
 			weight := computeInfluenceWeight(dist, params.FalloffRadius, joint.ID, skel)
-			if weight > 0.001 { // Threshold small weights
-				influences = append(influences, jointInfluence{
-					jointID: joint.ID,
-					weight:  weight,
-				})
+			if weight > 0.001 {
+				influences = append(influences, jointInfluence{jointID: joint.ID, weight: weight})
 			}
 		}
 	}
+	return influences
+}
 
-	// If no influences found, assign to nearest joint
+// ensureInfluences guarantees at least one joint influence exists.
+func ensureInfluences(influences []jointInfluence, pos Vec3, skel *Skeleton) []jointInfluence {
 	if len(influences) == 0 {
-		nearest := findNearestJoint(v.Position, skel)
-		influences = append(influences, jointInfluence{jointID: nearest, weight: 1.0})
+		nearest := findNearestJoint(pos, skel)
+		return []jointInfluence{{jointID: nearest, weight: 1.0}}
 	}
+	return influences
+}
 
-	// Sort by weight descending and keep top maxInfluences
+// limitInfluences sorts and truncates influences to the maximum allowed.
+func limitInfluences(influences []jointInfluence) []jointInfluence {
 	sortInfluencesByWeight(influences)
 	if len(influences) > maxInfluences {
-		influences = influences[:maxInfluences]
+		return influences[:maxInfluences]
 	}
+	return influences
+}
 
-	// Normalize weights
-	normalizeInfluences(influences)
-
-	// Write to vertex
+// applyInfluencesToVertex writes the finalized influences to vertex fields.
+func applyInfluencesToVertex(v *Vertex, influences []jointInfluence) {
 	v.JointIds = Vec4i{0, 0, 0, 0}
 	v.JointWeights = Vec4{0, 0, 0, 0}
 	for i := 0; i < len(influences) && i < maxInfluences; i++ {
 		v.JointIds[i] = int32(influences[i].jointID)
 		v.JointWeights[i] = influences[i].weight
 	}
+}
+
+// computeVertexWeights calculates the skinning weights for a single vertex.
+func computeVertexWeights(v *Vertex, skel *Skeleton, params SkinningParams) {
+	influences := collectJointInfluences(v.Position, skel, params)
+	influences = ensureInfluences(influences, v.Position, skel)
+	influences = limitInfluences(influences)
+	normalizeInfluences(influences)
+	applyInfluencesToVertex(v, influences)
 }
 
 // jointInfluence pairs a joint with its influence weight on a vertex.
@@ -315,6 +324,7 @@ type SkinningError struct {
 	Message     string
 }
 
+// Error implements the error interface for SkinningError.
 func (e *SkinningError) Error() string {
 	return "skinning error at vertex " + string(rune('0'+e.VertexIndex)) + ": " + e.Message
 }
@@ -342,55 +352,91 @@ func SmoothSkinningWeights(mesh *Mesh, iterations int) {
 	}
 }
 
-// smoothVertex averages weights with nearby vertices.
-func smoothVertex(v *Vertex, allVerts []Vertex, origWeights []Vec4, origIds []Vec4i, selfIdx int) {
-	const searchRadius = float32(0.05) // 5cm radius for neighbor search
-	const blendFactor = float32(0.3)   // How much to blend with neighbors
+// smoothVertexConfig holds configuration for vertex weight smoothing.
+type smoothVertexConfig struct {
+	searchRadius float32
+	blendFactor  float32
+}
 
+// defaultSmoothConfig returns the default smoothing configuration.
+func defaultSmoothConfig() smoothVertexConfig {
+	return smoothVertexConfig{
+		searchRadius: 0.05, // 5cm radius for neighbor search
+		blendFactor:  0.3,  // How much to blend with neighbors
+	}
+}
+
+// buildJointSlotMap creates a mapping of joint IDs to weight array slots.
+func buildJointSlotMap(jointIds Vec4i) map[int32]int {
+	jointPresent := make(map[int32]int)
+	for slot := 0; slot < maxInfluences; slot++ {
+		jointPresent[jointIds[slot]] = slot
+	}
+	return jointPresent
+}
+
+// isNeighborVertex checks if a vertex is within the search radius.
+func isNeighborVertex(pos, neighborPos Vec3, searchRadius float32) bool {
+	return vec3Len(vec3Sub(pos, neighborPos)) < searchRadius
+}
+
+// accumulateJointWeight adds a neighbor's joint weights to the accumulator.
+func accumulateJointWeight(jointPresent map[int32]int, avgWeights *[maxInfluences]float32, jointID int32, weight float32) {
+	if slot, ok := jointPresent[jointID]; ok {
+		avgWeights[slot] += weight
+	}
+}
+
+// accumulateNeighborWeights accumulates weights from nearby vertices.
+func accumulateNeighborWeights(pos Vec3, allVerts []Vertex, origWeights []Vec4, origIds []Vec4i, selfIdx int, jointPresent map[int32]int, searchRadius float32) (int, [maxInfluences]float32) {
 	var neighborCount int
 	var avgWeights [maxInfluences]float32
-	jointPresent := make(map[int32]int) // joint ID -> slot in avgWeights
 
-	// Map current joints to slots
-	for slot := 0; slot < maxInfluences; slot++ {
-		jointPresent[origIds[selfIdx][slot]] = slot
-	}
-
-	// Find nearby vertices and accumulate their weights
 	for j := range allVerts {
-		if j == selfIdx {
+		if j == selfIdx || !isNeighborVertex(pos, allVerts[j].Position, searchRadius) {
 			continue
 		}
-		dist := vec3Len(vec3Sub(v.Position, allVerts[j].Position))
-		if dist < searchRadius {
-			neighborCount++
-			// Add neighbor's weight contributions
-			for k := 0; k < maxInfluences; k++ {
-				jointID := origIds[j][k]
-				weight := origWeights[j][k]
-				if slot, ok := jointPresent[jointID]; ok {
-					avgWeights[slot] += weight
-				}
-			}
+		neighborCount++
+		for k := 0; k < maxInfluences; k++ {
+			accumulateJointWeight(jointPresent, &avgWeights, origIds[j][k], origWeights[j][k])
 		}
 	}
+	return neighborCount, avgWeights
+}
 
-	// Blend with self weights
-	if neighborCount > 0 {
-		neighborFactor := blendFactor / float32(neighborCount)
-		selfFactor := 1.0 - blendFactor
+// blendWeights blends original weights with neighbor-averaged weights.
+func blendWeights(original Vec4, avgWeights [maxInfluences]float32, neighborCount int, blendFactor float32) Vec4 {
+	neighborFactor := blendFactor / float32(neighborCount)
+	selfFactor := 1.0 - blendFactor
 
+	var result Vec4
+	for slot := 0; slot < maxInfluences; slot++ {
+		result[slot] = selfFactor*original[slot] + neighborFactor*avgWeights[slot]
+	}
+	return result
+}
+
+// normalizeWeights normalizes joint weights so they sum to 1.0.
+func normalizeWeights(weights *Vec4) {
+	sum := weights[0] + weights[1] + weights[2] + weights[3]
+	if sum > 0.001 {
 		for slot := 0; slot < maxInfluences; slot++ {
-			v.JointWeights[slot] = selfFactor*origWeights[selfIdx][slot] +
-				neighborFactor*avgWeights[slot]
+			weights[slot] /= sum
 		}
+	}
+}
 
-		// Renormalize
-		sum := v.JointWeights[0] + v.JointWeights[1] + v.JointWeights[2] + v.JointWeights[3]
-		if sum > 0.001 {
-			for slot := 0; slot < maxInfluences; slot++ {
-				v.JointWeights[slot] /= sum
-			}
-		}
+// smoothVertex averages weights with nearby vertices.
+func smoothVertex(v *Vertex, allVerts []Vertex, origWeights []Vec4, origIds []Vec4i, selfIdx int) {
+	cfg := defaultSmoothConfig()
+	jointPresent := buildJointSlotMap(origIds[selfIdx])
+
+	neighborCount, avgWeights := accumulateNeighborWeights(
+		v.Position, allVerts, origWeights, origIds, selfIdx, jointPresent, cfg.searchRadius,
+	)
+
+	if neighborCount > 0 {
+		v.JointWeights = blendWeights(origWeights[selfIdx], avgWeights, neighborCount, cfg.blendFactor)
+		normalizeWeights(&v.JointWeights)
 	}
 }

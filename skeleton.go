@@ -193,56 +193,63 @@ func computeJointPositions(skel *Skeleton, l bodyLayout) {
 }
 
 // computeFingerJoints calculates finger joint positions.
-func computeFingerJoints(skel *Skeleton, l bodyLayout, isLeft bool) {
-	var handCenter Vec3
-	var baseID JointID
-	var sign float32 = 1.0
+// fingerConfig holds the computed configuration for one hand's fingers.
+type fingerConfig struct {
+	handCenter Vec3
+	baseID     JointID
+	sign       float32
+}
 
+// computeFingerConfig returns the configuration for left or right hand fingers.
+func computeFingerConfig(l bodyLayout, isLeft bool) fingerConfig {
 	if isLeft {
-		handCenter = l.handCenterL
-		baseID = JointLeftThumb1
-		sign = -1.0
-	} else {
-		handCenter = l.handCenterR
-		baseID = JointRightThumb1
-		sign = 1.0
+		return fingerConfig{handCenter: l.handCenterL, baseID: JointLeftThumb1, sign: -1.0}
 	}
+	return fingerConfig{handCenter: l.handCenterR, baseID: JointRightThumb1, sign: 1.0}
+}
+
+// computeFingerOffsets returns X-offsets for each finger from palm center.
+func computeFingerOffsets(sign, handHW float32) [5]float32 {
+	return [5]float32{
+		-sign * handHW * 0.8, // Thumb (offset laterally)
+		-sign * handHW * 0.5, // Index
+		-sign * handHW * 0.2, // Middle
+		sign * handHW * 0.2,  // Ring
+		sign * handHW * 0.5,  // Pinky
+	}
+}
+
+// setFingerJointPositions positions joints for a single finger.
+func setFingerJointPositions(skel *Skeleton, cfg fingerConfig, offsets [5]float32, palmEdge, phalanxLen float32, fingerIdx int) {
+	numJoints := 3
+	if fingerIdx == 0 { // Thumb has 2 joints
+		numJoints = 2
+	}
+
+	for j := 0; j < numJoints; j++ {
+		jointIdx := cfg.baseID + JointID(fingerIdx*3+j)
+		if jointIdx >= JointCount {
+			break
+		}
+		yOffset := palmEdge - float32(j+1)*phalanxLen
+		skel.Joints[jointIdx].Position = Vec3{
+			cfg.handCenter[0] + offsets[fingerIdx],
+			yOffset,
+			cfg.handCenter[2],
+		}
+	}
+}
+
+func computeFingerJoints(skel *Skeleton, l bodyLayout, isLeft bool) {
+	cfg := computeFingerConfig(l, isLeft)
+	offsets := computeFingerOffsets(cfg.sign, l.handHW)
 
 	fingerLength := (l.proximalLength + l.middleLength + l.distalLength) * l.fingerLengthMult
 	phalanxLen := fingerLength / 3.0
-
-	// Finger X offsets from palm center (thumb is offset to side)
-	fingerOffsets := [5]float32{
-		-sign * l.handHW * 0.8, // Thumb (offset laterally)
-		-sign * l.handHW * 0.5, // Index
-		-sign * l.handHW * 0.2, // Middle
-		sign * l.handHW * 0.2,  // Ring
-		sign * l.handHW * 0.5,  // Pinky
-	}
-
-	// Fingers extend down from hand center
-	palmEdge := handCenter[1] - l.handHH
+	palmEdge := cfg.handCenter[1] - l.handHH
 
 	for f := 0; f < 5; f++ {
-		var numJoints int
-		if f == 0 { // Thumb has 2 joints
-			numJoints = 2
-		} else {
-			numJoints = 3
-		}
-
-		for j := 0; j < numJoints; j++ {
-			jointIdx := baseID + JointID(f*3+j)
-			if jointIdx >= JointCount {
-				break
-			}
-			yOffset := palmEdge - float32(j+1)*phalanxLen
-			skel.Joints[jointIdx].Position = Vec3{
-				handCenter[0] + fingerOffsets[f],
-				yOffset,
-				handCenter[2],
-			}
-		}
+		setFingerJointPositions(skel, cfg, offsets, palmEdge, phalanxLen, f)
 	}
 }
 
@@ -528,8 +535,118 @@ type TPoseError struct {
 	Details string
 }
 
+// Error implements the error interface for TPoseError.
 func (e *TPoseError) Error() string {
 	return fmt.Sprintf("bind-pose error at %s: %s (%s)", jointNames[e.JointID], e.Issue, e.Details)
+}
+
+// validateRootAtOrigin checks that the root joint is at the origin.
+func (s *Skeleton) validateRootAtOrigin() *TPoseError {
+	root := s.Joint(JointRoot)
+	if vec3Len(root.Position) > 0.001 {
+		return &TPoseError{
+			JointID: JointRoot,
+			Issue:   "not at origin",
+			Details: fmt.Sprintf("position (%.3f, %.3f, %.3f)", root.Position[0], root.Position[1], root.Position[2]),
+		}
+	}
+	return nil
+}
+
+// validateSpineUpward checks that the head is above the hips.
+func (s *Skeleton) validateSpineUpward() *TPoseError {
+	hips := s.Joint(JointHips)
+	head := s.Joint(JointHead)
+	if head.Position[1] <= hips.Position[1] {
+		return &TPoseError{
+			JointID: JointHead,
+			Issue:   "not above hips",
+			Details: fmt.Sprintf("head Y=%.3f, hips Y=%.3f", head.Position[1], hips.Position[1]),
+		}
+	}
+	return nil
+}
+
+// validateArmPosition checks that a hand is positioned correctly for A-pose.
+func validateArmPosition(hand, shoulder *Joint, isLeft bool) []error {
+	var errs []error
+	jointID := JointRightHand
+	if isLeft {
+		jointID = JointLeftHand
+	}
+
+	// Arms should be below shoulders (A-pose)
+	if hand.Position[1] >= shoulder.Position[1] {
+		errs = append(errs, &TPoseError{
+			JointID: jointID,
+			Issue:   "hand not below shoulder",
+			Details: fmt.Sprintf("hand Y=%.3f, shoulder Y=%.3f", hand.Position[1], shoulder.Position[1]),
+		})
+	}
+
+	// Check lateral position
+	if isLeft && hand.Position[0] >= 0 {
+		errs = append(errs, &TPoseError{
+			JointID: jointID,
+			Issue:   "left hand not on left side",
+			Details: fmt.Sprintf("hand X=%.3f", hand.Position[0]),
+		})
+	} else if !isLeft && hand.Position[0] <= 0 {
+		errs = append(errs, &TPoseError{
+			JointID: jointID,
+			Issue:   "right hand not on right side",
+			Details: fmt.Sprintf("hand X=%.3f", hand.Position[0]),
+		})
+	}
+	return errs
+}
+
+// validateFootNearGround checks that a foot is near ground level.
+func validateFootNearGround(foot *Joint, jointID JointID, tolerance float32) *TPoseError {
+	if foot.Position[1] > tolerance {
+		return &TPoseError{
+			JointID: jointID,
+			Issue:   "foot not near ground",
+			Details: fmt.Sprintf("foot Y=%.3f", foot.Position[1]),
+		}
+	}
+	return nil
+}
+
+// validateJointRotations checks that all joints have identity rotations.
+func (s *Skeleton) validateJointRotations() []error {
+	var errs []error
+	identityQuat := Vec4{0, 0, 0, 1}
+	for i := range s.Joints {
+		j := &s.Joints[i]
+		if j.Rotation != identityQuat {
+			errs = append(errs, &TPoseError{
+				JointID: j.ID,
+				Issue:   "non-identity rotation",
+				Details: fmt.Sprintf("rotation (%.3f, %.3f, %.3f, %.3f)",
+					j.Rotation[0], j.Rotation[1], j.Rotation[2], j.Rotation[3]),
+			})
+		}
+	}
+	return errs
+}
+
+// validateJointScales checks that all joints have unit scales.
+func (s *Skeleton) validateJointScales() []error {
+	var errs []error
+	unitScale := Vec3{1, 1, 1}
+	for i := range s.Joints {
+		j := &s.Joints[i]
+		if j.Scale != unitScale {
+			errs = append(errs, &TPoseError{
+				JointID: j.ID,
+				Issue:   "non-unit scale",
+				Details: fmt.Sprintf("scale (%.3f, %.3f, %.3f)",
+					j.Scale[0], j.Scale[1], j.Scale[2]),
+			})
+		}
+	}
+	return errs
 }
 
 // ValidateTPose checks that the skeleton conforms to industry-standard bind-pose
@@ -538,114 +655,33 @@ func (e *TPoseError) Error() string {
 func (s *Skeleton) ValidateTPose() []error {
 	var errors []error
 
-	// Check root at origin
-	root := s.Joint(JointRoot)
-	if vec3Len(root.Position) > 0.001 {
-		errors = append(errors, &TPoseError{
-			JointID: JointRoot,
-			Issue:   "not at origin",
-			Details: fmt.Sprintf("position (%.3f, %.3f, %.3f)", root.Position[0], root.Position[1], root.Position[2]),
-		})
+	if err := s.validateRootAtOrigin(); err != nil {
+		errors = append(errors, err)
 	}
 
-	// Check spine extends upward
-	hips := s.Joint(JointHips)
-	head := s.Joint(JointHead)
-	if head.Position[1] <= hips.Position[1] {
-		errors = append(errors, &TPoseError{
-			JointID: JointHead,
-			Issue:   "not above hips",
-			Details: fmt.Sprintf("head Y=%.3f, hips Y=%.3f", head.Position[1], hips.Position[1]),
-		})
+	if err := s.validateSpineUpward(); err != nil {
+		errors = append(errors, err)
 	}
 
-	// For A-pose: arms extend downward from shoulders
+	// Validate arm positions (A-pose: arms extend downward)
 	leftShoulder := s.Joint(JointLeftShoulder)
 	leftHand := s.Joint(JointLeftHand)
 	rightShoulder := s.Joint(JointRightShoulder)
 	rightHand := s.Joint(JointRightHand)
+	errors = append(errors, validateArmPosition(leftHand, leftShoulder, true)...)
+	errors = append(errors, validateArmPosition(rightHand, rightShoulder, false)...)
 
-	// Arms should be below shoulders (A-pose)
-	if leftHand.Position[1] >= leftShoulder.Position[1] {
-		errors = append(errors, &TPoseError{
-			JointID: JointLeftHand,
-			Issue:   "hand not below shoulder",
-			Details: fmt.Sprintf("hand Y=%.3f, shoulder Y=%.3f", leftHand.Position[1], leftShoulder.Position[1]),
-		})
+	// Validate feet near ground
+	groundTolerance := float32(0.15)
+	if err := validateFootNearGround(s.Joint(JointLeftFoot), JointLeftFoot, groundTolerance); err != nil {
+		errors = append(errors, err)
 	}
-	if rightHand.Position[1] >= rightShoulder.Position[1] {
-		errors = append(errors, &TPoseError{
-			JointID: JointRightHand,
-			Issue:   "hand not below shoulder",
-			Details: fmt.Sprintf("hand Y=%.3f, shoulder Y=%.3f", rightHand.Position[1], rightShoulder.Position[1]),
-		})
+	if err := validateFootNearGround(s.Joint(JointRightFoot), JointRightFoot, groundTolerance); err != nil {
+		errors = append(errors, err)
 	}
 
-	// Left arm should be on left side (negative X)
-	if leftHand.Position[0] >= 0 {
-		errors = append(errors, &TPoseError{
-			JointID: JointLeftHand,
-			Issue:   "left hand not on left side",
-			Details: fmt.Sprintf("hand X=%.3f", leftHand.Position[0]),
-		})
-	}
-
-	// Right arm should be on right side (positive X)
-	if rightHand.Position[0] <= 0 {
-		errors = append(errors, &TPoseError{
-			JointID: JointRightHand,
-			Issue:   "right hand not on right side",
-			Details: fmt.Sprintf("hand X=%.3f", rightHand.Position[0]),
-		})
-	}
-
-	// Check feet are near ground level
-	leftFoot := s.Joint(JointLeftFoot)
-	rightFoot := s.Joint(JointRightFoot)
-	groundTolerance := float32(0.15) // 15cm from ground
-
-	if leftFoot.Position[1] > groundTolerance {
-		errors = append(errors, &TPoseError{
-			JointID: JointLeftFoot,
-			Issue:   "foot not near ground",
-			Details: fmt.Sprintf("foot Y=%.3f", leftFoot.Position[1]),
-		})
-	}
-	if rightFoot.Position[1] > groundTolerance {
-		errors = append(errors, &TPoseError{
-			JointID: JointRightFoot,
-			Issue:   "foot not near ground",
-			Details: fmt.Sprintf("foot Y=%.3f", rightFoot.Position[1]),
-		})
-	}
-
-	// Check all rotations are identity
-	identityQuat := Vec4{0, 0, 0, 1}
-	for i := range s.Joints {
-		j := &s.Joints[i]
-		if j.Rotation != identityQuat {
-			errors = append(errors, &TPoseError{
-				JointID: j.ID,
-				Issue:   "non-identity rotation",
-				Details: fmt.Sprintf("rotation (%.3f, %.3f, %.3f, %.3f)",
-					j.Rotation[0], j.Rotation[1], j.Rotation[2], j.Rotation[3]),
-			})
-		}
-	}
-
-	// Check all scales are unit
-	unitScale := Vec3{1, 1, 1}
-	for i := range s.Joints {
-		j := &s.Joints[i]
-		if j.Scale != unitScale {
-			errors = append(errors, &TPoseError{
-				JointID: j.ID,
-				Issue:   "non-unit scale",
-				Details: fmt.Sprintf("scale (%.3f, %.3f, %.3f)",
-					j.Scale[0], j.Scale[1], j.Scale[2]),
-			})
-		}
-	}
+	errors = append(errors, s.validateJointRotations()...)
+	errors = append(errors, s.validateJointScales()...)
 
 	return errors
 }

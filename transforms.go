@@ -435,10 +435,9 @@ func applyFootSize(l *bodyLayout, fs FootSize) {
 
 // ─── Facial Features ─────────────────────────────────────────────────────────
 
-func applyFacialFeatures(l *bodyLayout, fs FaceShape, j Jaw, br Brow, e Ears) {
+// applyFaceShape modifies head geometry based on face shape.
+func applyFaceShape(l *bodyLayout, fs FaceShape) {
 	switch fs {
-	case FaceShapeOval:
-		// default
 	case FaceShapeRound:
 		l.headRX *= 1.08
 		l.headRZ *= 1.08
@@ -455,7 +454,10 @@ func applyFacialFeatures(l *bodyLayout, fs FaceShape, j Jaw, br Brow, e Ears) {
 		l.headRY *= 1.12
 		l.headRX *= 0.92
 	}
+}
 
+// applyJaw modifies head geometry based on jaw type.
+func applyJaw(l *bodyLayout, j Jaw) {
 	switch j {
 	case JawProminent:
 		l.headCenter[1] -= 0.005
@@ -464,38 +466,45 @@ func applyFacialFeatures(l *bodyLayout, fs FaceShape, j Jaw, br Brow, e Ears) {
 		l.headRX *= 1.03
 	case JawRounded:
 		l.headRY *= 0.97
-	case JawAverage, JawSubtle:
-		// default
 	}
+}
 
-	switch br {
-	case BrowHeavy:
+// applyBrow modifies head geometry based on brow type.
+func applyBrow(l *bodyLayout, br Brow) {
+	if br == BrowHeavy {
 		l.headRY *= 1.02
-	case BrowNormal, BrowLight, BrowArched:
-		// default
 	}
+}
 
-	// Apply ear-specific modifications
+// applyEarScale modifies ear scale based on ear type.
+func applyEarScale(l *bodyLayout, e Ears) {
 	switch e {
 	case EarsLarge:
 		l.earScale *= 1.30
 	case EarsPointed:
-		l.earScale *= 1.15 // Pointed ears are slightly larger
+		l.earScale *= 1.15
 	case EarsSmall:
 		l.earScale *= 0.70
-	case EarsMedium, EarsRounded:
-		// default scale
 	}
+}
 
-	// Update ear attachment points based on current head geometry.
-	// Ears attach at the lateral extent of the head at roughly eye level.
+// updateEarAttachments repositions ear attachment points based on head geometry.
+func updateEarAttachments(l *bodyLayout) {
 	l.earAttachL[0] = -l.headRX
 	l.earAttachL[1] = l.headCenter[1] + l.headRY*0.15
 	l.earAttachL[2] = l.headCenter[2]
-
 	l.earAttachR[0] = l.headRX
 	l.earAttachR[1] = l.headCenter[1] + l.headRY*0.15
 	l.earAttachR[2] = l.headCenter[2]
+}
+
+// applyFacialFeatures modifies the body layout based on facial feature parameters.
+func applyFacialFeatures(l *bodyLayout, fs FaceShape, j Jaw, br Brow, e Ears) {
+	applyFaceShape(l, fs)
+	applyJaw(l, j)
+	applyBrow(l, br)
+	applyEarScale(l, e)
+	updateEarAttachments(l)
 }
 
 // ─── Posture ─────────────────────────────────────────────────────────────────

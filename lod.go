@@ -125,70 +125,69 @@ func lodSuffix(level LODLevel) string {
 	}
 }
 
-// decimateMesh reduces triangle count using edge collapse decimation.
-func decimateMesh(src *Mesh, targetTris int) *Mesh {
-	if len(src.Indices)/3 <= targetTris {
-		return copyMesh(src)
-	}
-
-	// Build initial mesh structures
+// initDecimationData initializes the data structures for mesh decimation.
+func initDecimationData(src *Mesh) ([]Vertex, []uint32, []uint32) {
 	vertices := make([]Vertex, len(src.Vertices))
 	copy(vertices, src.Vertices)
 
 	indices := make([]uint32, len(src.Indices))
 	copy(indices, src.Indices)
 
-	// Track which vertices are still valid
-	vertexValid := make([]bool, len(vertices))
-	for i := range vertexValid {
-		vertexValid[i] = true
-	}
-
-	// Vertex remapping (original index -> new index after collapses)
 	remap := make([]uint32, len(vertices))
 	for i := range remap {
 		remap[i] = uint32(i)
 	}
+	return vertices, indices, remap
+}
 
-	// Build edge list with collapse costs
+// countDegenerateTriangles counts triangles that become degenerate after collapse.
+func countDegenerateTriangles(indices, remap []uint32) int {
+	removed := 0
+	for i := 0; i < len(indices); i += 3 {
+		a := followRemap(remap, indices[i])
+		b := followRemap(remap, indices[i+1])
+		c := followRemap(remap, indices[i+2])
+		if a == b || b == c || c == a {
+			removed++
+		}
+	}
+	return removed
+}
+
+// collapseEdge collapses edge v1 into v0 and returns updated triangle count.
+func collapseEdge(vertices []Vertex, indices, remap []uint32, e edge) int {
+	v0 := followRemap(remap, e.v0)
+	v1 := followRemap(remap, e.v1)
+	if v0 == v1 {
+		return -1 // Skip invalid edge
+	}
+
+	remap[v1] = v0
+	blendVertex(&vertices[v0], &vertices[v1], 0.5)
+	return countDegenerateTriangles(indices, remap)
+}
+
+// decimateMesh reduces triangle count using edge collapse decimation.
+func decimateMesh(src *Mesh, targetTris int) *Mesh {
+	if len(src.Indices)/3 <= targetTris {
+		return copyMesh(src)
+	}
+
+	vertices, indices, remap := initDecimationData(src)
 	edges := buildEdgeList(vertices, indices)
 	sortEdgesByCost(edges)
 
-	// Collapse edges until we reach target triangle count
 	currentTris := len(indices) / 3
 	edgeIdx := 0
 
 	for currentTris > targetTris && edgeIdx < len(edges) {
-		e := edges[edgeIdx]
+		removed := collapseEdge(vertices, indices, remap, edges[edgeIdx])
 		edgeIdx++
-
-		// Skip invalid edges (endpoints already collapsed)
-		v0 := followRemap(remap, e.v0)
-		v1 := followRemap(remap, e.v1)
-		if v0 == v1 {
-			continue
+		if removed >= 0 {
+			currentTris = len(indices)/3 - removed
 		}
-
-		// Collapse v1 into v0
-		remap[v1] = v0
-
-		// Blend vertex attributes at midpoint
-		blendVertex(&vertices[v0], &vertices[v1], 0.5)
-
-		// Count triangles removed (degenerate after collapse)
-		removed := 0
-		for i := 0; i < len(indices); i += 3 {
-			a := followRemap(remap, indices[i])
-			b := followRemap(remap, indices[i+1])
-			c := followRemap(remap, indices[i+2])
-			if a == b || b == c || c == a {
-				removed++
-			}
-		}
-		currentTris = len(indices)/3 - removed
 	}
 
-	// Rebuild mesh with collapsed vertices
 	return rebuildMesh(vertices, indices, remap)
 }
 
@@ -284,16 +283,18 @@ func blendVertex(dst, src *Vertex, t float32) {
 	dst.UV0[1] = dst.UV0[1]*s + src.UV0[1]*t
 }
 
-// rebuildMesh creates a new mesh with collapsed vertices and degenerate triangles removed.
-func rebuildMesh(vertices []Vertex, indices, remap []uint32) *Mesh {
-	// Find which vertices are still used
-	used := make([]bool, len(vertices))
+// markUsedVertices identifies which vertices are still referenced after remapping.
+func markUsedVertices(indices, remap []uint32, vertexCount int) []bool {
+	used := make([]bool, vertexCount)
 	for i := range indices {
 		idx := followRemap(remap, indices[i])
 		used[idx] = true
 	}
+	return used
+}
 
-	// Build compacted vertex list
+// compactVertices builds a compacted vertex list and index remapping table.
+func compactVertices(vertices []Vertex, used []bool, remap []uint32) ([]Vertex, []uint32) {
 	newIdx := make([]uint32, len(vertices))
 	var newVerts []Vertex
 	for i, v := range vertices {
@@ -302,19 +303,28 @@ func rebuildMesh(vertices []Vertex, indices, remap []uint32) *Mesh {
 			newVerts = append(newVerts, v)
 		}
 	}
+	return newVerts, newIdx
+}
 
-	// Rebuild indices, skipping degenerate triangles
+// rebuildIndices creates a new index buffer, skipping degenerate triangles.
+func rebuildIndices(indices, remap, newIdx []uint32) []uint32 {
 	var newIndices []uint32
 	for i := 0; i < len(indices); i += 3 {
 		a := newIdx[followRemap(remap, indices[i])]
 		b := newIdx[followRemap(remap, indices[i+1])]
 		c := newIdx[followRemap(remap, indices[i+2])]
-
 		if a != b && b != c && c != a {
 			newIndices = append(newIndices, a, b, c)
 		}
 	}
+	return newIndices
+}
 
+// rebuildMesh creates a new mesh with collapsed vertices and degenerate triangles removed.
+func rebuildMesh(vertices []Vertex, indices, remap []uint32) *Mesh {
+	used := markUsedVertices(indices, remap, len(vertices))
+	newVerts, newIdx := compactVertices(vertices, used, remap)
+	newIndices := rebuildIndices(indices, remap, newIdx)
 	return &Mesh{
 		Vertices: newVerts,
 		Indices:  newIndices,

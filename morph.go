@@ -113,35 +113,37 @@ func GenerateMorphTargets(mesh *Mesh, skel *Skeleton, layout bodyLayout) *MorphT
 
 // ─── Facial Morph Generators ─────────────────────────────────────────────────
 
+// computeSmileMouthOffset calculates the smile offset for mouth corner vertices.
+func computeSmileMouthOffset(localPos Vec3, layout bodyLayout) Vec3 {
+	// Smile affects corners of mouth (lower front of head)
+	if localPos[1] >= 0 || localPos[2] <= 0 {
+		return Vec3{}
+	}
+	mouthFactor := gaussianInfluence(localPos[1], -layout.headRY*0.6, 0.03)
+	sideFactor := absFloat32(localPos[0]) / layout.headRX
+	if sideFactor <= 0.3 {
+		return Vec3{}
+	}
+	// Pull corners up and back
+	intensity := mouthFactor * sideFactor * 0.015
+	return Vec3{
+		0,                // No X movement
+		intensity,        // Pull up
+		-intensity * 0.5, // Pull back slightly
+	}
+}
+
 // generateSmileMorph creates the smile expression morph target.
 func generateSmileMorph(mesh *Mesh, skel *Skeleton, layout bodyLayout) MorphTarget {
 	offsets := make([]Vec3, len(mesh.Vertices))
 	headJoint := skel.Joint(JointHead)
 
 	for i, v := range mesh.Vertices {
-		// Only affect head region vertices
 		if !isInHeadRegion(v.Position, headJoint.Position, layout) {
 			continue
 		}
-
-		// Calculate relative position within head
 		localPos := vec3Sub(v.Position, headJoint.Position)
-
-		// Smile affects corners of mouth (lower front of head)
-		// Pull corners up and back
-		if localPos[1] < 0 && localPos[2] > 0 { // Below center, in front
-			mouthFactor := gaussianInfluence(localPos[1], -layout.headRY*0.6, 0.03)
-			sideFactor := absFloat32(localPos[0]) / layout.headRX
-
-			if sideFactor > 0.3 { // Only affect sides (mouth corners)
-				intensity := mouthFactor * sideFactor * 0.015
-				offsets[i] = Vec3{
-					0,                // No X movement
-					intensity,        // Pull up
-					-intensity * 0.5, // Pull back slightly
-				}
-			}
-		}
+		offsets[i] = computeSmileMouthOffset(localPos, layout)
 	}
 
 	return MorphTarget{
@@ -150,6 +152,29 @@ func generateSmileMorph(mesh *Mesh, skel *Skeleton, layout bodyLayout) MorphTarg
 		Offsets:  offsets,
 		Strength: 1.0,
 	}
+}
+
+// computeFrownMouthOffset calculates the frown offset for mouth region vertices.
+func computeFrownMouthOffset(localPos Vec3, layout bodyLayout) Vec3 {
+	if localPos[1] >= 0 || localPos[2] <= 0 {
+		return Vec3{}
+	}
+	mouthFactor := gaussianInfluence(localPos[1], -layout.headRY*0.6, 0.03)
+	sideFactor := absFloat32(localPos[0]) / layout.headRX
+	if sideFactor <= 0.3 {
+		return Vec3{}
+	}
+	intensity := mouthFactor * sideFactor * 0.012
+	return Vec3{0, -intensity, 0}
+}
+
+// computeFrownBrowOffset calculates the frown offset for brow region vertices.
+func computeFrownBrowOffset(localPos Vec3, layout bodyLayout) Vec3 {
+	if localPos[1] <= layout.headRY*0.3 || localPos[2] <= layout.headRZ*0.5 {
+		return Vec3{}
+	}
+	browFactor := gaussianInfluence(localPos[1], layout.headRY*0.5, 0.02)
+	return Vec3{0, -browFactor * 0.008, 0}
 }
 
 // generateFrownMorph creates the frown expression morph target.
@@ -161,25 +186,10 @@ func generateFrownMorph(mesh *Mesh, skel *Skeleton, layout bodyLayout) MorphTarg
 		if !isInHeadRegion(v.Position, headJoint.Position, layout) {
 			continue
 		}
-
 		localPos := vec3Sub(v.Position, headJoint.Position)
-
-		// Frown pulls mouth corners down and furrows brow
-		if localPos[1] < 0 && localPos[2] > 0 { // Mouth region
-			mouthFactor := gaussianInfluence(localPos[1], -layout.headRY*0.6, 0.03)
-			sideFactor := absFloat32(localPos[0]) / layout.headRX
-
-			if sideFactor > 0.3 {
-				intensity := mouthFactor * sideFactor * 0.012
-				offsets[i] = Vec3{0, -intensity, 0}
-			}
-		}
-
-		// Furrow brow region
-		if localPos[1] > layout.headRY*0.3 && localPos[2] > layout.headRZ*0.5 {
-			browFactor := gaussianInfluence(localPos[1], layout.headRY*0.5, 0.02)
-			offsets[i] = vec3Add(offsets[i], Vec3{0, -browFactor * 0.008, 0})
-		}
+		mouthOffset := computeFrownMouthOffset(localPos, layout)
+		browOffset := computeFrownBrowOffset(localPos, layout)
+		offsets[i] = vec3Add(mouthOffset, browOffset)
 	}
 
 	return MorphTarget{
@@ -285,6 +295,20 @@ func generateEyesClosedMorph(mesh *Mesh, skel *Skeleton, layout bodyLayout) Morp
 	}
 }
 
+// computeMouthOpenOffset calculates the mouth open offset for jaw region vertices.
+func computeMouthOpenOffset(localPos Vec3, layout bodyLayout) Vec3 {
+	if localPos[1] >= -layout.headRY*0.3 || localPos[2] <= layout.headRZ*0.3 {
+		return Vec3{}
+	}
+	jawFactor := gaussianInfluence(localPos[1], -layout.headRY*0.7, 0.04)
+	frontFactor := (localPos[2] - layout.headRZ*0.3) / (layout.headRZ * 0.7)
+	if frontFactor < 0 {
+		frontFactor = 0
+	}
+	intensity := jawFactor * frontFactor * 0.02
+	return Vec3{0, -intensity, 0}
+}
+
 // generateMouthOpenMorph creates the open mouth morph target.
 func generateMouthOpenMorph(mesh *Mesh, skel *Skeleton, layout bodyLayout) MorphTarget {
 	offsets := make([]Vec3, len(mesh.Vertices))
@@ -294,21 +318,8 @@ func generateMouthOpenMorph(mesh *Mesh, skel *Skeleton, layout bodyLayout) Morph
 		if !isInHeadRegion(v.Position, headJoint.Position, layout) {
 			continue
 		}
-
 		localPos := vec3Sub(v.Position, headJoint.Position)
-
-		// Lower jaw region
-		if localPos[1] < -layout.headRY*0.3 && localPos[2] > layout.headRZ*0.3 {
-			jawFactor := gaussianInfluence(localPos[1], -layout.headRY*0.7, 0.04)
-			frontFactor := (localPos[2] - layout.headRZ*0.3) / (layout.headRZ * 0.7)
-			if frontFactor < 0 {
-				frontFactor = 0
-			}
-
-			// Pull lower jaw down
-			intensity := jawFactor * frontFactor * 0.02
-			offsets[i] = Vec3{0, -intensity, 0}
-		}
+		offsets[i] = computeMouthOpenOffset(localPos, layout)
 	}
 
 	return MorphTarget{

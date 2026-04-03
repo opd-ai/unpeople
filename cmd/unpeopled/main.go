@@ -87,13 +87,13 @@ Species Values:
   5=Goblin, 6=Kobold, 7=Orc, 8=Troll, 9=Ogre
 
 Height Values:
-  0=Short, 1=BelowAverage, 2=Average, 3=AboveAverage, 4=Tall
+  0=Giant, 1=Tall, 2=Medium, 3=Short, 4=Tiny
 
 Build Values:
-  0=Lean, 1=Slim, 2=Average, 3=Sturdy, 4=Heavy
+  0=Muscular, 1=Athletic, 2=Average, 3=Lean, 4=Stocky, 5=Fragile
 
 Age Values:
-  0=Child, 1=Teen, 2=YoungAdult, 3=MiddleAge, 4=Senior, 5=Elderly`)
+  0=Decrepit, 1=Elderly, 2=Old, 3=Adult, 4=Youth, 5=Teen, 6=Child, 7=Toddler`)
 }
 
 func loadParams() (unpeople.Params, error) {
@@ -191,22 +191,16 @@ func generateBinary(g *unpeople.Generator, p unpeople.Params, w io.Writer) error
 	return nil
 }
 
-func generateLOD(g *unpeople.Generator, p unpeople.Params, w io.Writer) error {
-	result, err := g.GenerateWithLOD(p)
-	if err != nil {
-		return err
+// validateLODLevel checks if the LOD level is valid.
+func validateLODLevel(level int) error {
+	if level < 0 || level >= int(unpeople.LODCount) {
+		return fmt.Errorf("invalid LOD level: %d (must be 0, 1, or 2)", level)
 	}
+	return nil
+}
 
-	level := unpeople.LODLevel(*lodFlag)
-	if level < 0 || level >= unpeople.LODCount {
-		return fmt.Errorf("invalid LOD level: %d (must be 0, 1, or 2)", *lodFlag)
-	}
-
-	lodMesh := result.LODSet.Meshes[level]
-	info("Generated LOD%d: %d triangles (%.0f%% of LOD0)",
-		level, lodMesh.TriangleCount, lodMesh.TriangleRatio*100)
-
-	// Write as binary
+// writeLODMesh writes the LOD mesh to the writer in binary format.
+func writeLODMesh(lodMesh *unpeople.LODMesh, w io.Writer) error {
 	bw := unpeople.NewBinaryMeshWriter(w)
 	if err := bw.WriteHeader(len(lodMesh.Mesh.Vertices), len(lodMesh.Mesh.Indices)); err != nil {
 		return err
@@ -222,6 +216,24 @@ func generateLOD(g *unpeople.Generator, p unpeople.Params, w io.Writer) error {
 		}
 	}
 	return bw.Flush()
+}
+
+func generateLOD(g *unpeople.Generator, p unpeople.Params, w io.Writer) error {
+	if err := validateLODLevel(*lodFlag); err != nil {
+		return err
+	}
+
+	result, err := g.GenerateWithLOD(p)
+	if err != nil {
+		return err
+	}
+
+	level := unpeople.LODLevel(*lodFlag)
+	lodMesh := result.LODSet.Meshes[level]
+	info("Generated LOD%d: %d triangles (%.0f%% of LOD0)",
+		level, lodMesh.TriangleCount, lodMesh.TriangleRatio*100)
+
+	return writeLODMesh(lodMesh, w)
 }
 
 func info(format string, args ...any) {

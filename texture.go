@@ -102,60 +102,85 @@ func computeBlemishIntensity(age Age) float32 {
 
 // ─── Texture Generation ──────────────────────────────────────────────────────
 
+// textureGenContext holds precomputed data for texture generation.
+type textureGenContext struct {
+	params    SkinTextureParams
+	freckles  []featurePoint
+	blemishes []featurePoint
+	uvAtlas   UVAtlas
+}
+
+// newTextureGenContext initializes the texture generation context.
+func newTextureGenContext(params SkinTextureParams, rng *splitmix64) *textureGenContext {
+	return &textureGenContext{
+		params:    params,
+		freckles:  generateFrecklePositions(rng, params.FreckleIntensity, 256),
+		blemishes: generateBlemishPositions(rng, params.BlemishIntensity, params.Age, 128),
+		uvAtlas:   defaultUVAtlas(),
+	}
+}
+
+// isFreckleRegion returns true if the UV coordinate is in a freckle-visible area.
+func (ctx *textureGenContext) isFreckleRegion(u, v float32) bool {
+	return isInRegion(u, v, ctx.uvAtlas.Face) || isInRegion(u, v, ctx.uvAtlas.Head) ||
+		isInRegion(u, v, ctx.uvAtlas.UpperArmL) || isInRegion(u, v, ctx.uvAtlas.UpperArmR)
+}
+
+// isBlemishRegion returns true if the UV coordinate is in a blemish-visible area.
+func (ctx *textureGenContext) isBlemishRegion(u, v float32) bool {
+	return isInRegion(u, v, ctx.uvAtlas.Face) || isInRegion(u, v, ctx.uvAtlas.Head) ||
+		isInRegion(u, v, ctx.uvAtlas.HandL) || isInRegion(u, v, ctx.uvAtlas.HandR)
+}
+
+// isVeinRegion returns true if veins should be visible at this UV coordinate.
+func (ctx *textureGenContext) isVeinRegion(u, v float32) bool {
+	return ctx.params.Age >= AgeOld &&
+		(isInRegion(u, v, ctx.uvAtlas.HandL) || isInRegion(u, v, ctx.uvAtlas.HandR))
+}
+
+// computePixelColor generates the skin color for a single pixel.
+func (ctx *textureGenContext) computePixelColor(u, v float32) Color {
+	color := ctx.params.BaseColor
+
+	noiseVal := perlinNoise2D(u*8, v*8, ctx.params.Seed) * 0.03
+	color = colorShift(color, noiseVal)
+
+	if ctx.isFreckleRegion(u, v) {
+		freckleVal := sampleFreckles(u, v, ctx.freckles)
+		color = applyFreckles(color, freckleVal, ctx.params.FreckleIntensity)
+	}
+
+	if ctx.isBlemishRegion(u, v) {
+		blemishVal := sampleBlemishes(u, v, ctx.blemishes, ctx.params.Age)
+		color = applyBlemishes(color, blemishVal, ctx.params.Age)
+	}
+
+	if ctx.isVeinRegion(u, v) {
+		veinVal := generateVeinPattern(u, v, ctx.params.Seed)
+		color = applyVeins(color, veinVal, ctx.params.Age)
+	}
+
+	return color
+}
+
 // GenerateSkinTexture creates a procedural skin texture atlas with the given
 // dimensions. The texture includes subtle color variations, freckles (for
 // lighter skin tones), and age-related blemishes.
 func GenerateSkinTexture(params SkinTextureParams, width, height int) *Texture {
 	rng := newSplitmix64(params.Seed)
+	ctx := newTextureGenContext(params, rng)
+
 	tex := &Texture{
 		Width:  width,
 		Height: height,
 		Pixels: make([]Color, width*height),
 	}
 
-	// Pre-generate freckle positions for the face region
-	freckles := generateFrecklePositions(rng, params.FreckleIntensity, 256)
-
-	// Pre-generate blemish/age spot positions
-	blemishes := generateBlemishPositions(rng, params.BlemishIntensity, params.Age, 128)
-
-	// Get UV atlas for body part detection
-	uvAtlas := defaultUVAtlas()
-
-	// Generate texture pixels
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			u := float32(x) / float32(width-1)
 			v := float32(y) / float32(height-1)
-
-			// Start with base color
-			color := params.BaseColor
-
-			// Add subtle noise variation for organic look
-			noiseVal := perlinNoise2D(u*8, v*8, params.Seed) * 0.03
-			color = colorShift(color, noiseVal)
-
-			// Add freckles (mainly visible on face and arms)
-			if isInRegion(u, v, uvAtlas.Face) || isInRegion(u, v, uvAtlas.Head) ||
-				isInRegion(u, v, uvAtlas.UpperArmL) || isInRegion(u, v, uvAtlas.UpperArmR) {
-				freckleVal := sampleFreckles(u, v, freckles)
-				color = applyFreckles(color, freckleVal, params.FreckleIntensity)
-			}
-
-			// Add blemishes/age spots (mainly on exposed areas)
-			if isInRegion(u, v, uvAtlas.Face) || isInRegion(u, v, uvAtlas.Head) ||
-				isInRegion(u, v, uvAtlas.HandL) || isInRegion(u, v, uvAtlas.HandR) {
-				blemishVal := sampleBlemishes(u, v, blemishes, params.Age)
-				color = applyBlemishes(color, blemishVal, params.Age)
-			}
-
-			// Add subtle vein visibility for elderly on hands
-			if params.Age >= AgeOld && (isInRegion(u, v, uvAtlas.HandL) || isInRegion(u, v, uvAtlas.HandR)) {
-				veinVal := generateVeinPattern(u, v, params.Seed)
-				color = applyVeins(color, veinVal, params.Age)
-			}
-
-			tex.Pixels[y*width+x] = color
+			tex.Pixels[y*width+x] = ctx.computePixelColor(u, v)
 		}
 	}
 

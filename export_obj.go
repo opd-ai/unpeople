@@ -44,41 +44,50 @@ func writeOBJHeader(bw *bufio.Writer, mesh *Mesh) error {
 	return nil
 }
 
-// writeOBJVertexData writes vertex positions, UVs, and normals to the OBJ file.
-func writeOBJVertexData(bw *bufio.Writer, vertices []Vertex) error {
-	// Vertex positions
+// writeOBJPositions writes vertex positions to the OBJ file.
+func writeOBJPositions(bw *bufio.Writer, vertices []Vertex) error {
 	for _, v := range vertices {
 		if _, err := fmt.Fprintf(bw, "v %f %f %f\n",
 			v.Position[0], v.Position[1], v.Position[2]); err != nil {
 			return err
 		}
 	}
-	if _, err := bw.WriteString("\n"); err != nil {
-		return err
-	}
+	_, err := bw.WriteString("\n")
+	return err
+}
 
-	// Texture coordinates
+// writeOBJTexCoords writes texture coordinates to the OBJ file.
+func writeOBJTexCoords(bw *bufio.Writer, vertices []Vertex) error {
 	for _, v := range vertices {
 		if _, err := fmt.Fprintf(bw, "vt %f %f\n", v.UV0[0], v.UV0[1]); err != nil {
 			return err
 		}
 	}
-	if _, err := bw.WriteString("\n"); err != nil {
-		return err
-	}
+	_, err := bw.WriteString("\n")
+	return err
+}
 
-	// Vertex normals
+// writeOBJNormals writes vertex normals to the OBJ file.
+func writeOBJNormals(bw *bufio.Writer, vertices []Vertex) error {
 	for _, v := range vertices {
 		if _, err := fmt.Fprintf(bw, "vn %f %f %f\n",
 			v.Normal[0], v.Normal[1], v.Normal[2]); err != nil {
 			return err
 		}
 	}
-	if _, err := bw.WriteString("\n"); err != nil {
+	_, err := bw.WriteString("\n")
+	return err
+}
+
+// writeOBJVertexData writes vertex positions, UVs, and normals to the OBJ file.
+func writeOBJVertexData(bw *bufio.Writer, vertices []Vertex) error {
+	if err := writeOBJPositions(bw, vertices); err != nil {
 		return err
 	}
-
-	return nil
+	if err := writeOBJTexCoords(bw, vertices); err != nil {
+		return err
+	}
+	return writeOBJNormals(bw, vertices)
 }
 
 // writeOBJFaces writes triangle face definitions to the OBJ file.
@@ -141,28 +150,62 @@ func ExportOBJ(w io.Writer, mesh *Mesh, objectName string) error {
 	return bw.Flush()
 }
 
+// writeMTLLibReference writes the mtllib directive if a material writer is provided.
+func writeMTLLibReference(bw *bufio.Writer, mtlW io.Writer, mtlName string) error {
+	if mtlW == nil || mtlName == "" {
+		return nil
+	}
+	_, err := fmt.Fprintf(bw, "mtllib %s\n\n", mtlName)
+	return err
+}
+
+// writeUseMaterial writes the usemtl directive or a newline if no material.
+func writeUseMaterial(bw *bufio.Writer, mtlW io.Writer, name string) error {
+	if mtlW != nil {
+		_, err := fmt.Fprintf(bw, "usemtl %s_mat\n\n", name)
+		return err
+	}
+	_, err := bw.WriteString("\n")
+	return err
+}
+
 // writeMaterialReference writes the MTL library reference and usemtl directive.
 func writeMaterialReference(bw *bufio.Writer, mtlW io.Writer, name, mtlName string) error {
-	if mtlW != nil && mtlName != "" {
-		if _, err := fmt.Fprintf(bw, "mtllib %s\n\n", mtlName); err != nil {
-			return err
-		}
+	if err := writeMTLLibReference(bw, mtlW, mtlName); err != nil {
+		return err
 	}
-
 	if _, err := fmt.Fprintf(bw, "o %s\n", name); err != nil {
 		return err
 	}
+	return writeUseMaterial(bw, mtlW, name)
+}
 
-	if mtlW != nil {
-		if _, err := fmt.Fprintf(bw, "usemtl %s_mat\n\n", name); err != nil {
-			return err
-		}
-	} else {
-		if _, err := bw.WriteString("\n"); err != nil {
-			return err
-		}
+// writeMaterialLibrary writes the MTL file if both writer and material are provided.
+func writeMaterialLibrary(mtlW io.Writer, matName string, material *Material) error {
+	if mtlW == nil || material == nil {
+		return nil
+	}
+	if err := writeMTL(mtlW, matName, material); err != nil {
+		return fmt.Errorf("writing MTL: %w", err)
 	}
 	return nil
+}
+
+// writeSmoothingGroup writes the smoothing group directive to the OBJ file.
+func writeSmoothingGroup(bw *bufio.Writer) error {
+	_, err := bw.WriteString("s 1\n")
+	return err
+}
+
+// writeOBJMeshBody writes the vertex data, smoothing group, and faces.
+func writeOBJMeshBody(bw *bufio.Writer, mesh *Mesh) error {
+	if err := writeOBJVertexData(bw, mesh.Vertices); err != nil {
+		return err
+	}
+	if err := writeSmoothingGroup(bw); err != nil {
+		return err
+	}
+	return writeOBJFaces(bw, mesh.Indices)
 }
 
 // ExportOBJWithMTL writes the mesh to objW and an accompanying material
@@ -182,11 +225,8 @@ func ExportOBJWithMTL(objW, mtlW io.Writer, mesh *Mesh, material *Material, obje
 
 	name := resolveObjectName(objectName)
 
-	// Write material library if writer provided
-	if mtlW != nil && material != nil {
-		if err := writeMTL(mtlW, name+"_mat", material); err != nil {
-			return fmt.Errorf("writing MTL: %w", err)
-		}
+	if err := writeMaterialLibrary(mtlW, name+"_mat", material); err != nil {
+		return err
 	}
 
 	bw := bufio.NewWriter(objW)
@@ -199,16 +239,7 @@ func ExportOBJWithMTL(objW, mtlW io.Writer, mesh *Mesh, material *Material, obje
 		return err
 	}
 
-	if err := writeOBJVertexData(bw, mesh.Vertices); err != nil {
-		return err
-	}
-
-	// Smoothing group
-	if _, err := bw.WriteString("s 1\n"); err != nil {
-		return err
-	}
-
-	if err := writeOBJFaces(bw, mesh.Indices); err != nil {
+	if err := writeOBJMeshBody(bw, mesh); err != nil {
 		return err
 	}
 
@@ -221,51 +252,55 @@ func writeMTLColor(bw *bufio.Writer, prefix string, r, g, b float32) error {
 	return err
 }
 
-// writeMTL writes a Wavefront MTL material file.
-func writeMTL(w io.Writer, matName string, mat *Material) error {
-	bw := bufio.NewWriter(w)
-
-	// Header
+// writeMTLHeader writes the MTL file header and material name.
+func writeMTLHeader(bw *bufio.Writer, matName string) error {
 	if _, err := fmt.Fprintf(bw, "# Wavefront MTL exported by unpeople\n\n"); err != nil {
 		return err
 	}
+	_, err := fmt.Fprintf(bw, "newmtl %s\n", matName)
+	return err
+}
 
-	// Material definition
-	if _, err := fmt.Fprintf(bw, "newmtl %s\n", matName); err != nil {
-		return err
-	}
-
+// writeMTLColors writes the ambient, diffuse, and specular colors.
+func writeMTLColors(bw *bufio.Writer, mat *Material) error {
 	// Ambient color (use albedo scaled down)
 	if err := writeMTLColor(bw, "Ka", mat.Albedo[0]*0.1, mat.Albedo[1]*0.1, mat.Albedo[2]*0.1); err != nil {
 		return err
 	}
-
 	// Diffuse color (albedo)
 	if err := writeMTLColor(bw, "Kd", mat.Albedo[0], mat.Albedo[1], mat.Albedo[2]); err != nil {
 		return err
 	}
-
 	// Specular color (based on roughness - rougher = less specular)
 	spec := (1.0 - mat.Roughness) * 0.3
-	if err := writeMTLColor(bw, "Ks", spec, spec, spec); err != nil {
-		return err
-	}
+	return writeMTLColor(bw, "Ks", spec, spec, spec)
+}
 
-	// Specular exponent (shininess) - inverse of roughness
+// writeMTLProperties writes shininess, transparency, and illumination model.
+func writeMTLProperties(bw *bufio.Writer, mat *Material) error {
 	shininess := (1.0-mat.Roughness)*128.0 + 1.0
 	if _, err := fmt.Fprintf(bw, "Ns %f\n", shininess); err != nil {
 		return err
 	}
-
-	// Transparency (dissolve)
 	if _, err := fmt.Fprintf(bw, "d %f\n", mat.Albedo[3]); err != nil {
 		return err
 	}
+	_, err := bw.WriteString("illum 2\n")
+	return err
+}
 
-	// Illumination model (2 = highlight on)
-	if _, err := bw.WriteString("illum 2\n"); err != nil {
+// writeMTL writes a Wavefront MTL material file.
+func writeMTL(w io.Writer, matName string, mat *Material) error {
+	bw := bufio.NewWriter(w)
+
+	if err := writeMTLHeader(bw, matName); err != nil {
 		return err
 	}
-
+	if err := writeMTLColors(bw, mat); err != nil {
+		return err
+	}
+	if err := writeMTLProperties(bw, mat); err != nil {
+		return err
+	}
 	return bw.Flush()
 }

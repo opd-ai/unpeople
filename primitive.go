@@ -8,7 +8,7 @@ const tau = math.Pi * 2.0
 
 // ellipsoidVertex computes a single vertex on an ellipsoid surface given spherical
 // angles theta (latitude) and phi (longitude), center position, radii, and UV coords.
-func ellipsoidVertex(center Vec3, rx, ry, rz, theta, phi float32, uvU, uvV float32) Vertex {
+func ellipsoidVertex(center Vec3, rx, ry, rz, theta, phi, uvU, uvV float32) Vertex {
 	sinT := float32(math.Sin(float64(theta)))
 	cosT := float32(math.Cos(float64(theta)))
 	sinP := float32(math.Sin(float64(phi)))
@@ -272,85 +272,97 @@ func generateBox(center Vec3, hw, hh, hd float32) ([]Vertex, []uint32) {
 
 // ─── Ear ─────────────────────────────────────────────────────────────────────
 
-// generateEar creates a simplified ear mesh as a curved, tapered shell.
-// The ear is generated at the attachment point and oriented outward from the
-// head. isLeftEar determines which side the ear faces (left = -X, right = +X).
-// scale controls the overall size of the ear.
-func generateEar(attachPoint Vec3, scale float32, isLeftEar bool) ([]Vertex, []uint32) {
-	// Ear dimensions relative to scale
-	earHeight := scale * 0.28   // Vertical extent
-	earWidth := scale * 0.12    // Lateral protrusion from head
-	earDepth := scale * 0.08    // Front-to-back thickness
-	earCurve := scale * 0.04    // Curvature of the outer rim
-	earTipRatio := float32(0.3) // Top tapers to 30% of base width
+// earDimensions holds computed dimensions for ear generation.
+type earDimensions struct {
+	height   float32
+	width    float32
+	depth    float32
+	curve    float32
+	tipRatio float32
+	dir      float32
+}
 
-	// Direction multiplier: -1 for left ear, +1 for right ear
+// computeEarDimensions calculates ear dimensions based on scale and side.
+func computeEarDimensions(scale float32, isLeftEar bool) earDimensions {
 	dir := float32(1.0)
 	if isLeftEar {
 		dir = -1.0
 	}
+	return earDimensions{
+		height:   scale * 0.28,
+		width:    scale * 0.12,
+		depth:    scale * 0.08,
+		curve:    scale * 0.04,
+		tipRatio: 0.3,
+		dir:      dir,
+	}
+}
 
-	// Generate a simplified ear shape as a curved quad strip
-	// 4 vertical segments × 2 columns (inner/outer) = 8 vertices
+// earSegmentPosition computes the inner and outer edge positions for an ear segment.
+func earSegmentPosition(attachPoint Vec3, dim earDimensions, t float32) (inner, outer Vec3) {
+	y := attachPoint[1] - dim.height*0.4 + dim.height*t
+	widthMult := 1.0 - t*(1.0-dim.tipRatio)
+	curveOffset := dim.curve * float32(math.Sin(float64(t*math.Pi)))
+
+	inner = Vec3{
+		attachPoint[0] + dim.dir*0.002,
+		y,
+		attachPoint[2] + dim.depth*0.5*widthMult - curveOffset*0.5,
+	}
+	outer = Vec3{
+		attachPoint[0] + dim.dir*(dim.width*widthMult+curveOffset),
+		y,
+		attachPoint[2] - dim.depth*0.5*widthMult,
+	}
+	return inner, outer
+}
+
+// appendEarSegmentVertices adds inner and outer vertices for an ear segment.
+func appendEarSegmentVertices(verts []Vertex, inner, outer, normal Vec3, vCoord float32) []Vertex {
+	verts = append(verts, Vertex{
+		Position: inner,
+		Normal:   normal,
+		UV0:      Vec2{0.0, vCoord},
+		Color:    ColorGray,
+	})
+	verts = append(verts, Vertex{
+		Position: outer,
+		Normal:   normal,
+		UV0:      Vec2{1.0, vCoord},
+		Color:    ColorGray,
+	})
+	return verts
+}
+
+// appendEarQuadIndices adds indices for a quad strip segment with proper winding.
+func appendEarQuadIndices(idxs []uint32, base uint32, isLeftEar bool) []uint32 {
+	if isLeftEar {
+		idxs = append(idxs, base, base+2, base+1)
+		idxs = append(idxs, base+1, base+2, base+3)
+	} else {
+		idxs = append(idxs, base, base+1, base+2)
+		idxs = append(idxs, base+1, base+3, base+2)
+	}
+	return idxs
+}
+
+// generateEar creates a simplified ear mesh as a curved, tapered shell.
+func generateEar(attachPoint Vec3, scale float32, isLeftEar bool) ([]Vertex, []uint32) {
+	dim := computeEarDimensions(scale, isLeftEar)
 	const segs = 4
+
 	verts := make([]Vertex, 0, (segs+1)*2)
 	idxs := make([]uint32, 0, segs*6)
-
-	// Outer normal direction (pointing away from head)
-	outerNorm := Vec3{dir, 0, 0}
+	outerNorm := Vec3{dim.dir, 0, 0}
 
 	for i := 0; i <= segs; i++ {
 		t := float32(i) / float32(segs)
-
-		// Vertical position from bottom to top
-		y := attachPoint[1] - earHeight*0.4 + earHeight*t
-
-		// Taper width toward the top
-		widthMult := 1.0 - t*(1.0-earTipRatio)
-
-		// Curvature: ear bulges out in the middle vertically
-		curveOffset := earCurve * float32(math.Sin(float64(t*math.Pi)))
-
-		// Inner edge (closer to head)
-		innerX := attachPoint[0] + dir*0.002
-		innerZ := attachPoint[2] + earDepth*0.5*widthMult - curveOffset*0.5
-
-		// Outer edge (away from head)
-		outerX := attachPoint[0] + dir*(earWidth*widthMult+curveOffset)
-		outerZ := attachPoint[2] - earDepth*0.5*widthMult
-
-		// UV coordinates
-		uInner := float32(0.0)
-		uOuter := float32(1.0)
-		v := t
-
-		verts = append(verts, Vertex{
-			Position: Vec3{innerX, y, innerZ},
-			Normal:   outerNorm,
-			UV0:      Vec2{uInner, v},
-			Color:    ColorGray,
-		})
-		verts = append(verts, Vertex{
-			Position: Vec3{outerX, y, outerZ},
-			Normal:   outerNorm,
-			UV0:      Vec2{uOuter, v},
-			Color:    ColorGray,
-		})
+		inner, outer := earSegmentPosition(attachPoint, dim, t)
+		verts = appendEarSegmentVertices(verts, inner, outer, outerNorm, t)
 	}
 
-	// Generate quad strip indices
 	for i := 0; i < segs; i++ {
-		base := uint32(i * 2)
-		// Two triangles per quad, maintaining CCW winding from outside
-		if isLeftEar {
-			// Left ear faces -X, so triangles wind differently
-			idxs = append(idxs, base, base+2, base+1)
-			idxs = append(idxs, base+1, base+2, base+3)
-		} else {
-			// Right ear faces +X
-			idxs = append(idxs, base, base+1, base+2)
-			idxs = append(idxs, base+1, base+3, base+2)
-		}
+		idxs = appendEarQuadIndices(idxs, uint32(i*2), isLeftEar)
 	}
 
 	return verts, idxs
@@ -388,10 +400,80 @@ func generateFinger(base, direction Vec3, segments []float32, radius float32) ([
 	return m.Vertices, m.Indices
 }
 
+// handConfig holds configuration for hand generation.
+type handConfig struct {
+	fingerSegs []float32
+	thumbSegs  []float32
+	palmEdgeY  float32
+	baseZ      float32
+	xDir       float32
+	dir        Vec3
+}
+
+// computeHandConfig sets up hand generation parameters.
+func computeHandConfig(handCenter Vec3, hh float32, direction Vec3, isLeftHand bool, fingerLengthMult, proximalLen, middleLen, distalLen, thumbProximalLen, thumbDistalLen float32) handConfig {
+	xDir := float32(1.0)
+	if isLeftHand {
+		xDir = -1.0
+	}
+	return handConfig{
+		fingerSegs: []float32{
+			proximalLen * fingerLengthMult,
+			middleLen * fingerLengthMult,
+			distalLen * fingerLengthMult,
+		},
+		thumbSegs: []float32{
+			thumbProximalLen * fingerLengthMult,
+			thumbDistalLen * fingerLengthMult,
+		},
+		palmEdgeY: handCenter[1] - hh,
+		baseZ:     handCenter[2],
+		xDir:      xDir,
+		dir:       vec3Normalize(direction),
+	}
+}
+
+// fingerScale returns the length scale factor for a finger by index.
+func fingerScale(fingerIdx int) float32 {
+	if fingerIdx == 3 {
+		return 0.75 // Pinky is shorter
+	}
+	return 1.0
+}
+
+// scaleFingerSegments applies a scale factor to finger segment lengths.
+func scaleFingerSegments(segs []float32, scale float32) []float32 {
+	scaled := make([]float32, len(segs))
+	for i, s := range segs {
+		scaled[i] = s * scale
+	}
+	return scaled
+}
+
+// appendMainFingers generates the four main fingers (index, middle, ring, pinky).
+func appendMainFingers(builder *meshBuilder, handCenter Vec3, hw float32, cfg handConfig, fingerRadius float32) {
+	offsets := []float32{hw * 0.55, hw * 0.18, -hw * 0.18, -hw * 0.55}
+	for i, xOff := range offsets {
+		segs := scaleFingerSegments(cfg.fingerSegs, fingerScale(i))
+		base := Vec3{handCenter[0] + xOff*cfg.xDir, cfg.palmEdgeY, cfg.baseZ}
+		v, idx := generateFinger(base, cfg.dir, segs, fingerRadius)
+		builder.append(v, idx)
+	}
+}
+
+// appendThumb generates the thumb.
+func appendThumb(builder *meshBuilder, handCenter Vec3, hw, hh, hd float32, cfg handConfig, fingerRadius float32) {
+	thumbDir := vec3Normalize(Vec3{cfg.xDir * 0.5, -0.85, 0.2})
+	thumbBase := Vec3{
+		handCenter[0] + hw*0.95*cfg.xDir,
+		handCenter[1] - hh*0.3,
+		handCenter[2] + hd*0.3,
+	}
+	v, idx := generateFinger(thumbBase, thumbDir, cfg.thumbSegs, fingerRadius*1.15)
+	builder.append(v, idx)
+}
+
 // generateHand creates a complete hand with palm box and five fingers.
-// handCenter is the palm center, hw/hh/hd are palm half-extents, direction
-// is the finger pointing direction (typically down for T-pose), isLeftHand
-// determines finger placement mirroring, and remaining params define fingers.
 func generateHand(
 	handCenter Vec3,
 	hw, hh, hd float32,
@@ -404,71 +486,13 @@ func generateHand(
 ) ([]Vertex, []uint32) {
 	var builder meshBuilder
 
-	// Palm box
 	v, idx := generateBox(handCenter, hw, hh, hd)
 	builder.append(v, idx)
 
-	// Finger segments scaled by length multiplier
-	fingerSegs := []float32{
-		proximalLen * fingerLengthMult,
-		middleLen * fingerLengthMult,
-		distalLen * fingerLengthMult,
-	}
-	thumbSegs := []float32{
-		thumbProximalLen * fingerLengthMult,
-		thumbDistalLen * fingerLengthMult,
-	}
+	cfg := computeHandConfig(handCenter, hh, direction, isLeftHand, fingerLengthMult, proximalLen, middleLen, distalLen, thumbProximalLen, thumbDistalLen)
 
-	dir := vec3Normalize(direction)
-
-	// Compute palm edge where fingers attach (bottom of hand box)
-	palmEdgeY := handCenter[1] - hh
-
-	// Finger attachment positions (4 fingers + thumb)
-	// Fingers spread laterally across the palm width
-	fingerBaseZ := handCenter[2]
-
-	// Direction multiplier for left/right hand (X-axis)
-	xDir := float32(1.0)
-	if isLeftHand {
-		xDir = -1.0
-	}
-
-	// Four main fingers: index, middle, ring, pinky
-	fingerXOffsets := []float32{
-		hw * 0.55,  // Index (closer to center)
-		hw * 0.18,  // Middle (center)
-		-hw * 0.18, // Ring
-		-hw * 0.55, // Pinky (outer edge)
-	}
-
-	for i, xOff := range fingerXOffsets {
-		// Pinky is shorter
-		scale := float32(1.0)
-		if i == 3 {
-			scale = 0.75
-		}
-		scaledSegs := make([]float32, len(fingerSegs))
-		for j, s := range fingerSegs {
-			scaledSegs[j] = s * scale
-		}
-
-		fingerBase := Vec3{
-			handCenter[0] + xOff*xDir,
-			palmEdgeY,
-			fingerBaseZ,
-		}
-		v, idx := generateFinger(fingerBase, dir, scaledSegs, fingerRadius)
-		builder.append(v, idx)
-	}
-
-	// Thumb: attaches to side of palm, points more laterally
-	thumbBaseX := handCenter[0] + hw*0.95*xDir
-	thumbBaseY := handCenter[1] - hh*0.3
-	thumbDir := vec3Normalize(Vec3{xDir * 0.5, -0.85, 0.2})
-	thumbBase := Vec3{thumbBaseX, thumbBaseY, handCenter[2] + hd*0.3}
-	v, idx = generateFinger(thumbBase, thumbDir, thumbSegs, fingerRadius*1.15)
-	builder.append(v, idx)
+	appendMainFingers(&builder, handCenter, hw, cfg, fingerRadius)
+	appendThumb(&builder, handCenter, hw, hh, hd, cfg, fingerRadius)
 
 	m := builder.build("")
 	return m.Vertices, m.Indices

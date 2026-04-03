@@ -34,46 +34,68 @@ type StreamResult struct {
 // GenerateStream generates a character mesh and streams it to the provided writer.
 // This is memory-efficient for very large scenes as it doesn't hold the complete
 // mesh in memory.
-func (g *Generator) GenerateStream(p Params, w MeshWriter) (*StreamResult, error) {
-	if err := p.Validate(); err != nil {
-		return nil, err
-	}
-
-	// Generate the mesh normally (we need all data to get counts first)
-	mesh, err := g.Generate(p)
-	if err != nil {
-		return nil, err
-	}
-
-	// Write header with counts
-	if err := w.WriteHeader(len(mesh.Vertices), len(mesh.Indices)); err != nil {
-		return nil, err
-	}
-
-	// Stream vertices
-	for _, v := range mesh.Vertices {
+// streamVertices writes all mesh vertices to the writer.
+func streamVertices(vertices []Vertex, w MeshWriter) error {
+	for _, v := range vertices {
 		if err := w.WriteVertex(v); err != nil {
-			return nil, err
+			return err
 		}
 	}
+	return nil
+}
 
-	// Stream indices
-	for _, idx := range mesh.Indices {
+// streamIndices writes all mesh indices to the writer.
+func streamIndices(indices []uint32, w MeshWriter) error {
+	for _, idx := range indices {
 		if err := w.WriteIndex(idx); err != nil {
-			return nil, err
+			return err
 		}
 	}
+	return nil
+}
 
-	if err := w.Flush(); err != nil {
-		return nil, err
-	}
-
+// buildStreamResult creates a StreamResult from a mesh.
+func buildStreamResult(mesh *Mesh) *StreamResult {
 	return &StreamResult{
 		Key:           mesh.Key,
 		VertexCount:   len(mesh.Vertices),
 		IndexCount:    len(mesh.Indices),
 		TriangleCount: len(mesh.Indices) / 3,
-	}, nil
+	}
+}
+
+// streamMeshToWriter writes the mesh data (header, vertices, indices) to the writer.
+func streamMeshToWriter(mesh *Mesh, w MeshWriter) error {
+	if err := w.WriteHeader(len(mesh.Vertices), len(mesh.Indices)); err != nil {
+		return err
+	}
+	if err := streamVertices(mesh.Vertices, w); err != nil {
+		return err
+	}
+	if err := streamIndices(mesh.Indices, w); err != nil {
+		return err
+	}
+	return w.Flush()
+}
+
+// GenerateStream generates a mesh from the given parameters and writes it
+// to the provided MeshWriter. This allows streaming large meshes without
+// holding the entire mesh in memory.
+func (g *Generator) GenerateStream(p Params, w MeshWriter) (*StreamResult, error) {
+	if err := p.Validate(); err != nil {
+		return nil, err
+	}
+
+	mesh, err := g.Generate(p)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := streamMeshToWriter(mesh, w); err != nil {
+		return nil, err
+	}
+
+	return buildStreamResult(mesh), nil
 }
 
 // MeshChan is a channel-based mesh output for concurrent consumption.
@@ -138,106 +160,84 @@ func NewBinaryMeshWriter(w io.Writer) *BinaryMeshWriter {
 	return &BinaryMeshWriter{w: w}
 }
 
-// WriteHeader writes the mesh header (vertex count, index count).
-func (bw *BinaryMeshWriter) WriteHeader(vertexCount, indexCount int) error {
-	if bw.err != nil {
-		return bw.err
+// writeHeaderField writes a single uint32 header field.
+func (bw *BinaryMeshWriter) writeHeaderField(value uint32) error {
+	if err := binary.Write(bw.w, binary.LittleEndian, value); err != nil {
+		bw.err = err
+		return err
 	}
+	bw.bytesWritten += 4
+	return nil
+}
 
-	// Magic number "UNPM" (UNPeople Mesh)
+// writeMagicNumber writes the UNPM magic number to identify the file format.
+func (bw *BinaryMeshWriter) writeMagicNumber() error {
 	magic := []byte{'U', 'N', 'P', 'M'}
 	if _, err := bw.w.Write(magic); err != nil {
 		bw.err = err
 		return err
 	}
 	bw.bytesWritten += 4
-
-	// Version (1)
-	if err := binary.Write(bw.w, binary.LittleEndian, uint32(1)); err != nil {
-		bw.err = err
-		return err
-	}
-	bw.bytesWritten += 4
-
-	// Vertex count
-	if err := binary.Write(bw.w, binary.LittleEndian, uint32(vertexCount)); err != nil {
-		bw.err = err
-		return err
-	}
-	bw.bytesWritten += 4
-
-	// Index count
-	if err := binary.Write(bw.w, binary.LittleEndian, uint32(indexCount)); err != nil {
-		bw.err = err
-		return err
-	}
-	bw.bytesWritten += 4
-
 	return nil
+}
+
+// WriteHeader writes the mesh header (vertex count, index count).
+func (bw *BinaryMeshWriter) WriteHeader(vertexCount, indexCount int) error {
+	if bw.err != nil {
+		return bw.err
+	}
+	if err := bw.writeMagicNumber(); err != nil {
+		return err
+	}
+	if err := bw.writeHeaderField(1); err != nil { // Version
+		return err
+	}
+	if err := bw.writeHeaderField(uint32(vertexCount)); err != nil {
+		return err
+	}
+	return bw.writeHeaderField(uint32(indexCount))
+}
+
+// writeBinaryField writes a single field and updates byte count.
+func (bw *BinaryMeshWriter) writeBinaryField(data any, size int64) error {
+	if bw.err != nil {
+		return bw.err
+	}
+	if err := binary.Write(bw.w, binary.LittleEndian, data); err != nil {
+		bw.err = err
+		return err
+	}
+	bw.bytesWritten += size
+	return nil
+}
+
+// vertexField represents a vertex attribute with its data and byte size.
+type vertexField struct {
+	data any
+	size int64
+}
+
+// vertexFields returns all fields of a vertex for sequential binary writing.
+func vertexFields(v Vertex) []vertexField {
+	return []vertexField{
+		{v.Position, 12},     // Position (3 floats)
+		{v.Normal, 12},       // Normal (3 floats)
+		{v.Tangent, 16},      // Tangent (4 floats)
+		{v.UV0, 8},           // UV0 (2 floats)
+		{v.Color, 4},         // Color (4 bytes)
+		{v.JointIds, 8},      // JointIds (4 int32)
+		{v.JointWeights, 16}, // JointWeights (4 floats)
+		{v.MorphTarget, 12},  // MorphTarget (3 floats)
+	}
 }
 
 // WriteVertex writes a single vertex in binary format.
 func (bw *BinaryMeshWriter) WriteVertex(v Vertex) error {
-	if bw.err != nil {
-		return bw.err
+	for _, field := range vertexFields(v) {
+		if err := bw.writeBinaryField(field.data, field.size); err != nil {
+			return err
+		}
 	}
-
-	// Position (3 floats = 12 bytes)
-	if err := binary.Write(bw.w, binary.LittleEndian, v.Position); err != nil {
-		bw.err = err
-		return err
-	}
-	bw.bytesWritten += 12
-
-	// Normal (3 floats = 12 bytes)
-	if err := binary.Write(bw.w, binary.LittleEndian, v.Normal); err != nil {
-		bw.err = err
-		return err
-	}
-	bw.bytesWritten += 12
-
-	// Tangent (4 floats = 16 bytes)
-	if err := binary.Write(bw.w, binary.LittleEndian, v.Tangent); err != nil {
-		bw.err = err
-		return err
-	}
-	bw.bytesWritten += 16
-
-	// UV0 (2 floats = 8 bytes)
-	if err := binary.Write(bw.w, binary.LittleEndian, v.UV0); err != nil {
-		bw.err = err
-		return err
-	}
-	bw.bytesWritten += 8
-
-	// Color (4 bytes)
-	if err := binary.Write(bw.w, binary.LittleEndian, v.Color); err != nil {
-		bw.err = err
-		return err
-	}
-	bw.bytesWritten += 4
-
-	// JointIds (4 uint16 = 8 bytes)
-	if err := binary.Write(bw.w, binary.LittleEndian, v.JointIds); err != nil {
-		bw.err = err
-		return err
-	}
-	bw.bytesWritten += 8
-
-	// JointWeights (4 floats = 16 bytes)
-	if err := binary.Write(bw.w, binary.LittleEndian, v.JointWeights); err != nil {
-		bw.err = err
-		return err
-	}
-	bw.bytesWritten += 16
-
-	// MorphTarget (3 floats = 12 bytes)
-	if err := binary.Write(bw.w, binary.LittleEndian, v.MorphTarget); err != nil {
-		bw.err = err
-		return err
-	}
-	bw.bytesWritten += 12
-
 	return nil
 }
 

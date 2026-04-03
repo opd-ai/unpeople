@@ -235,7 +235,7 @@ func defaultBodyLayout() bodyLayout {
 // buildMesh assembles the full humanoid mesh from the given body layout.
 // The mesh key is used by the Kaiju engine's mesh cache.
 func buildMesh(layout bodyLayout, key string) *Mesh {
-	var b meshBuilder
+	var builder meshBuilder
 
 	const (
 		circSegs = 8 // radial resolution for cylinders

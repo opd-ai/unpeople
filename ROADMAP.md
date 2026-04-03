@@ -136,9 +136,9 @@ No CI exists. Given stdlib-only design, CI is trivial but valuable for preventin
 
 The CLI (`cmd/unpeopled`) has lower coverage than other packages.
 
-- [ ] Add test cases for each output format (`gltf`, `glb`, `binary`, `lod`)
-- [ ] Test error paths (invalid JSON, bad format flag)
-- [ ] Mock stdin for parameterized tests
+- [x] Add test cases for each output format (`gltf`, `glb`, `binary`, `lod`)
+- [x] Test error paths (invalid JSON, bad format flag)
+- [x] Mock stdin for parameterized tests
 - **Validation**: `go test -cover ./cmd/unpeopled` reports ≥85%
 
 ### Priority 4: Reduce Dead Code

@@ -304,16 +304,16 @@ func applyHipWidth(l *bodyLayout, hw HipWidth) {
 // ─── Limb Length ─────────────────────────────────────────────────────────────
 
 func applyLimbLength(l *bodyLayout, ll LimbLength) {
-	var s float32
+	var scale float32
 	switch ll {
 	case LimbLengthLong:
-		s = 1.12
+		scale = 1.12
 	case LimbLengthProportional:
 		return
 	case LimbLengthShort:
-		s = 0.85
+		scale = 0.85
 	}
-	scaleLimbs(l, s)
+	scaleLimbs(l, scale)
 }
 
 // ─── Neck Length ─────────────────────────────────────────────────────────────

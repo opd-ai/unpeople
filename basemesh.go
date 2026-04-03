@@ -246,71 +246,71 @@ func buildMesh(layout bodyLayout, key string) *Mesh {
 	// Head
 	v, i := generateEllipsoid(layout.headCenter,
 		layout.headRX, layout.headRY, layout.headRZ, latSegs, lonSegs)
-	b.append(v, i)
+	builder.append(v, i)
 
 	// Neck
 	v, i = generateCylinder(layout.neckBottom, layout.neckTop,
 		layout.neckRadius, layout.neckRadius, circSegs, false, false)
-	b.append(v, i)
+	builder.append(v, i)
 
 	// Chest (tapered: slightly narrower at bottom)
 	v, i = generateCylinder(layout.chestBottom, layout.chestTop,
 		layout.chestRX*0.82, layout.chestRX, circSegs, false, false)
-	b.append(v, i)
+	builder.append(v, i)
 
 	// Abdomen
 	v, i = generateCylinder(layout.abdomenBottom, layout.abdomenTop,
 		layout.abdomenRX, layout.abdomenRX*0.88, circSegs, false, false)
-	b.append(v, i)
+	builder.append(v, i)
 
 	// Hips / pelvis (closed at bottom)
 	v, i = generateCylinder(layout.hipsBottom, layout.hipsTop,
 		layout.hipsRX, layout.hipsRX*0.95, circSegs, true, false)
-	b.append(v, i)
+	builder.append(v, i)
 
 	// Upper arms
 	v, i = generateCylinder(layout.upperArmTopL, layout.upperArmBottomL,
 		layout.upperArmRadius, layout.upperArmRadius*0.85, circSegs, false, false)
-	b.append(v, i)
+	builder.append(v, i)
 	v, i = generateCylinder(layout.upperArmTopR, layout.upperArmBottomR,
 		layout.upperArmRadius, layout.upperArmRadius*0.85, circSegs, false, false)
-	b.append(v, i)
+	builder.append(v, i)
 
 	// Forearms
 	v, i = generateCylinder(layout.forearmTopL, layout.forearmBottomL,
 		layout.forearmRadius, layout.forearmRadius*0.80, circSegs, false, false)
-	b.append(v, i)
+	builder.append(v, i)
 	v, i = generateCylinder(layout.forearmTopR, layout.forearmBottomR,
 		layout.forearmRadius, layout.forearmRadius*0.80, circSegs, false, false)
-	b.append(v, i)
+	builder.append(v, i)
 
 	// Hands
 	v, i = generateBox(layout.handCenterL, layout.handHW, layout.handHH, layout.handHD)
-	b.append(v, i)
+	builder.append(v, i)
 	v, i = generateBox(layout.handCenterR, layout.handHW, layout.handHH, layout.handHD)
-	b.append(v, i)
+	builder.append(v, i)
 
 	// Upper legs
 	v, i = generateCylinder(layout.upperLegTopL, layout.upperLegBottomL,
 		layout.upperLegRadius, layout.upperLegRadius*0.85, circSegs, false, false)
-	b.append(v, i)
+	builder.append(v, i)
 	v, i = generateCylinder(layout.upperLegTopR, layout.upperLegBottomR,
 		layout.upperLegRadius, layout.upperLegRadius*0.85, circSegs, false, false)
-	b.append(v, i)
+	builder.append(v, i)
 
 	// Lower legs (closed at ankle)
 	v, i = generateCylinder(layout.lowerLegTopL, layout.lowerLegBottomL,
 		layout.lowerLegRadius, layout.lowerLegRadius*0.75, circSegs, false, true)
-	b.append(v, i)
+	builder.append(v, i)
 	v, i = generateCylinder(layout.lowerLegTopR, layout.lowerLegBottomR,
 		layout.lowerLegRadius, layout.lowerLegRadius*0.75, circSegs, false, true)
-	b.append(v, i)
+	builder.append(v, i)
 
 	// Feet
 	v, i = generateBox(layout.footCenterL, layout.footHW, layout.footHH, layout.footHD)
-	b.append(v, i)
+	builder.append(v, i)
 	v, i = generateBox(layout.footCenterR, layout.footHW, layout.footHH, layout.footHD)
-	b.append(v, i)
+	builder.append(v, i)
 
-	return b.build(key)
+	return builder.build(key)
 }

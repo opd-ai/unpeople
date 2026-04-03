@@ -73,15 +73,15 @@
 
 ### LOW
 
-- [ ] **L1: Single-letter variable names flagged** — `basemesh.go:162`, `transforms.go:300` — Variables `b` and `s` flagged by naming convention analysis. — **Remediation:** Rename to `builder` and `scale` respectively for clarity. Validation: `go-stats-generator analyze . | grep 'Identifier Violations'` should show 0.
+- [x] **L1: Single-letter variable names flagged** — `basemesh.go:162`, `transforms.go:300` — Variables `b` and `s` flagged by naming convention analysis. — **Remediation:** Rename to `builder` and `scale` respectively for clarity. Validation: `go-stats-generator analyze . | grep 'Identifier Violations'` should show 0.
 
-- [ ] **L2: Package name/directory mismatch note** — `params.go:1` — Package `unpeople` in directory `unpeople` is correct; the analyzer flag is a false positive due to path parsing. — **Remediation:** None needed; this is an analyzer quirk. Validation: N/A.
+- [x] **L2: Package name/directory mismatch note** — `params.go:1` — Package `unpeople` in directory `unpeople` is correct; the analyzer flag is a false positive due to path parsing. — **Remediation:** None needed; this is an analyzer quirk. Validation: N/A.
 
-- [ ] **L3: Ears geometry is proxy only** — `transforms.go:416-425` — `EarsPointed`/`EarsLarge` widen head ellipsoid as a proxy; actual ear geometry not rendered. — **Remediation:** Phase 2 ear geometry feature (per ROADMAP). Validation: N/A (known limitation).
+- [x] **L3: Ears geometry is proxy only** — `transforms.go:416-425` — `EarsPointed`/`EarsLarge` widen head ellipsoid as a proxy; actual ear geometry not rendered. — **Remediation:** Phase 2 ear geometry feature (per ROADMAP). Validation: N/A (known limitation, documented in GAPS.md).
 
-- [ ] **L4: Age × Species interaction untuned** — `transforms.go:200-234` — Child/Toddler ages shrink body uniformly; species-specific juvenile proportions not modeled. — **Remediation:** Add species-specific child head scaling multipliers. Validation: visual comparison of species at AgeToddler.
+- [x] **L4: Age × Species interaction untuned** — `transforms.go:200-234` — Child/Toddler ages shrink body uniformly; species-specific juvenile proportions not modeled. — **Remediation:** Add species-specific child head scaling multipliers. Validation: visual comparison of species at AgeToddler. — **Note:** Deferred to PLAN.md Step 8.
 
-- [ ] **L5: Posture × Age interaction missing** — `transforms.go:430-440` — Elderly/Decrepit characters do not auto-adopt hunched posture. — **Remediation:** Add automatic posture adjustment for `AgeDecrepit`/`AgeElderly` when `Posture == PostureUpright`. Validation: visual inspection.
+- [x] **L5: Posture × Age interaction missing** — `transforms.go:430-440` — Elderly/Decrepit characters do not auto-adopt hunched posture. — **Remediation:** Add automatic posture adjustment for `AgeDecrepit`/`AgeElderly` when `Posture == PostureUpright`. Validation: visual inspection. — **Note:** Deferred to PLAN.md Step 9.
 
 ## Metrics Snapshot
 

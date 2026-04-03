@@ -25,8 +25,21 @@ func generateCylinder(
 	segments int,
 	addBottomCap, addTopCap bool,
 ) ([]Vertex, []uint32) {
-	var verts []Vertex
-	var idxs []uint32
+	// Pre-calculate capacities: 2 rings of segments vertices each,
+	// plus 1 center vertex per cap. Indices: 6 per side quad (2 triangles),
+	// plus 3*segments per cap.
+	vertCap := 2 * segments
+	idxCap := 6 * segments
+	if addBottomCap {
+		vertCap++
+		idxCap += 3 * segments
+	}
+	if addTopCap {
+		vertCap++
+		idxCap += 3 * segments
+	}
+	verts := make([]Vertex, 0, vertCap)
+	idxs := make([]uint32, 0, idxCap)
 
 	axis := vec3Normalize(vec3Sub(topCenter, bottomCenter))
 	perp := perpendicular(axis)
@@ -120,8 +133,12 @@ func generateEllipsoid(
 	rx, ry, rz float32,
 	latSegs, lonSegs int,
 ) ([]Vertex, []uint32) {
-	var verts []Vertex
-	var idxs []uint32
+	// Pre-calculate capacities: (latSegs+1)*(lonSegs+1) vertices,
+	// and 6*latSegs*lonSegs indices (2 triangles per quad)
+	vertCap := (latSegs + 1) * (lonSegs + 1)
+	idxCap := 6 * latSegs * lonSegs
+	verts := make([]Vertex, 0, vertCap)
+	idxs := make([]uint32, 0, idxCap)
 
 	for lat := 0; lat <= latSegs; lat++ {
 		theta := float32(lat) * float32(math.Pi) / float32(latSegs)
@@ -208,8 +225,9 @@ func generateBox(center Vec3, hw, hh, hd float32) ([]Vertex, []uint32) {
 	}
 	uvCorners := [4]Vec2{{0, 0}, {1, 0}, {1, 1}, {0, 1}}
 
-	var verts []Vertex
-	var idxs []uint32
+	// Pre-allocate: 6 faces * 4 vertices = 24 vertices, 6 faces * 6 indices = 36 indices
+	verts := make([]Vertex, 0, 24)
+	idxs := make([]uint32, 0, 36)
 
 	for f := 0; f < 6; f++ {
 		base := uint32(len(verts))

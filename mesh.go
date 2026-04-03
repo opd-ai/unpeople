@@ -74,6 +74,13 @@ type meshBuilder struct {
 func (b *meshBuilder) append(verts []Vertex, idxs []uint32) {
 	base := uint32(len(b.vertices))
 	b.vertices = append(b.vertices, verts...)
+
+	// Pre-grow the indices slice to avoid repeated allocations in the loop
+	if cap(b.indices)-len(b.indices) < len(idxs) {
+		newIndices := make([]uint32, len(b.indices), len(b.indices)+len(idxs))
+		copy(newIndices, b.indices)
+		b.indices = newIndices
+	}
 	for _, idx := range idxs {
 		b.indices = append(b.indices, base+idx)
 	}

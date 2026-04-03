@@ -462,115 +462,68 @@ func shiftUpperBodyForward(l *bodyLayout, dz float32) {
 
 // ─── Uniform scale helpers ────────────────────────────────────────────────────
 
+// allPositionFields returns pointers to all Vec3 position fields in the layout.
+// Used by scaleAll and scaleHeight to avoid duplicating field lists.
+func allPositionFields(l *bodyLayout) []*Vec3 {
+	return []*Vec3{
+		&l.headCenter,
+		&l.neckBottom, &l.neckTop,
+		&l.chestBottom, &l.chestTop,
+		&l.abdomenBottom, &l.abdomenTop,
+		&l.hipsBottom, &l.hipsTop,
+		&l.upperArmTopL, &l.upperArmBottomL, &l.upperArmTopR, &l.upperArmBottomR,
+		&l.forearmTopL, &l.forearmBottomL, &l.forearmTopR, &l.forearmBottomR,
+		&l.handCenterL, &l.handCenterR,
+		&l.upperLegTopL, &l.upperLegBottomL, &l.upperLegTopR, &l.upperLegBottomR,
+		&l.lowerLegTopL, &l.lowerLegBottomL, &l.lowerLegTopR, &l.lowerLegBottomR,
+		&l.footCenterL, &l.footCenterR,
+	}
+}
+
+// allUniformRadii returns pointers to all radius/dimension fields that should
+// scale uniformly (XYZ). Excludes height-only fields like handHH, footHH, headRY.
+func allUniformRadii(l *bodyLayout) []*float32 {
+	return []*float32{
+		&l.headRX, &l.headRY, &l.headRZ,
+		&l.neckRadius,
+		&l.chestRX, &l.chestRZ,
+		&l.abdomenRX, &l.abdomenRZ,
+		&l.hipsRX, &l.hipsRZ,
+		&l.upperArmRadius, &l.forearmRadius,
+		&l.handHW, &l.handHH, &l.handHD,
+		&l.upperLegRadius, &l.lowerLegRadius,
+		&l.footHW, &l.footHH, &l.footHD,
+	}
+}
+
+// heightOnlyRadii returns pointers to radius/dimension fields that scale only
+// in the vertical (Y) direction during scaleHeight operations.
+func heightOnlyRadii(l *bodyLayout) []*float32 {
+	return []*float32{&l.headRY, &l.handHH, &l.footHH}
+}
+
 // scaleAll uniformly scales all positions and radii around the world origin
 // (feet remain near Y≈0).
 func scaleAll(l *bodyLayout, s float32) {
 	l.totalHeight *= s
-
-	scaleV3(&l.headCenter, s)
-	l.headRX *= s
-	l.headRY *= s
-	l.headRZ *= s
-
-	scaleV3(&l.neckBottom, s)
-	scaleV3(&l.neckTop, s)
-	l.neckRadius *= s
-
-	scaleV3(&l.chestBottom, s)
-	scaleV3(&l.chestTop, s)
-	l.chestRX *= s
-	l.chestRZ *= s
-
-	scaleV3(&l.abdomenBottom, s)
-	scaleV3(&l.abdomenTop, s)
-	l.abdomenRX *= s
-	l.abdomenRZ *= s
-
-	scaleV3(&l.hipsBottom, s)
-	scaleV3(&l.hipsTop, s)
-	l.hipsRX *= s
-	l.hipsRZ *= s
-
-	scaleV3(&l.upperArmTopL, s)
-	scaleV3(&l.upperArmBottomL, s)
-	scaleV3(&l.upperArmTopR, s)
-	scaleV3(&l.upperArmBottomR, s)
-	l.upperArmRadius *= s
-
-	scaleV3(&l.forearmTopL, s)
-	scaleV3(&l.forearmBottomL, s)
-	scaleV3(&l.forearmTopR, s)
-	scaleV3(&l.forearmBottomR, s)
-	l.forearmRadius *= s
-
-	scaleV3(&l.handCenterL, s)
-	scaleV3(&l.handCenterR, s)
-	l.handHW *= s
-	l.handHH *= s
-	l.handHD *= s
-
-	scaleV3(&l.upperLegTopL, s)
-	scaleV3(&l.upperLegBottomL, s)
-	scaleV3(&l.upperLegTopR, s)
-	scaleV3(&l.upperLegBottomR, s)
-	l.upperLegRadius *= s
-
-	scaleV3(&l.lowerLegTopL, s)
-	scaleV3(&l.lowerLegBottomL, s)
-	scaleV3(&l.lowerLegTopR, s)
-	scaleV3(&l.lowerLegBottomR, s)
-	l.lowerLegRadius *= s
-
-	scaleV3(&l.footCenterL, s)
-	scaleV3(&l.footCenterR, s)
-	l.footHW *= s
-	l.footHH *= s
-	l.footHD *= s
+	for _, v := range allPositionFields(l) {
+		scaleV3(v, s)
+	}
+	for _, r := range allUniformRadii(l) {
+		*r *= s
+	}
 }
 
 // scaleHeight scales only the Y component of all position vectors and vertical
 // radii (used by species that are shorter but not narrower).
 func scaleHeight(l *bodyLayout, s float32) {
 	l.totalHeight *= s
-
-	scaleV3Y(&l.headCenter, s)
-	l.headRY *= s
-	scaleV3Y(&l.neckBottom, s)
-	scaleV3Y(&l.neckTop, s)
-	scaleV3Y(&l.chestBottom, s)
-	scaleV3Y(&l.chestTop, s)
-	scaleV3Y(&l.abdomenBottom, s)
-	scaleV3Y(&l.abdomenTop, s)
-	scaleV3Y(&l.hipsBottom, s)
-	scaleV3Y(&l.hipsTop, s)
-
-	scaleV3Y(&l.upperArmTopL, s)
-	scaleV3Y(&l.upperArmBottomL, s)
-	scaleV3Y(&l.upperArmTopR, s)
-	scaleV3Y(&l.upperArmBottomR, s)
-
-	scaleV3Y(&l.forearmTopL, s)
-	scaleV3Y(&l.forearmBottomL, s)
-	scaleV3Y(&l.forearmTopR, s)
-	scaleV3Y(&l.forearmBottomR, s)
-
-	scaleV3Y(&l.handCenterL, s)
-	scaleV3Y(&l.handCenterR, s)
-	l.handHH *= s
-
-	scaleV3Y(&l.upperLegTopL, s)
-	scaleV3Y(&l.upperLegBottomL, s)
-	scaleV3Y(&l.upperLegTopR, s)
-	scaleV3Y(&l.upperLegBottomR, s)
-
-	scaleV3Y(&l.lowerLegTopL, s)
-	scaleV3Y(&l.lowerLegBottomL, s)
-	scaleV3Y(&l.lowerLegTopR, s)
-	scaleV3Y(&l.lowerLegBottomR, s)
-
-	scaleV3Y(&l.footCenterL, s)
-	scaleV3Y(&l.footCenterR, s)
-	l.footHH *= s
+	for _, v := range allPositionFields(l) {
+		scaleV3Y(v, s)
+	}
+	for _, r := range heightOnlyRadii(l) {
+		*r *= s
+	}
 }
 
 // scaleLimbs rescales limb segment lengths proportionally (arms and legs)

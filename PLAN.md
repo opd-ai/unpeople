@@ -67,7 +67,7 @@
 - **Validation**: `go-stats-generator analyze . --skip-tests --format json 2>/dev/null | jq -r '.functions[] | select(.name == "Validate") | .complexity.cyclomatic'` returns value ≤ 10
 
 ### Step 5: Reduce Scale Helper Duplication
-- [ ] **Pending**
+- [x] **Resolved**
 - **Deliverable**: Create a unified field accessor mechanism in `transforms.go` that `scaleAll`, `scaleHeight`, and `scaleLimbs` can share. Options:
   - (A) Extract common field lists to data tables
   - (B) Use a helper that accepts field pointers
@@ -77,7 +77,7 @@
 - **Validation**: `go-stats-generator analyze . --skip-tests --format json 2>/dev/null | jq -r '.duplication.duplication_ratio'` returns value < 0.15
 
 ### Step 6: Pre-allocate Slices in Primitives
-- [ ] **Pending**
+- [x] **Resolved**
 - **Deliverable**: Modify `generateEllipsoid`, `generateCylinder`, `generateBox` in `primitive.go` to pre-allocate vertex/index slices using `make([]Vertex, 0, capacity)`
 - **Dependencies**: None
 - **Goal Impact**: Addresses performance anti-patterns flagged by go-stats-generator; reduces GC pressure
@@ -85,7 +85,7 @@
 - **Validation**: `go test -bench=BenchmarkGenerate -benchmem ./... 2>&1 | grep allocs`
 
 ### Step 7: Pre-allocate Slice in meshBuilder.append
-- [ ] **Pending**
+- [x] **Resolved**
 - **Deliverable**: Modify `meshBuilder.append()` in `mesh.go` to pre-allocate indices slice capacity
 - **Dependencies**: None
 - **Goal Impact**: Addresses "append() in loop without pre-allocation" anti-pattern

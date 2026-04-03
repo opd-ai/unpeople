@@ -25,7 +25,6 @@ func generateCylinder(
 	segments int,
 	addBottomCap, addTopCap bool,
 ) ([]Vertex, []uint32) {
-
 	var verts []Vertex
 	var idxs []uint32
 
@@ -121,7 +120,6 @@ func generateEllipsoid(
 	rx, ry, rz float32,
 	latSegs, lonSegs int,
 ) ([]Vertex, []uint32) {
-
 	var verts []Vertex
 	var idxs []uint32
 

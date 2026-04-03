@@ -16,7 +16,7 @@ import "errors"
 type Species int
 
 const (
-	SpeciesHuman    Species = iota
+	SpeciesHuman Species = iota
 	SpeciesElf
 	SpeciesDwarf
 	SpeciesGnome
@@ -34,7 +34,7 @@ const (
 type Height int
 
 const (
-	HeightGiant  Height = iota
+	HeightGiant Height = iota
 	HeightTall
 	HeightMedium
 	HeightShort
@@ -61,7 +61,7 @@ const (
 type Proportions int
 
 const (
-	ProportionsHeroic     Proportions = iota
+	ProportionsHeroic Proportions = iota
 	ProportionsRealistic
 	ProportionsStylized
 	ProportionsCaricature
@@ -73,7 +73,7 @@ const (
 type Phenotype int
 
 const (
-	PhenotypeMasculine   Phenotype = iota
+	PhenotypeMasculine Phenotype = iota
 	PhenotypeAndrogynous
 	PhenotypeFeminine
 )
@@ -100,7 +100,7 @@ const (
 type Posture int
 
 const (
-	PostureUpright  Posture = iota
+	PostureUpright Posture = iota
 	PostureSlouched
 	PostureHunched
 	PostureRigid
@@ -112,7 +112,7 @@ const (
 type FaceShape int
 
 const (
-	FaceShapeOval    FaceShape = iota
+	FaceShapeOval FaceShape = iota
 	FaceShapeRound
 	FaceShapeSquare
 	FaceShapeHeart
@@ -139,7 +139,7 @@ const (
 type Brow int
 
 const (
-	BrowHeavy  Brow = iota
+	BrowHeavy Brow = iota
 	BrowNormal
 	BrowLight
 	BrowArched
@@ -151,7 +151,7 @@ const (
 type Ears int
 
 const (
-	EarsSmall   Ears = iota
+	EarsSmall Ears = iota
 	EarsMedium
 	EarsLarge
 	EarsPointed
@@ -164,7 +164,7 @@ const (
 type ShoulderWidth int
 
 const (
-	ShoulderWidthBroad   ShoulderWidth = iota
+	ShoulderWidthBroad ShoulderWidth = iota
 	ShoulderWidthAverage
 	ShoulderWidthNarrow
 )
@@ -175,7 +175,7 @@ const (
 type HipWidth int
 
 const (
-	HipWidthWide    HipWidth = iota
+	HipWidthWide HipWidth = iota
 	HipWidthAverage
 	HipWidthNarrow
 )
@@ -186,7 +186,7 @@ const (
 type LimbLength int
 
 const (
-	LimbLengthLong         LimbLength = iota
+	LimbLengthLong LimbLength = iota
 	LimbLengthProportional
 	LimbLengthShort
 )
@@ -197,7 +197,7 @@ const (
 type NeckLength int
 
 const (
-	NeckLengthLong   NeckLength = iota
+	NeckLengthLong NeckLength = iota
 	NeckLengthMedium
 	NeckLengthShort
 	NeckLengthThick
@@ -209,7 +209,7 @@ const (
 type HandSize int
 
 const (
-	HandSizeLarge  HandSize = iota
+	HandSizeLarge HandSize = iota
 	HandSizeMedium
 	HandSizeSmall
 )
@@ -220,7 +220,7 @@ const (
 type FingerLength int
 
 const (
-	FingerLengthLong    FingerLength = iota
+	FingerLengthLong FingerLength = iota
 	FingerLengthAverage
 	FingerLengthShort
 )
@@ -231,7 +231,7 @@ const (
 type FootSize int
 
 const (
-	FootSizeLarge  FootSize = iota
+	FootSizeLarge FootSize = iota
 	FootSizeMedium
 	FootSizeSmall
 )

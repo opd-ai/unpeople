@@ -18,10 +18,10 @@ type bodyLayout struct {
 	totalHeight float32
 
 	// ── Head ────────────────────────────────────────────────────────────────
-	headCenter  Vec3
-	headRX      float32 // radius X (lateral)
-	headRY      float32 // radius Y (vertical)
-	headRZ      float32 // radius Z (front-back)
+	headCenter Vec3
+	headRX     float32 // radius X (lateral)
+	headRY     float32 // radius Y (vertical)
+	headRZ     float32 // radius Z (front-back)
 
 	// ── Neck ────────────────────────────────────────────────────────────────
 	neckBottom Vec3

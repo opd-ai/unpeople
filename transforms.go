@@ -461,41 +461,64 @@ func scaleAll(l *bodyLayout, s float32) {
 	l.totalHeight *= s
 
 	scaleV3(&l.headCenter, s)
-	l.headRX *= s; l.headRY *= s; l.headRZ *= s
+	l.headRX *= s
+	l.headRY *= s
+	l.headRZ *= s
 
-	scaleV3(&l.neckBottom, s); scaleV3(&l.neckTop, s)
+	scaleV3(&l.neckBottom, s)
+	scaleV3(&l.neckTop, s)
 	l.neckRadius *= s
 
-	scaleV3(&l.chestBottom, s); scaleV3(&l.chestTop, s)
-	l.chestRX *= s; l.chestRZ *= s
+	scaleV3(&l.chestBottom, s)
+	scaleV3(&l.chestTop, s)
+	l.chestRX *= s
+	l.chestRZ *= s
 
-	scaleV3(&l.abdomenBottom, s); scaleV3(&l.abdomenTop, s)
-	l.abdomenRX *= s; l.abdomenRZ *= s
+	scaleV3(&l.abdomenBottom, s)
+	scaleV3(&l.abdomenTop, s)
+	l.abdomenRX *= s
+	l.abdomenRZ *= s
 
-	scaleV3(&l.hipsBottom, s); scaleV3(&l.hipsTop, s)
-	l.hipsRX *= s; l.hipsRZ *= s
+	scaleV3(&l.hipsBottom, s)
+	scaleV3(&l.hipsTop, s)
+	l.hipsRX *= s
+	l.hipsRZ *= s
 
-	scaleV3(&l.upperArmTopL, s); scaleV3(&l.upperArmBottomL, s)
-	scaleV3(&l.upperArmTopR, s); scaleV3(&l.upperArmBottomR, s)
+	scaleV3(&l.upperArmTopL, s)
+	scaleV3(&l.upperArmBottomL, s)
+	scaleV3(&l.upperArmTopR, s)
+	scaleV3(&l.upperArmBottomR, s)
 	l.upperArmRadius *= s
 
-	scaleV3(&l.forearmTopL, s); scaleV3(&l.forearmBottomL, s)
-	scaleV3(&l.forearmTopR, s); scaleV3(&l.forearmBottomR, s)
+	scaleV3(&l.forearmTopL, s)
+	scaleV3(&l.forearmBottomL, s)
+	scaleV3(&l.forearmTopR, s)
+	scaleV3(&l.forearmBottomR, s)
 	l.forearmRadius *= s
 
-	scaleV3(&l.handCenterL, s); scaleV3(&l.handCenterR, s)
-	l.handHW *= s; l.handHH *= s; l.handHD *= s
+	scaleV3(&l.handCenterL, s)
+	scaleV3(&l.handCenterR, s)
+	l.handHW *= s
+	l.handHH *= s
+	l.handHD *= s
 
-	scaleV3(&l.upperLegTopL, s); scaleV3(&l.upperLegBottomL, s)
-	scaleV3(&l.upperLegTopR, s); scaleV3(&l.upperLegBottomR, s)
+	scaleV3(&l.upperLegTopL, s)
+	scaleV3(&l.upperLegBottomL, s)
+	scaleV3(&l.upperLegTopR, s)
+	scaleV3(&l.upperLegBottomR, s)
 	l.upperLegRadius *= s
 
-	scaleV3(&l.lowerLegTopL, s); scaleV3(&l.lowerLegBottomL, s)
-	scaleV3(&l.lowerLegTopR, s); scaleV3(&l.lowerLegBottomR, s)
+	scaleV3(&l.lowerLegTopL, s)
+	scaleV3(&l.lowerLegBottomL, s)
+	scaleV3(&l.lowerLegTopR, s)
+	scaleV3(&l.lowerLegBottomR, s)
 	l.lowerLegRadius *= s
 
-	scaleV3(&l.footCenterL, s); scaleV3(&l.footCenterR, s)
-	l.footHW *= s; l.footHH *= s; l.footHD *= s
+	scaleV3(&l.footCenterL, s)
+	scaleV3(&l.footCenterR, s)
+	l.footHW *= s
+	l.footHH *= s
+	l.footHD *= s
 }
 
 // scaleHeight scales only the Y component of all position vectors and vertical
@@ -503,28 +526,43 @@ func scaleAll(l *bodyLayout, s float32) {
 func scaleHeight(l *bodyLayout, s float32) {
 	l.totalHeight *= s
 
-	scaleV3Y(&l.headCenter, s); l.headRY *= s
-	scaleV3Y(&l.neckBottom, s); scaleV3Y(&l.neckTop, s)
-	scaleV3Y(&l.chestBottom, s); scaleV3Y(&l.chestTop, s)
-	scaleV3Y(&l.abdomenBottom, s); scaleV3Y(&l.abdomenTop, s)
-	scaleV3Y(&l.hipsBottom, s); scaleV3Y(&l.hipsTop, s)
+	scaleV3Y(&l.headCenter, s)
+	l.headRY *= s
+	scaleV3Y(&l.neckBottom, s)
+	scaleV3Y(&l.neckTop, s)
+	scaleV3Y(&l.chestBottom, s)
+	scaleV3Y(&l.chestTop, s)
+	scaleV3Y(&l.abdomenBottom, s)
+	scaleV3Y(&l.abdomenTop, s)
+	scaleV3Y(&l.hipsBottom, s)
+	scaleV3Y(&l.hipsTop, s)
 
-	scaleV3Y(&l.upperArmTopL, s); scaleV3Y(&l.upperArmBottomL, s)
-	scaleV3Y(&l.upperArmTopR, s); scaleV3Y(&l.upperArmBottomR, s)
+	scaleV3Y(&l.upperArmTopL, s)
+	scaleV3Y(&l.upperArmBottomL, s)
+	scaleV3Y(&l.upperArmTopR, s)
+	scaleV3Y(&l.upperArmBottomR, s)
 
-	scaleV3Y(&l.forearmTopL, s); scaleV3Y(&l.forearmBottomL, s)
-	scaleV3Y(&l.forearmTopR, s); scaleV3Y(&l.forearmBottomR, s)
+	scaleV3Y(&l.forearmTopL, s)
+	scaleV3Y(&l.forearmBottomL, s)
+	scaleV3Y(&l.forearmTopR, s)
+	scaleV3Y(&l.forearmBottomR, s)
 
-	scaleV3Y(&l.handCenterL, s); scaleV3Y(&l.handCenterR, s)
+	scaleV3Y(&l.handCenterL, s)
+	scaleV3Y(&l.handCenterR, s)
 	l.handHH *= s
 
-	scaleV3Y(&l.upperLegTopL, s); scaleV3Y(&l.upperLegBottomL, s)
-	scaleV3Y(&l.upperLegTopR, s); scaleV3Y(&l.upperLegBottomR, s)
+	scaleV3Y(&l.upperLegTopL, s)
+	scaleV3Y(&l.upperLegBottomL, s)
+	scaleV3Y(&l.upperLegTopR, s)
+	scaleV3Y(&l.upperLegBottomR, s)
 
-	scaleV3Y(&l.lowerLegTopL, s); scaleV3Y(&l.lowerLegBottomL, s)
-	scaleV3Y(&l.lowerLegTopR, s); scaleV3Y(&l.lowerLegBottomR, s)
+	scaleV3Y(&l.lowerLegTopL, s)
+	scaleV3Y(&l.lowerLegBottomL, s)
+	scaleV3Y(&l.lowerLegTopR, s)
+	scaleV3Y(&l.lowerLegBottomR, s)
 
-	scaleV3Y(&l.footCenterL, s); scaleV3Y(&l.footCenterR, s)
+	scaleV3Y(&l.footCenterL, s)
+	scaleV3Y(&l.footCenterR, s)
 	l.footHH *= s
 }
 
@@ -589,7 +627,9 @@ func scaleLimbs(l *bodyLayout, s float32) {
 // ─── Vec3 helpers ─────────────────────────────────────────────────────────────
 
 func scaleV3(v *Vec3, s float32) {
-	v[0] *= s; v[1] *= s; v[2] *= s
+	v[0] *= s
+	v[1] *= s
+	v[2] *= s
 }
 
 func scaleV3Y(v *Vec3, s float32) {

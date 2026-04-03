@@ -271,6 +271,9 @@ type Params struct {
 	HandSize     HandSize
 	FingerLength FingerLength
 	FootSize     FootSize
+
+	// Optional mesh components
+	HasHairSlot bool // If true, generate skull cap placeholder for hair attachment
 }
 
 // DefaultParams returns a Params representing a generic Adult Human with
@@ -296,6 +299,7 @@ func DefaultParams() Params {
 		HandSize:      HandSizeMedium,
 		FingerLength:  FingerLengthAverage,
 		FootSize:      FootSizeMedium,
+		HasHairSlot:   true,
 	}
 }
 

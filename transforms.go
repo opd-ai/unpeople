@@ -9,7 +9,7 @@ func computeBodyLayout(p *Params, rng *splitmix64) bodyLayout {
 
 	applySpecies(&l, p.Species)
 	applyHeight(&l, p.Height)
-	applyBuild(&l, p.Build)
+	applyBuild(&l, p.Build, p.Species)
 	applyProportions(&l, p.Proportions)
 	applyPhenotype(&l, p.Phenotype)
 	applyAge(&l, p.Age, p.Species)
@@ -106,17 +106,74 @@ func applyHeight(l *bodyLayout, h Height) {
 
 // ─── Build ───────────────────────────────────────────────────────────────────
 
-func applyBuild(l *bodyLayout, b Build) {
+// speciesBuildInteraction returns species-aware multipliers for build effects.
+// This addresses awkward combinations like Orc+Fragile or Troll+Lean where
+// base build multipliers produce unnatural proportions.
+// chestMult adjusts torso reduction/expansion, limbMult adjusts limb reduction.
+func speciesBuildInteraction(s Species, b Build) (chestMult, limbMult float32) {
+	// Default: no interaction adjustment
+	chestMult, limbMult = 1.0, 1.0
+
+	switch b {
+	case BuildFragile:
+		// Fragile builds on naturally bulky species should be less extreme
+		switch s {
+		case SpeciesOrc:
+			// Orcs are naturally bulky; fragile Orc is still somewhat broad
+			chestMult = 1.15 // Less chest reduction (0.80 * 1.15 = 0.92)
+			limbMult = 1.12  // Less limb reduction
+		case SpeciesTroll:
+			chestMult = 1.20
+			limbMult = 1.15
+		case SpeciesOgre:
+			chestMult = 1.25
+			limbMult = 1.18
+		case SpeciesDwarf:
+			// Dwarves are stocky; fragile Dwarf still retains some bulk
+			chestMult = 1.10
+			limbMult = 1.08
+		}
+
+	case BuildLean:
+		// Lean builds on bulky species need adjustment
+		switch s {
+		case SpeciesOrc:
+			chestMult = 1.08
+			limbMult = 1.06
+		case SpeciesTroll:
+			chestMult = 1.12
+			limbMult = 1.10
+		case SpeciesOgre:
+			chestMult = 1.15
+			limbMult = 1.12
+		}
+
+	case BuildMuscular:
+		// Muscular builds on already-bulky species should be less extreme
+		switch s {
+		case SpeciesOrc, SpeciesTroll, SpeciesOgre:
+			chestMult = 0.90 // Reduce muscle expansion
+			limbMult = 0.92
+		}
+	}
+
+	return chestMult, limbMult
+}
+
+func applyBuild(l *bodyLayout, b Build, s Species) {
+	// Get species-aware adjustment multipliers
+	chestMult, limbMult := speciesBuildInteraction(s, b)
+
 	switch b {
 	case BuildMuscular:
-		l.chestRX *= 1.28
-		l.chestRZ *= 1.20
-		l.abdomenRX *= 1.10
-		l.upperArmRadius *= 1.30
-		l.forearmRadius *= 1.20
-		l.upperLegRadius *= 1.25
-		l.lowerLegRadius *= 1.20
-		l.neckRadius *= 1.15
+		l.chestRX *= 1.28 * chestMult
+		l.chestRZ *= 1.20 * chestMult
+		l.abdomenRX *= 1.10 * chestMult
+		l.upperArmRadius *= 1.30 * limbMult
+		l.forearmRadius *= 1.20 * limbMult
+		l.upperLegRadius *= 1.25 * limbMult
+		l.lowerLegRadius *= 1.20 * limbMult
+		l.neckRadius *= 1.15 * chestMult
 	case BuildAthletic:
 		l.chestRX *= 1.12
 		l.upperArmRadius *= 1.12
@@ -124,12 +181,12 @@ func applyBuild(l *bodyLayout, b Build) {
 	case BuildAverage:
 		// default
 	case BuildLean:
-		l.chestRX *= 0.90
-		l.abdomenRX *= 0.88
-		l.hipsRX *= 0.92
-		l.upperArmRadius *= 0.88
-		l.upperLegRadius *= 0.88
-		l.lowerLegRadius *= 0.90
+		l.chestRX *= 0.90 * chestMult
+		l.abdomenRX *= 0.88 * chestMult
+		l.hipsRX *= 0.92 * chestMult
+		l.upperArmRadius *= 0.88 * limbMult
+		l.upperLegRadius *= 0.88 * limbMult
+		l.lowerLegRadius *= 0.90 * limbMult
 	case BuildStocky:
 		l.chestRX *= 1.15
 		l.abdomenRX *= 1.15
@@ -137,15 +194,15 @@ func applyBuild(l *bodyLayout, b Build) {
 		l.upperLegRadius *= 1.15
 		l.lowerLegRadius *= 1.10
 	case BuildFragile:
-		l.chestRX *= 0.80
-		l.chestRZ *= 0.85
-		l.abdomenRX *= 0.82
-		l.hipsRX *= 0.85
-		l.upperArmRadius *= 0.75
-		l.forearmRadius *= 0.72
-		l.upperLegRadius *= 0.78
-		l.lowerLegRadius *= 0.75
-		l.neckRadius *= 0.85
+		l.chestRX *= 0.80 * chestMult
+		l.chestRZ *= 0.85 * chestMult
+		l.abdomenRX *= 0.82 * chestMult
+		l.hipsRX *= 0.85 * chestMult
+		l.upperArmRadius *= 0.75 * limbMult
+		l.forearmRadius *= 0.72 * limbMult
+		l.upperLegRadius *= 0.78 * limbMult
+		l.lowerLegRadius *= 0.75 * limbMult
+		l.neckRadius *= 0.85 * chestMult
 	}
 }
 

@@ -457,3 +457,159 @@ func generateHand(
 	m := builder.build("")
 	return m.Vertices, m.Indices
 }
+
+// ─── Foot with Toes ──────────────────────────────────────────────────────────
+
+// generateFoot creates a complete foot with box base and five toes.
+// footCenter is the foot box center, hw/hh/hd are foot half-extents, direction
+// is the toe pointing direction (typically forward +Z), isLeftFoot determines
+// toe placement mirroring, and remaining params define toe dimensions.
+func generateFoot(
+	footCenter Vec3,
+	hw, hh, hd float32,
+	direction Vec3,
+	isLeftFoot bool,
+	toeRadius, toeProximal, toeMiddle, toeDistal float32,
+	bigToeProximal, bigToeDistal float32,
+	toeSpacing float32,
+) ([]Vertex, []uint32) {
+	var builder meshBuilder
+
+	// Foot box (base)
+	v, idx := generateBox(footCenter, hw, hh, hd)
+	builder.append(v, idx)
+
+	dir := vec3Normalize(direction)
+
+	// Toe attachment: front edge of foot box
+	toeEdgeZ := footCenter[2] + hd
+	toeY := footCenter[1] - hh*0.3 // Slightly below foot center
+
+	// Direction multiplier for left/right foot (X-axis)
+	xDir := float32(1.0)
+	if isLeftFoot {
+		xDir = -1.0
+	}
+
+	// Five toes: big toe, index, middle, ring, pinky
+	// Big toe is medial (inner), pinky is lateral (outer)
+	toeXOffsets := []float32{
+		hw * 0.60,  // Big toe (inner)
+		hw * 0.25,  // Index
+		-hw * 0.05, // Middle
+		-hw * 0.35, // Ring
+		-hw * 0.60, // Pinky (outer)
+	}
+
+	for i, xOff := range toeXOffsets {
+		var segs []float32
+		radius := toeRadius
+
+		if i == 0 {
+			// Big toe: 2 segments, larger radius
+			segs = []float32{bigToeProximal, bigToeDistal}
+			radius *= 1.3
+		} else {
+			// Other toes: 3 segments, progressively smaller for pinky
+			scale := float32(1.0)
+			if i == 4 {
+				scale = 0.70 // Pinky is smallest
+			} else if i == 3 {
+				scale = 0.85 // Ring is slightly smaller
+			}
+			segs = []float32{
+				toeProximal * scale,
+				toeMiddle * scale,
+				toeDistal * scale,
+			}
+		}
+
+		toeBase := Vec3{
+			footCenter[0] + xOff*xDir,
+			toeY,
+			toeEdgeZ,
+		}
+		v, idx := generateFinger(toeBase, dir, segs, radius)
+		builder.append(v, idx)
+	}
+
+	m := builder.build("")
+	return m.Vertices, m.Indices
+}
+
+// ─── Skull Cap ───────────────────────────────────────────────────────────────
+
+// generateSkullCap creates a hemisphere mesh covering the top of the head.
+// This serves as a placeholder attachment surface for hair systems.
+// headCenter is the ellipsoid center, rx/ry/rz are the head radii.
+// The cap covers the upper half of the head with a slight overlap.
+func generateSkullCap(headCenter Vec3, rx, ry, rz float32) ([]Vertex, []uint32) {
+	// Skull cap: upper portion of head ellipsoid (above equator)
+	// We generate only the top hemisphere with a slight overlap below equator
+	const (
+		latSegs = 4 // latitude rings (equator to pole)
+		lonSegs = 8 // longitude segments
+	)
+
+	// Pre-calculate capacities
+	vertCap := (latSegs + 1) * (lonSegs + 1)
+	idxCap := 6 * latSegs * lonSegs
+	verts := make([]Vertex, 0, vertCap)
+	idxs := make([]uint32, 0, idxCap)
+
+	// Offset cap slightly outward to sit on top of head
+	capOffset := float32(0.002)
+	capRX := rx + capOffset
+	capRY := ry + capOffset
+	capRZ := rz + capOffset
+
+	// Generate hemisphere (theta from 0 to pi/2, with slight overlap at -0.1*pi)
+	startTheta := float32(-0.1 * 3.14159) // Slight overlap below equator
+	endTheta := float32(0.5 * 3.14159)    // Top pole
+
+	for lat := 0; lat <= latSegs; lat++ {
+		t := float32(lat) / float32(latSegs)
+		theta := startTheta + t*(endTheta-startTheta)
+		sinT := float32(math.Sin(float64(theta)))
+		cosT := float32(math.Cos(float64(theta)))
+
+		for lon := 0; lon <= lonSegs; lon++ {
+			phi := float32(lon) * float32(tau) / float32(lonSegs)
+			sinP := float32(math.Sin(float64(phi)))
+			cosP := float32(math.Cos(float64(phi)))
+
+			// Unit-sphere direction
+			nx := cosP * sinT
+			ny := cosT
+			nz := sinP * sinT
+
+			pos := Vec3{
+				headCenter[0] + capRX*nx,
+				headCenter[1] + capRY*ny,
+				headCenter[2] + capRZ*nz,
+			}
+			n := vec3Normalize(Vec3{nx / (capRX * capRX), ny / (capRY * capRY), nz / (capRZ * capRZ)})
+			uv := Vec2{float32(lon) / float32(lonSegs), t}
+
+			verts = append(verts, Vertex{
+				Position: pos,
+				Normal:   n,
+				UV0:      uv,
+				Color:    ColorGray,
+				Tangent:  Vec4{-sinP, 0, cosP, 1},
+			})
+		}
+	}
+
+	stride := uint32(lonSegs + 1)
+	for lat := 0; lat < latSegs; lat++ {
+		for lon := 0; lon < lonSegs; lon++ {
+			a := uint32(lat)*stride + uint32(lon)
+			b := a + stride
+			idxs = append(idxs, a, b, a+1)
+			idxs = append(idxs, b, b+1, a+1)
+		}
+	}
+
+	return verts, idxs
+}

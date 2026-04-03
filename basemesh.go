@@ -292,6 +292,15 @@ func defaultBodyLayout() bodyLayout {
 		footHH:      defaultFootHH,
 		footHD:      defaultFootHD,
 
+		// Toe dimensions
+		toeRadius:         defaultToeRadius,
+		toeProximalLength: defaultToeProximalLength,
+		toeMiddleLength:   defaultToeMiddleLength,
+		toeDistalLength:   defaultToeDistalLength,
+		bigToeProximal:    defaultBigToeProximal,
+		bigToeDistal:      defaultBigToeDistal,
+		toeSpacing:        defaultToeSpacing,
+
 		// Ears attach to the sides of the head at roughly eye level
 		earAttachL: Vec3{
 			-defaultHeadRX,
@@ -309,7 +318,8 @@ func defaultBodyLayout() bodyLayout {
 
 // buildMesh assembles the full humanoid mesh from the given body layout.
 // The mesh key is used by the Kaiju engine's mesh cache.
-func buildMesh(layout bodyLayout, key string) *Mesh {
+// hasHairSlot controls whether the skull cap placeholder is generated.
+func buildMesh(layout bodyLayout, key string, hasHairSlot bool) *Mesh {
 	var builder meshBuilder
 
 	const (
@@ -322,6 +332,12 @@ func buildMesh(layout bodyLayout, key string) *Mesh {
 	v, i := generateEllipsoid(layout.headCenter,
 		layout.headRX, layout.headRY, layout.headRZ, latSegs, lonSegs)
 	builder.append(v, i)
+
+	// Skull cap (hair slot placeholder)
+	if hasHairSlot {
+		v, i = generateSkullCap(layout.headCenter, layout.headRX, layout.headRY, layout.headRZ)
+		builder.append(v, i)
+	}
 
 	// Neck
 	v, i = generateCylinder(layout.neckBottom, layout.neckTop,
@@ -394,10 +410,23 @@ func buildMesh(layout bodyLayout, key string) *Mesh {
 		layout.lowerLegRadius, layout.lowerLegRadius*0.75, circSegs, false, true)
 	builder.append(v, i)
 
-	// Feet
-	v, i = generateBox(layout.footCenterL, layout.footHW, layout.footHH, layout.footHD)
+	// Feet with toes
+	toeDir := Vec3{0, 0, 1} // toes point forward in T-pose
+	v, i = generateFoot(
+		layout.footCenterL, layout.footHW, layout.footHH, layout.footHD,
+		toeDir, true, // isLeftFoot
+		layout.toeRadius, layout.toeProximalLength, layout.toeMiddleLength, layout.toeDistalLength,
+		layout.bigToeProximal, layout.bigToeDistal,
+		layout.toeSpacing,
+	)
 	builder.append(v, i)
-	v, i = generateBox(layout.footCenterR, layout.footHW, layout.footHH, layout.footHD)
+	v, i = generateFoot(
+		layout.footCenterR, layout.footHW, layout.footHH, layout.footHD,
+		toeDir, false, // isLeftFoot
+		layout.toeRadius, layout.toeProximalLength, layout.toeMiddleLength, layout.toeDistalLength,
+		layout.bigToeProximal, layout.bigToeDistal,
+		layout.toeSpacing,
+	)
 	builder.append(v, i)
 
 	// Ears

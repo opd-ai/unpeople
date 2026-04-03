@@ -48,3 +48,15 @@
 [2026-04-03 00:31:55] === Iteration 1 / 50 ===
 [2026-04-03 00:31:55] Step A: Executing next task...
 [2026-04-03 00:31:55] Delegating: EXECUTE.md
+[2026-04-03 00:46:09] === LOOP STARTING ===
+[2026-04-03 00:46:09] Working directory: /home/user/go/src/github.com/opd-ai/unpeople
+[2026-04-03 00:46:09] Prompt directory:  /home/user/go/src/github.com/opd-ai/go-stats-generator
+[2026-04-03 00:46:09] Max iterations:    50
+[2026-04-03 00:46:09] --- Initialization ---
+[2026-04-03 00:46:09] AUDIT.md already exists — skipping BASE_AUDIT.md.
+[2026-04-03 00:46:09] PLAN.md already exists — skipping MAKE_PLAN.md.
+[2026-04-03 00:46:09] --- Entering main loop (max 50 iterations) ---
+[2026-04-03 00:46:09] 
+[2026-04-03 00:46:09] === Iteration 1 / 50 ===
+[2026-04-03 00:46:09] Step A: Executing next task...
+[2026-04-03 00:46:09] Delegating: EXECUTE.md

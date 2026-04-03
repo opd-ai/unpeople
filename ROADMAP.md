@@ -58,7 +58,7 @@ and must be addressed before or during Phase 2 implementation:
 - [x] **Finger geometry** – Individual finger segments (proximal / middle /
   distal phalanges) driven by the `FingerLength` parameter.
 - [x] **Toe geometry** – Toe segments on the foot mesh.
-- [ ] **Musculature detail** – Normal-map baked geometry bumps driven by the
+- [x] **Musculature detail** – Normal-map baked geometry bumps driven by the
   `Build` parameter (requires Phase 3 UV atlas).
 - [x] **Hair/skull cap placeholder** – Separate mesh token for hair slot that
   downstream systems can swap.

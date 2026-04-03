@@ -1,15 +1,15 @@
 {
   "metadata": {
     "repository": "/home/user/go/src/github.com/opd-ai/unpeople",
-    "generated_at": "2026-04-03T02:21:35.259028165-04:00",
-    "analysis_time": 976560762,
+    "generated_at": "2026-04-03T02:38:09.010684202-04:00",
+    "analysis_time": 769884964,
     "files_processed": 14,
     "tool_version": "1.0.0",
     "go_version": ""
   },
   "overview": {
-    "total_lines_of_code": 2038,
-    "total_functions": 93,
+    "total_lines_of_code": 1997,
+    "total_functions": 98,
     "total_methods": 29,
     "total_structs": 21,
     "total_interfaces": 0,
@@ -17,6 +17,77 @@
     "total_files": 14
   },
   "functions": [
+    {
+      "name": "NewGenerator",
+      "package": "unpeople",
+      "file": "generator.go",
+      "line": 11,
+      "is_exported": true,
+      "is_method": false,
+      "lines": {
+        "total": 1,
+        "code": 1,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 0,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.3
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 51,
+        "has_example": false,
+        "quality_score": 0.20400000000000001
+      }
+    },
+    {
+      "name": "Generate",
+      "package": "unpeople",
+      "file": "generator.go",
+      "line": 33,
+      "is_exported": true,
+      "is_method": true,
+      "receiver_type": "*Generator",
+      "lines": {
+        "total": 40,
+        "code": 28,
+        "comments": 6,
+        "blank": 6
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 2,
+        "has_variadic": false,
+        "returns_error": true,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.1
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 1,
+        "overall": 4.4
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 495,
+        "has_example": false,
+        "quality_score": 0.6000000000000001
+      }
+    },
     {
       "name": "DefaultSkinMaterial",
       "package": "unpeople",
@@ -191,6 +262,784 @@
         "comment_length": 134,
         "has_example": false,
         "quality_score": 0.4
+      }
+    },
+    {
+      "name": "main",
+      "package": "main",
+      "file": "example/main.go",
+      "line": 15,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 128,
+        "code": 125,
+        "comments": 0,
+        "blank": 3
+      },
+      "signature": {
+        "parameter_count": 0,
+        "return_count": 0,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 2,
+        "overall": 4.9
+      },
+      "documentation": {
+        "has_comment": false,
+        "comment_length": 0,
+        "has_example": false,
+        "quality_score": 0
+      }
+    },
+    {
+      "name": "NewBatchGenerator",
+      "package": "unpeople",
+      "file": "batch.go",
+      "line": 44,
+      "is_exported": true,
+      "is_method": false,
+      "lines": {
+        "total": 3,
+        "code": 3,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 0,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.3
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 68,
+        "has_example": false,
+        "quality_score": 0.272
+      }
+    },
+    {
+      "name": "NewBatchGeneratorWithCache",
+      "package": "unpeople",
+      "file": "batch.go",
+      "line": 53,
+      "is_exported": true,
+      "is_method": false,
+      "lines": {
+        "total": 3,
+        "code": 3,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 221,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "resolveWorkerCount",
+      "package": "unpeople",
+      "file": "batch.go",
+      "line": 60,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 8,
+        "code": 8,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 1,
+        "overall": 4.4
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 78,
+        "has_example": false,
+        "quality_score": 0.41200000000000003
+      }
+    },
+    {
+      "name": "spawnBatchWorker",
+      "package": "unpeople",
+      "file": "batch.go",
+      "line": 72,
+      "is_exported": false,
+      "is_method": true,
+      "receiver_type": "*BatchGenerator",
+      "lines": {
+        "total": 12,
+        "code": 12,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 6,
+        "return_count": 0,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 3
+      },
+      "complexity": {
+        "cyclomatic": 6,
+        "cognitive": 6,
+        "nesting_depth": 3,
+        "overall": 9.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 88,
+        "has_example": false,
+        "quality_score": 0.35200000000000004
+      }
+    },
+    {
+      "name": "enqueueJobs",
+      "package": "unpeople",
+      "file": "batch.go",
+      "line": 95,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 7,
+        "code": 7,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 0,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.5
+      },
+      "complexity": {
+        "cyclomatic": 5,
+        "cognitive": 5,
+        "nesting_depth": 2,
+        "overall": 7.5
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 89,
+        "has_example": false,
+        "quality_score": 0.35600000000000004
+      }
+    },
+    {
+      "name": "markUnprocessedJobs",
+      "package": "unpeople",
+      "file": "batch.go",
+      "line": 106,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 7,
+        "code": 7,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 0,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.5
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 2,
+        "overall": 4.9
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 91,
+        "has_example": false,
+        "quality_score": 0.4640000000000001
+      }
+    },
+    {
+      "name": "GenerateBatch",
+      "package": "unpeople",
+      "file": "batch.go",
+      "line": 119,
+      "is_exported": true,
+      "is_method": true,
+      "receiver_type": "*BatchGenerator",
+      "lines": {
+        "total": 22,
+        "code": 16,
+        "comments": 1,
+        "blank": 5
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.8
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 1,
+        "overall": 4.4
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 172,
+        "has_example": false,
+        "quality_score": 0.6000000000000001
+      }
+    },
+    {
+      "name": "processJob",
+      "package": "unpeople",
+      "file": "batch.go",
+      "line": 145,
+      "is_exported": false,
+      "is_method": true,
+      "receiver_type": "*BatchGenerator",
+      "lines": {
+        "total": 24,
+        "code": 19,
+        "comments": 0,
+        "blank": 5
+      },
+      "signature": {
+        "parameter_count": 4,
+        "return_count": 0,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 2
+      },
+      "complexity": {
+        "cyclomatic": 4,
+        "cognitive": 4,
+        "nesting_depth": 1,
+        "overall": 5.7
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 58,
+        "has_example": false,
+        "quality_score": 0.23199999999999998
+      }
+    },
+    {
+      "name": "GenerateBatchSimple",
+      "package": "unpeople",
+      "file": "batch.go",
+      "line": 174,
+      "is_exported": true,
+      "is_method": true,
+      "receiver_type": "*BatchGenerator",
+      "lines": {
+        "total": 6,
+        "code": 6,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.3
+      },
+      "complexity": {
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 114,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "GenerateBatchWithMaterial",
+      "package": "unpeople",
+      "file": "batch.go",
+      "line": 185,
+      "is_exported": true,
+      "is_method": true,
+      "receiver_type": "*BatchGenerator",
+      "lines": {
+        "total": 3,
+        "code": 3,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.3
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 99,
+        "has_example": false,
+        "quality_score": 0.396
+      }
+    },
+    {
+      "name": "CacheStats",
+      "package": "unpeople",
+      "file": "batch.go",
+      "line": 193,
+      "is_exported": true,
+      "is_method": true,
+      "receiver_type": "*BatchGenerator",
+      "lines": {
+        "total": 4,
+        "code": 4,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 0,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.3
+      },
+      "complexity": {
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 100,
+        "has_example": false,
+        "quality_score": 0.5
+      }
+    },
+    {
+      "name": "ComputeSkinColor",
+      "package": "unpeople",
+      "file": "mesh.go",
+      "line": 55,
+      "is_exported": true,
+      "is_method": false,
+      "lines": {
+        "total": 9,
+        "code": 6,
+        "comments": 1,
+        "blank": 2
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.3
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 81,
+        "has_example": false,
+        "quality_score": 0.42400000000000004
+      }
+    },
+    {
+      "name": "clampFloat32",
+      "package": "unpeople",
+      "file": "mesh.go",
+      "line": 68,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 7,
+        "code": 7,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 1,
+        "overall": 4.4
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 59,
+        "has_example": false,
+        "quality_score": 0.236
+      }
+    },
+    {
+      "name": "append",
+      "package": "unpeople",
+      "file": "mesh.go",
+      "line": 121,
+      "is_exported": false,
+      "is_method": true,
+      "receiver_type": "*meshBuilder",
+      "lines": {
+        "total": 12,
+        "code": 10,
+        "comments": 1,
+        "blank": 1
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 0,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 1,
+        "overall": 4.4
+      },
+      "documentation": {
+        "has_comment": false,
+        "comment_length": 0,
+        "has_example": false,
+        "quality_score": 0
+      }
+    },
+    {
+      "name": "build",
+      "package": "unpeople",
+      "file": "mesh.go",
+      "line": 136,
+      "is_exported": false,
+      "is_method": true,
+      "receiver_type": "*meshBuilder",
+      "lines": {
+        "total": 5,
+        "code": 5,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": false,
+        "comment_length": 0,
+        "has_example": false,
+        "quality_score": 0
+      }
+    },
+    {
+      "name": "vec3Add",
+      "package": "unpeople",
+      "file": "mesh.go",
+      "line": 146,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 1,
+        "code": 1,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": false,
+        "comment_length": 0,
+        "has_example": false,
+        "quality_score": 0
+      }
+    },
+    {
+      "name": "vec3Sub",
+      "package": "unpeople",
+      "file": "mesh.go",
+      "line": 150,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 1,
+        "code": 1,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": false,
+        "comment_length": 0,
+        "has_example": false,
+        "quality_score": 0
+      }
+    },
+    {
+      "name": "vec3Scale",
+      "package": "unpeople",
+      "file": "mesh.go",
+      "line": 154,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 1,
+        "code": 1,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.3
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": false,
+        "comment_length": 0,
+        "has_example": false,
+        "quality_score": 0
+      }
+    },
+    {
+      "name": "vec3Cross",
+      "package": "unpeople",
+      "file": "mesh.go",
+      "line": 158,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 5,
+        "code": 5,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": false,
+        "comment_length": 0,
+        "has_example": false,
+        "quality_score": 0
+      }
+    },
+    {
+      "name": "vec3Len",
+      "package": "unpeople",
+      "file": "mesh.go",
+      "line": 166,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 1,
+        "code": 1,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": false,
+        "comment_length": 0,
+        "has_example": false,
+        "quality_score": 0
+      }
+    },
+    {
+      "name": "vec3Normalize",
+      "package": "unpeople",
+      "file": "mesh.go",
+      "line": 170,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 5,
+        "code": 5,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
+      },
+      "documentation": {
+        "has_comment": false,
+        "comment_length": 0,
+        "has_example": false,
+        "quality_score": 0
       }
     },
     {
@@ -479,15 +1328,15 @@
       }
     },
     {
-      "name": "NewGenerator",
+      "name": "DefaultParams",
       "package": "unpeople",
-      "file": "generator.go",
-      "line": 11,
+      "file": "params.go",
+      "line": 312,
       "is_exported": true,
       "is_method": false,
       "lines": {
-        "total": 1,
-        "code": 1,
+        "total": 24,
+        "code": 24,
         "comments": 0,
         "blank": 0
       },
@@ -508,33 +1357,453 @@
       },
       "documentation": {
         "has_comment": true,
-        "comment_length": 51,
+        "comment_length": 121,
         "has_example": false,
-        "quality_score": 0.20400000000000001
+        "quality_score": 0.6000000000000001
       }
     },
     {
-      "name": "Generate",
+      "name": "Validate",
       "package": "unpeople",
-      "file": "generator.go",
-      "line": 33,
+      "file": "params.go",
+      "line": 340,
       "is_exported": true,
       "is_method": true,
-      "receiver_type": "*Generator",
+      "receiver_type": "*Params",
       "lines": {
-        "total": 40,
-        "code": 28,
-        "comments": 6,
-        "blank": 6
+        "total": 34,
+        "code": 33,
+        "comments": 1,
+        "blank": 0
       },
       "signature": {
-        "parameter_count": 1,
-        "return_count": 2,
+        "parameter_count": 0,
+        "return_count": 1,
         "has_variadic": false,
         "returns_error": true,
         "interface_parameters": 0,
         "generic_parameters": null,
-        "signature_complexity": 1.1
+        "signature_complexity": 0.3
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 2,
+        "overall": 4.9
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 73,
+        "has_example": false,
+        "quality_score": 0.5920000000000001
+      }
+    },
+    {
+      "name": "validateMeshForExport",
+      "package": "unpeople",
+      "file": "export_obj.go",
+      "line": 16,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 13,
+        "code": 13,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": true,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 5,
+        "cognitive": 5,
+        "nesting_depth": 1,
+        "overall": 7
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 69,
+        "has_example": false,
+        "quality_score": 0.27599999999999997
+      }
+    },
+    {
+      "name": "writeOBJHeader",
+      "package": "unpeople",
+      "file": "export_obj.go",
+      "line": 33,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 11,
+        "code": 11,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": true,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.3
+      },
+      "complexity": {
+        "cyclomatic": 4,
+        "cognitive": 4,
+        "nesting_depth": 1,
+        "overall": 5.7
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 66,
+        "has_example": false,
+        "quality_score": 0.264
+      }
+    },
+    {
+      "name": "writeOBJVertexData",
+      "package": "unpeople",
+      "file": "export_obj.go",
+      "line": 48,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 33,
+        "code": 27,
+        "comments": 3,
+        "blank": 3
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": true,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.3
+      },
+      "complexity": {
+        "cyclomatic": 10,
+        "cognitive": 10,
+        "nesting_depth": 2,
+        "overall": 14
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 78,
+        "has_example": false,
+        "quality_score": 0.31200000000000006
+      }
+    },
+    {
+      "name": "writeOBJFaces",
+      "package": "unpeople",
+      "file": "export_obj.go",
+      "line": 85,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 11,
+        "code": 10,
+        "comments": 1,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": true,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.3
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 2,
+        "overall": 4.9
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 64,
+        "has_example": false,
+        "quality_score": 0.256
+      }
+    },
+    {
+      "name": "resolveObjectName",
+      "package": "unpeople",
+      "file": "export_obj.go",
+      "line": 100,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 4,
+        "code": 4,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 70,
+        "has_example": false,
+        "quality_score": 0.38
+      }
+    },
+    {
+      "name": "ExportOBJ",
+      "package": "unpeople",
+      "file": "export_obj.go",
+      "line": 117,
+      "is_exported": true,
+      "is_method": false,
+      "lines": {
+        "total": 24,
+        "code": 18,
+        "comments": 0,
+        "blank": 6
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": true,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.8
+      },
+      "complexity": {
+        "cyclomatic": 6,
+        "cognitive": 6,
+        "nesting_depth": 1,
+        "overall": 8.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 375,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "writeMaterialReference",
+      "package": "unpeople",
+      "file": "export_obj.go",
+      "line": 145,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 20,
+        "code": 18,
+        "comments": 0,
+        "blank": 2
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": true,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.8
+      },
+      "complexity": {
+        "cyclomatic": 7,
+        "cognitive": 7,
+        "nesting_depth": 2,
+        "overall": 10.1
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 78,
+        "has_example": false,
+        "quality_score": 0.31200000000000006
+      }
+    },
+    {
+      "name": "ExportOBJWithMTL",
+      "package": "unpeople",
+      "file": "export_obj.go",
+      "line": 178,
+      "is_exported": true,
+      "is_method": false,
+      "lines": {
+        "total": 37,
+        "code": 26,
+        "comments": 2,
+        "blank": 9
+      },
+      "signature": {
+        "parameter_count": 4,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": true,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 2.3
+      },
+      "complexity": {
+        "cyclomatic": 9,
+        "cognitive": 9,
+        "nesting_depth": 2,
+        "overall": 12.7
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 466,
+        "has_example": false,
+        "quality_score": 0.5
+      }
+    },
+    {
+      "name": "writeMTLColor",
+      "package": "unpeople",
+      "file": "export_obj.go",
+      "line": 219,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 2,
+        "code": 2,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": true,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.8
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 60,
+        "has_example": false,
+        "quality_score": 0.24
+      }
+    },
+    {
+      "name": "writeMTL",
+      "package": "unpeople",
+      "file": "export_obj.go",
+      "line": 225,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 45,
+        "code": 28,
+        "comments": 8,
+        "blank": 9
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": true,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.8
+      },
+      "complexity": {
+        "cyclomatic": 9,
+        "cognitive": 9,
+        "nesting_depth": 1,
+        "overall": 12.2
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 47,
+        "has_example": false,
+        "quality_score": 0.188
+      }
+    },
+    {
+      "name": "perpendicular",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 10,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 4,
+        "code": 4,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 56,
+        "has_example": false,
+        "quality_score": 0.32400000000000007
+      }
+    },
+    {
+      "name": "cylinderCapacity",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 20,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 11,
+        "code": 11,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.3
       },
       "complexity": {
         "cyclomatic": 3,
@@ -544,9 +1813,639 @@
       },
       "documentation": {
         "has_comment": true,
-        "comment_length": 495,
+        "comment_length": 72,
         "has_example": false,
-        "quality_score": 0.6000000000000001
+        "quality_score": 0.288
+      }
+    },
+    {
+      "name": "appendCylinderCap",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 37,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 16,
+        "code": 16,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 6,
+        "return_count": 2,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 3.6
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 2,
+        "overall": 4.9
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 206,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "cylinderRingVertex",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 64,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 10,
+        "code": 10,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 4,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 2.3
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 76,
+        "has_example": false,
+        "quality_score": 0.30400000000000005
+      }
+    },
+    {
+      "name": "appendCylinderRing",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 78,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 5,
+        "code": 5,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 5,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 2.8
+      },
+      "complexity": {
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 66,
+        "has_example": false,
+        "quality_score": 0.264
+      }
+    },
+    {
+      "name": "appendCylinderSideIndices",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 87,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 9,
+        "code": 9,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.3
+      },
+      "complexity": {
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 69,
+        "has_example": false,
+        "quality_score": 0.27599999999999997
+      }
+    },
+    {
+      "name": "generateCylinder",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 102,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 26,
+        "code": 20,
+        "comments": 0,
+        "blank": 6
+      },
+      "signature": {
+        "parameter_count": 4,
+        "return_count": 2,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 2.6
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 1,
+        "overall": 4.4
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 175,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "appendQuadGridIndices",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 141,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 10,
+        "code": 10,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.3
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 2,
+        "overall": 4.9
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 212,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "generateEllipsoid",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 156,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 44,
+        "code": 33,
+        "comments": 5,
+        "blank": 6
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 2,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 2.1
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 2,
+        "overall": 4.9
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 148,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "generateBox",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 211,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 50,
+        "code": 44,
+        "comments": 2,
+        "blank": 4
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 2,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.6
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 2,
+        "overall": 4.9
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 145,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "generateEar",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 270,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 77,
+        "code": 49,
+        "comments": 15,
+        "blank": 13
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 2,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 2.1
+      },
+      "complexity": {
+        "cyclomatic": 5,
+        "cognitive": 5,
+        "nesting_depth": 2,
+        "overall": 7.5
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 266,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "generateFinger",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 356,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 23,
+        "code": 18,
+        "comments": 1,
+        "blank": 4
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 2,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 2.1
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 1,
+        "overall": 4.4
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 280,
+        "has_example": false,
+        "quality_score": 0.5
+      }
+    },
+    {
+      "name": "generateHand",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 386,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 70,
+        "code": 50,
+        "comments": 9,
+        "blank": 11
+      },
+      "signature": {
+        "parameter_count": 8,
+        "return_count": 2,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 4.6
+      },
+      "complexity": {
+        "cyclomatic": 5,
+        "cognitive": 5,
+        "nesting_depth": 2,
+        "overall": 7.5
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 291,
+        "has_example": false,
+        "quality_score": 0.5
+      }
+    },
+    {
+      "name": "buildToeConfig",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 477,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 19,
+        "code": 16,
+        "comments": 2,
+        "blank": 1
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.3
+      },
+      "complexity": {
+        "cyclomatic": 4,
+        "cognitive": 4,
+        "nesting_depth": 2,
+        "overall": 6.2
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 72,
+        "has_example": false,
+        "quality_score": 0.288
+      }
+    },
+    {
+      "name": "generateFoot",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 503,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 25,
+        "code": 19,
+        "comments": 0,
+        "blank": 6
+      },
+      "signature": {
+        "parameter_count": 7,
+        "return_count": 2,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 4.1
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 1,
+        "overall": 4.4
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 288,
+        "has_example": false,
+        "quality_score": 0.5
+      }
+    },
+    {
+      "name": "generateSkullCap",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 545,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 59,
+        "code": 44,
+        "comments": 6,
+        "blank": 9
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 2,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.6
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 2,
+        "overall": 4.9
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 269,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "getFaceShapeDisplacement",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 619,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 14,
+        "code": 14,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 64,
+        "has_example": false,
+        "quality_score": 0.356
+      }
+    },
+    {
+      "name": "getJawDisplacement",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 637,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 12,
+        "code": 12,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 54,
+        "has_example": false,
+        "quality_score": 0.31600000000000006
+      }
+    },
+    {
+      "name": "getBrowDisplacement",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 653,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 10,
+        "code": 10,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 1,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.8
+      },
+      "complexity": {
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 56,
+        "has_example": false,
+        "quality_score": 0.32400000000000007
+      }
+    },
+    {
+      "name": "generateFaceMesh",
+      "package": "unpeople",
+      "file": "primitive.go",
+      "line": 669,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 126,
+        "code": 92,
+        "comments": 16,
+        "blank": 18
+      },
+      "signature": {
+        "parameter_count": 5,
+        "return_count": 2,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 3.1
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 191,
+        "has_example": false,
+        "quality_score": 0.5
       }
     },
     {
@@ -816,12 +2715,12 @@
       },
       "signature": {
         "parameter_count": 0,
-        "return_count": 2,
+        "return_count": 1,
         "has_variadic": false,
         "returns_error": false,
         "interface_parameters": 0,
         "generic_parameters": null,
-        "signature_complexity": 0.6
+        "signature_complexity": 0.3
       },
       "complexity": {
         "cyclomatic": 1,
@@ -1014,38 +2913,108 @@
       }
     },
     {
-      "name": "main",
-      "package": "main",
-      "file": "example/main.go",
-      "line": 15,
+      "name": "defaultBodyLayout",
+      "package": "unpeople",
+      "file": "basemesh.go",
+      "line": 222,
       "is_exported": false,
       "is_method": false,
       "lines": {
-        "total": 128,
-        "code": 125,
-        "comments": 0,
-        "blank": 3
+        "total": 94,
+        "code": 78,
+        "comments": 2,
+        "blank": 14
       },
       "signature": {
         "parameter_count": 0,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 0.3
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 69,
+        "has_example": false,
+        "quality_score": 0.376
+      }
+    },
+    {
+      "name": "buildMesh",
+      "package": "unpeople",
+      "file": "basemesh.go",
+      "line": 322,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 115,
+        "code": 81,
+        "comments": 16,
+        "blank": 18
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 1,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.8
+      },
+      "complexity": {
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 199,
+        "has_example": false,
+        "quality_score": 0.5
+      }
+    },
+    {
+      "name": "applySkinColor",
+      "package": "unpeople",
+      "file": "basemesh.go",
+      "line": 441,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 3,
+        "code": 3,
+        "comments": 0,
+        "blank": 0
+      },
+      "signature": {
+        "parameter_count": 2,
         "return_count": 0,
         "has_variadic": false,
         "returns_error": false,
         "interface_parameters": 0,
         "generic_parameters": null,
-        "signature_complexity": 0
+        "signature_complexity": 1
       },
       "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 2,
-        "overall": 4.9
+        "cyclomatic": 2,
+        "cognitive": 2,
+        "nesting_depth": 1,
+        "overall": 3.1
       },
       "documentation": {
-        "has_comment": false,
-        "comment_length": 0,
+        "has_comment": true,
+        "comment_length": 77,
         "has_example": false,
-        "quality_score": 0
+        "quality_score": 0.30800000000000005
       }
     },
     {
@@ -1508,1275 +3477,6 @@
       }
     },
     {
-      "name": "validateMeshForExport",
-      "package": "unpeople",
-      "file": "export_obj.go",
-      "line": 16,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 13,
-        "code": 13,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": true,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 5,
-        "cognitive": 5,
-        "nesting_depth": 1,
-        "overall": 7
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 69,
-        "has_example": false,
-        "quality_score": 0.27599999999999997
-      }
-    },
-    {
-      "name": "writeOBJHeader",
-      "package": "unpeople",
-      "file": "export_obj.go",
-      "line": 33,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 11,
-        "code": 11,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": true,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.3
-      },
-      "complexity": {
-        "cyclomatic": 4,
-        "cognitive": 4,
-        "nesting_depth": 1,
-        "overall": 5.7
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 66,
-        "has_example": false,
-        "quality_score": 0.264
-      }
-    },
-    {
-      "name": "writeOBJVertexData",
-      "package": "unpeople",
-      "file": "export_obj.go",
-      "line": 48,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 33,
-        "code": 27,
-        "comments": 3,
-        "blank": 3
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": true,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.3
-      },
-      "complexity": {
-        "cyclomatic": 10,
-        "cognitive": 10,
-        "nesting_depth": 2,
-        "overall": 14
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 78,
-        "has_example": false,
-        "quality_score": 0.31200000000000006
-      }
-    },
-    {
-      "name": "writeOBJFaces",
-      "package": "unpeople",
-      "file": "export_obj.go",
-      "line": 85,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 11,
-        "code": 10,
-        "comments": 1,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": true,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.3
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 2,
-        "overall": 4.9
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 64,
-        "has_example": false,
-        "quality_score": 0.256
-      }
-    },
-    {
-      "name": "resolveObjectName",
-      "package": "unpeople",
-      "file": "export_obj.go",
-      "line": 100,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 4,
-        "code": 4,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 70,
-        "has_example": false,
-        "quality_score": 0.38
-      }
-    },
-    {
-      "name": "ExportOBJ",
-      "package": "unpeople",
-      "file": "export_obj.go",
-      "line": 117,
-      "is_exported": true,
-      "is_method": false,
-      "lines": {
-        "total": 24,
-        "code": 18,
-        "comments": 0,
-        "blank": 6
-      },
-      "signature": {
-        "parameter_count": 3,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": true,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.8
-      },
-      "complexity": {
-        "cyclomatic": 6,
-        "cognitive": 6,
-        "nesting_depth": 1,
-        "overall": 8.3
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 375,
-        "has_example": false,
-        "quality_score": 0.4
-      }
-    },
-    {
-      "name": "writeMaterialReference",
-      "package": "unpeople",
-      "file": "export_obj.go",
-      "line": 145,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 20,
-        "code": 18,
-        "comments": 0,
-        "blank": 2
-      },
-      "signature": {
-        "parameter_count": 3,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": true,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.8
-      },
-      "complexity": {
-        "cyclomatic": 7,
-        "cognitive": 7,
-        "nesting_depth": 2,
-        "overall": 10.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 78,
-        "has_example": false,
-        "quality_score": 0.31200000000000006
-      }
-    },
-    {
-      "name": "ExportOBJWithMTL",
-      "package": "unpeople",
-      "file": "export_obj.go",
-      "line": 178,
-      "is_exported": true,
-      "is_method": false,
-      "lines": {
-        "total": 37,
-        "code": 26,
-        "comments": 2,
-        "blank": 9
-      },
-      "signature": {
-        "parameter_count": 4,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": true,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 2.3
-      },
-      "complexity": {
-        "cyclomatic": 9,
-        "cognitive": 9,
-        "nesting_depth": 2,
-        "overall": 12.7
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 466,
-        "has_example": false,
-        "quality_score": 0.5
-      }
-    },
-    {
-      "name": "writeMTLColor",
-      "package": "unpeople",
-      "file": "export_obj.go",
-      "line": 219,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 2,
-        "code": 2,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 3,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": true,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.8
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 60,
-        "has_example": false,
-        "quality_score": 0.24
-      }
-    },
-    {
-      "name": "writeMTL",
-      "package": "unpeople",
-      "file": "export_obj.go",
-      "line": 225,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 45,
-        "code": 28,
-        "comments": 8,
-        "blank": 9
-      },
-      "signature": {
-        "parameter_count": 3,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": true,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.8
-      },
-      "complexity": {
-        "cyclomatic": 9,
-        "cognitive": 9,
-        "nesting_depth": 1,
-        "overall": 12.2
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 47,
-        "has_example": false,
-        "quality_score": 0.188
-      }
-    },
-    {
-      "name": "ComputeSkinColor",
-      "package": "unpeople",
-      "file": "mesh.go",
-      "line": 55,
-      "is_exported": true,
-      "is_method": false,
-      "lines": {
-        "total": 9,
-        "code": 6,
-        "comments": 1,
-        "blank": 2
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.3
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 81,
-        "has_example": false,
-        "quality_score": 0.42400000000000004
-      }
-    },
-    {
-      "name": "clampFloat32",
-      "package": "unpeople",
-      "file": "mesh.go",
-      "line": 68,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 7,
-        "code": 7,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 1,
-        "overall": 4.4
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 59,
-        "has_example": false,
-        "quality_score": 0.236
-      }
-    },
-    {
-      "name": "append",
-      "package": "unpeople",
-      "file": "mesh.go",
-      "line": 121,
-      "is_exported": false,
-      "is_method": true,
-      "receiver_type": "*meshBuilder",
-      "lines": {
-        "total": 12,
-        "code": 10,
-        "comments": 1,
-        "blank": 1
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 0,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 1,
-        "overall": 4.4
-      },
-      "documentation": {
-        "has_comment": false,
-        "comment_length": 0,
-        "has_example": false,
-        "quality_score": 0
-      }
-    },
-    {
-      "name": "build",
-      "package": "unpeople",
-      "file": "mesh.go",
-      "line": 136,
-      "is_exported": false,
-      "is_method": true,
-      "receiver_type": "*meshBuilder",
-      "lines": {
-        "total": 5,
-        "code": 5,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": false,
-        "comment_length": 0,
-        "has_example": false,
-        "quality_score": 0
-      }
-    },
-    {
-      "name": "vec3Add",
-      "package": "unpeople",
-      "file": "mesh.go",
-      "line": 146,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 1,
-        "code": 1,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": false,
-        "comment_length": 0,
-        "has_example": false,
-        "quality_score": 0
-      }
-    },
-    {
-      "name": "vec3Sub",
-      "package": "unpeople",
-      "file": "mesh.go",
-      "line": 150,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 1,
-        "code": 1,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": false,
-        "comment_length": 0,
-        "has_example": false,
-        "quality_score": 0
-      }
-    },
-    {
-      "name": "vec3Scale",
-      "package": "unpeople",
-      "file": "mesh.go",
-      "line": 154,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 1,
-        "code": 1,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.3
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": false,
-        "comment_length": 0,
-        "has_example": false,
-        "quality_score": 0
-      }
-    },
-    {
-      "name": "vec3Cross",
-      "package": "unpeople",
-      "file": "mesh.go",
-      "line": 158,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 5,
-        "code": 5,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": false,
-        "comment_length": 0,
-        "has_example": false,
-        "quality_score": 0
-      }
-    },
-    {
-      "name": "vec3Len",
-      "package": "unpeople",
-      "file": "mesh.go",
-      "line": 166,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 1,
-        "code": 1,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": false,
-        "comment_length": 0,
-        "has_example": false,
-        "quality_score": 0
-      }
-    },
-    {
-      "name": "vec3Normalize",
-      "package": "unpeople",
-      "file": "mesh.go",
-      "line": 170,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 5,
-        "code": 5,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": false,
-        "comment_length": 0,
-        "has_example": false,
-        "quality_score": 0
-      }
-    },
-    {
-      "name": "defaultBodyLayout",
-      "package": "unpeople",
-      "file": "basemesh.go",
-      "line": 222,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 94,
-        "code": 78,
-        "comments": 2,
-        "blank": 14
-      },
-      "signature": {
-        "parameter_count": 0,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.3
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 69,
-        "has_example": false,
-        "quality_score": 0.376
-      }
-    },
-    {
-      "name": "buildMesh",
-      "package": "unpeople",
-      "file": "basemesh.go",
-      "line": 322,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 154,
-        "code": 118,
-        "comments": 17,
-        "blank": 19
-      },
-      "signature": {
-        "parameter_count": 3,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.8
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 199,
-        "has_example": false,
-        "quality_score": 0.5
-      }
-    },
-    {
-      "name": "applySkinColor",
-      "package": "unpeople",
-      "file": "basemesh.go",
-      "line": 480,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 3,
-        "code": 3,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 0,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 77,
-        "has_example": false,
-        "quality_score": 0.30800000000000005
-      }
-    },
-    {
-      "name": "NewBatchGenerator",
-      "package": "unpeople",
-      "file": "batch.go",
-      "line": 44,
-      "is_exported": true,
-      "is_method": false,
-      "lines": {
-        "total": 3,
-        "code": 3,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 0,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.3
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 68,
-        "has_example": false,
-        "quality_score": 0.272
-      }
-    },
-    {
-      "name": "NewBatchGeneratorWithCache",
-      "package": "unpeople",
-      "file": "batch.go",
-      "line": 53,
-      "is_exported": true,
-      "is_method": false,
-      "lines": {
-        "total": 3,
-        "code": 3,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 221,
-        "has_example": false,
-        "quality_score": 0.4
-      }
-    },
-    {
-      "name": "resolveWorkerCount",
-      "package": "unpeople",
-      "file": "batch.go",
-      "line": 60,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 8,
-        "code": 8,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 1,
-        "overall": 4.4
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 78,
-        "has_example": false,
-        "quality_score": 0.41200000000000003
-      }
-    },
-    {
-      "name": "spawnBatchWorker",
-      "package": "unpeople",
-      "file": "batch.go",
-      "line": 72,
-      "is_exported": false,
-      "is_method": true,
-      "receiver_type": "*BatchGenerator",
-      "lines": {
-        "total": 12,
-        "code": 12,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 6,
-        "return_count": 0,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 3
-      },
-      "complexity": {
-        "cyclomatic": 6,
-        "cognitive": 6,
-        "nesting_depth": 3,
-        "overall": 9.3
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 88,
-        "has_example": false,
-        "quality_score": 0.35200000000000004
-      }
-    },
-    {
-      "name": "enqueueJobs",
-      "package": "unpeople",
-      "file": "batch.go",
-      "line": 95,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 7,
-        "code": 7,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 3,
-        "return_count": 0,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.5
-      },
-      "complexity": {
-        "cyclomatic": 5,
-        "cognitive": 5,
-        "nesting_depth": 2,
-        "overall": 7.5
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 89,
-        "has_example": false,
-        "quality_score": 0.35600000000000004
-      }
-    },
-    {
-      "name": "markUnprocessedJobs",
-      "package": "unpeople",
-      "file": "batch.go",
-      "line": 106,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 7,
-        "code": 7,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 3,
-        "return_count": 0,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.5
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 2,
-        "overall": 4.9
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 91,
-        "has_example": false,
-        "quality_score": 0.4640000000000001
-      }
-    },
-    {
-      "name": "GenerateBatch",
-      "package": "unpeople",
-      "file": "batch.go",
-      "line": 119,
-      "is_exported": true,
-      "is_method": true,
-      "receiver_type": "*BatchGenerator",
-      "lines": {
-        "total": 22,
-        "code": 16,
-        "comments": 1,
-        "blank": 5
-      },
-      "signature": {
-        "parameter_count": 3,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.8
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 1,
-        "overall": 4.4
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 172,
-        "has_example": false,
-        "quality_score": 0.6000000000000001
-      }
-    },
-    {
-      "name": "processJob",
-      "package": "unpeople",
-      "file": "batch.go",
-      "line": 145,
-      "is_exported": false,
-      "is_method": true,
-      "receiver_type": "*BatchGenerator",
-      "lines": {
-        "total": 24,
-        "code": 19,
-        "comments": 0,
-        "blank": 5
-      },
-      "signature": {
-        "parameter_count": 4,
-        "return_count": 0,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 2
-      },
-      "complexity": {
-        "cyclomatic": 4,
-        "cognitive": 4,
-        "nesting_depth": 1,
-        "overall": 5.7
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 58,
-        "has_example": false,
-        "quality_score": 0.23199999999999998
-      }
-    },
-    {
-      "name": "GenerateBatchSimple",
-      "package": "unpeople",
-      "file": "batch.go",
-      "line": 174,
-      "is_exported": true,
-      "is_method": true,
-      "receiver_type": "*BatchGenerator",
-      "lines": {
-        "total": 6,
-        "code": 6,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.3
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 114,
-        "has_example": false,
-        "quality_score": 0.4
-      }
-    },
-    {
-      "name": "GenerateBatchWithMaterial",
-      "package": "unpeople",
-      "file": "batch.go",
-      "line": 185,
-      "is_exported": true,
-      "is_method": true,
-      "receiver_type": "*BatchGenerator",
-      "lines": {
-        "total": 3,
-        "code": 3,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.3
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 99,
-        "has_example": false,
-        "quality_score": 0.396
-      }
-    },
-    {
-      "name": "CacheStats",
-      "package": "unpeople",
-      "file": "batch.go",
-      "line": 193,
-      "is_exported": true,
-      "is_method": true,
-      "receiver_type": "*BatchGenerator",
-      "lines": {
-        "total": 4,
-        "code": 4,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 0,
-        "return_count": 2,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.6
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 100,
-        "has_example": false,
-        "quality_score": 0.5
-      }
-    },
-    {
-      "name": "DefaultParams",
-      "package": "unpeople",
-      "file": "params.go",
-      "line": 312,
-      "is_exported": true,
-      "is_method": false,
-      "lines": {
-        "total": 24,
-        "code": 24,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 0,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.3
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 121,
-        "has_example": false,
-        "quality_score": 0.6000000000000001
-      }
-    },
-    {
-      "name": "Validate",
-      "package": "unpeople",
-      "file": "params.go",
-      "line": 340,
-      "is_exported": true,
-      "is_method": true,
-      "receiver_type": "*Params",
-      "lines": {
-        "total": 34,
-        "code": 33,
-        "comments": 1,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 0,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": true,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.3
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 2,
-        "overall": 4.9
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 73,
-        "has_example": false,
-        "quality_score": 0.5920000000000001
-      }
-    },
-    {
       "name": "computeBodyLayout",
       "package": "unpeople",
       "file": "transforms.go",
@@ -3064,10 +3764,10 @@
       "is_exported": false,
       "is_method": false,
       "lines": {
-        "total": 26,
-        "code": 23,
-        "comments": 2,
-        "blank": 1
+        "total": 14,
+        "code": 13,
+        "comments": 1,
+        "blank": 0
       },
       "signature": {
         "parameter_count": 2,
@@ -3095,14 +3795,14 @@
       "name": "applyHipWidth",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 348,
+      "line": 336,
       "is_exported": false,
       "is_method": false,
       "lines": {
-        "total": 25,
-        "code": 23,
+        "total": 14,
+        "code": 13,
         "comments": 1,
-        "blank": 1
+        "blank": 0
       },
       "signature": {
         "parameter_count": 2,
@@ -3130,7 +3830,7 @@
       "name": "applyLimbLength",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 378,
+      "line": 355,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3165,7 +3865,7 @@
       "name": "applyNeckLength",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 393,
+      "line": 370,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3200,7 +3900,7 @@
       "name": "applyHandSize",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 410,
+      "line": 387,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3235,7 +3935,7 @@
       "name": "applyFootSize",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 446,
+      "line": 423,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3270,7 +3970,7 @@
       "name": "applyFacialFeatures",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 461,
+      "line": 438,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3305,7 +4005,7 @@
       "name": "applyPosture",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 529,
+      "line": 506,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3340,7 +4040,7 @@
       "name": "shiftUpperBodyForward",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 556,
+      "line": 533,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3375,7 +4075,7 @@
       "name": "allPositionFields",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 573,
+      "line": 550,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3410,7 +4110,7 @@
       "name": "allUniformRadii",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 592,
+      "line": 569,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3445,7 +4145,7 @@
       "name": "heightOnlyRadii",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 609,
+      "line": 586,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3480,7 +4180,7 @@
       "name": "scaleAll",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 615,
+      "line": 592,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3515,7 +4215,7 @@
       "name": "scaleHeight",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 627,
+      "line": 604,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3550,14 +4250,14 @@
       "name": "scaleLimbs",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 639,
+      "line": 616,
       "is_exported": false,
       "is_method": false,
       "lines": {
-        "total": 53,
-        "code": 40,
-        "comments": 6,
-        "blank": 7
+        "total": 13,
+        "code": 10,
+        "comments": 2,
+        "blank": 1
       },
       "signature": {
         "parameter_count": 2,
@@ -3582,10 +4282,80 @@
       }
     },
     {
+      "name": "scaleArmChain",
+      "package": "unpeople",
+      "file": "transforms.go",
+      "line": 634,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 23,
+        "code": 20,
+        "comments": 2,
+        "blank": 1
+      },
+      "signature": {
+        "parameter_count": 4,
+        "return_count": 0,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 2
+      },
+      "complexity": {
+        "cyclomatic": 3,
+        "cognitive": 3,
+        "nesting_depth": 1,
+        "overall": 4.4
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 147,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "scaleLegChain",
+      "package": "unpeople",
+      "file": "transforms.go",
+      "line": 666,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 15,
+        "code": 12,
+        "comments": 2,
+        "blank": 1
+      },
+      "signature": {
+        "parameter_count": 3,
+        "return_count": 0,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1.5
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 143,
+        "has_example": false,
+        "quality_score": 0.4
+      }
+    },
+    {
       "name": "scaleV3",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 697,
+      "line": 690,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3620,7 +4390,7 @@
       "name": "scaleV3Y",
       "package": "unpeople",
       "file": "transforms.go",
-      "line": 703,
+      "line": 696,
       "is_exported": false,
       "is_method": false,
       "lines": {
@@ -3652,656 +4422,26 @@
       }
     },
     {
-      "name": "perpendicular",
+      "name": "shiftArmPositionsX",
       "package": "unpeople",
-      "file": "primitive.go",
-      "line": 10,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 4,
-        "code": 4,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 56,
-        "has_example": false,
-        "quality_score": 0.32400000000000007
-      }
-    },
-    {
-      "name": "cylinderCapacity",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 20,
+      "file": "transforms.go",
+      "line": 704,
       "is_exported": false,
       "is_method": false,
       "lines": {
         "total": 11,
-        "code": 11,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.3
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 1,
-        "overall": 4.4
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 72,
-        "has_example": false,
-        "quality_score": 0.288
-      }
-    },
-    {
-      "name": "appendCylinderCap",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 37,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 16,
-        "code": 16,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 6,
-        "return_count": 2,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 3.6
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 2,
-        "overall": 4.9
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 206,
-        "has_example": false,
-        "quality_score": 0.4
-      }
-    },
-    {
-      "name": "cylinderRingVertex",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 64,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 10,
         "code": 10,
         "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 6,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 3.3
-      },
-      "complexity": {
-        "cyclomatic": 1,
-        "cognitive": 1,
-        "nesting_depth": 0,
-        "overall": 1.3
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 76,
-        "has_example": false,
-        "quality_score": 0.30400000000000005
-      }
-    },
-    {
-      "name": "appendCylinderRing",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 78,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 5,
-        "code": 5,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 6,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 3.3
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 66,
-        "has_example": false,
-        "quality_score": 0.264
-      }
-    },
-    {
-      "name": "appendCylinderSideIndices",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 87,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 9,
-        "code": 9,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.3
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 69,
-        "has_example": false,
-        "quality_score": 0.27599999999999997
-      }
-    },
-    {
-      "name": "generateCylinder",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 102,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 26,
-        "code": 20,
-        "comments": 0,
-        "blank": 6
-      },
-      "signature": {
-        "parameter_count": 4,
-        "return_count": 2,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 2.6
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 1,
-        "overall": 4.4
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 175,
-        "has_example": false,
-        "quality_score": 0.4
-      }
-    },
-    {
-      "name": "generateEllipsoid",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 140,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 53,
-        "code": 41,
-        "comments": 5,
-        "blank": 7
-      },
-      "signature": {
-        "parameter_count": 3,
-        "return_count": 2,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 2.1
-      },
-      "complexity": {
-        "cyclomatic": 5,
-        "cognitive": 5,
-        "nesting_depth": 2,
-        "overall": 7.5
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 148,
-        "has_example": false,
-        "quality_score": 0.4
-      }
-    },
-    {
-      "name": "generateBox",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 204,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 50,
-        "code": 44,
-        "comments": 2,
-        "blank": 4
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 2,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.6
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 2,
-        "overall": 4.9
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 145,
-        "has_example": false,
-        "quality_score": 0.4
-      }
-    },
-    {
-      "name": "generateEar",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 263,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 77,
-        "code": 49,
-        "comments": 15,
-        "blank": 13
-      },
-      "signature": {
-        "parameter_count": 3,
-        "return_count": 2,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 2.1
-      },
-      "complexity": {
-        "cyclomatic": 5,
-        "cognitive": 5,
-        "nesting_depth": 2,
-        "overall": 7.5
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 266,
-        "has_example": false,
-        "quality_score": 0.4
-      }
-    },
-    {
-      "name": "generateFinger",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 349,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 23,
-        "code": 18,
-        "comments": 1,
-        "blank": 4
-      },
-      "signature": {
-        "parameter_count": 3,
-        "return_count": 2,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 2.1
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 1,
-        "overall": 4.4
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 280,
-        "has_example": false,
-        "quality_score": 0.5
-      }
-    },
-    {
-      "name": "generateHand",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 379,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 70,
-        "code": 50,
-        "comments": 9,
-        "blank": 11
-      },
-      "signature": {
-        "parameter_count": 8,
-        "return_count": 2,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 4.6
-      },
-      "complexity": {
-        "cyclomatic": 5,
-        "cognitive": 5,
-        "nesting_depth": 2,
-        "overall": 7.5
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 291,
-        "has_example": false,
-        "quality_score": 0.5
-      }
-    },
-    {
-      "name": "buildToeConfig",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 470,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 19,
-        "code": 16,
-        "comments": 2,
         "blank": 1
       },
       "signature": {
         "parameter_count": 2,
-        "return_count": 1,
+        "return_count": 0,
         "has_variadic": false,
         "returns_error": false,
         "interface_parameters": 0,
         "generic_parameters": null,
-        "signature_complexity": 1.3
-      },
-      "complexity": {
-        "cyclomatic": 4,
-        "cognitive": 4,
-        "nesting_depth": 2,
-        "overall": 6.2
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 72,
-        "has_example": false,
-        "quality_score": 0.288
-      }
-    },
-    {
-      "name": "generateFoot",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 496,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 25,
-        "code": 19,
-        "comments": 0,
-        "blank": 6
-      },
-      "signature": {
-        "parameter_count": 7,
-        "return_count": 2,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 4.1
-      },
-      "complexity": {
-        "cyclomatic": 3,
-        "cognitive": 3,
-        "nesting_depth": 1,
-        "overall": 4.4
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 288,
-        "has_example": false,
-        "quality_score": 0.5
-      }
-    },
-    {
-      "name": "generateSkullCap",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 538,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 68,
-        "code": 52,
-        "comments": 6,
-        "blank": 10
-      },
-      "signature": {
-        "parameter_count": 2,
-        "return_count": 2,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 1.6
-      },
-      "complexity": {
-        "cyclomatic": 5,
-        "cognitive": 5,
-        "nesting_depth": 2,
-        "overall": 7.5
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 269,
-        "has_example": false,
-        "quality_score": 0.4
-      }
-    },
-    {
-      "name": "getFaceShapeDisplacement",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 621,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 14,
-        "code": 14,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 64,
-        "has_example": false,
-        "quality_score": 0.356
-      }
-    },
-    {
-      "name": "getJawDisplacement",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 639,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 12,
-        "code": 12,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 54,
-        "has_example": false,
-        "quality_score": 0.31600000000000006
-      }
-    },
-    {
-      "name": "getBrowDisplacement",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 655,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 10,
-        "code": 10,
-        "comments": 0,
-        "blank": 0
-      },
-      "signature": {
-        "parameter_count": 1,
-        "return_count": 1,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 0.8
-      },
-      "complexity": {
-        "cyclomatic": 2,
-        "cognitive": 2,
-        "nesting_depth": 1,
-        "overall": 3.1
-      },
-      "documentation": {
-        "has_comment": true,
-        "comment_length": 56,
-        "has_example": false,
-        "quality_score": 0.32400000000000007
-      }
-    },
-    {
-      "name": "generateFaceMesh",
-      "package": "unpeople",
-      "file": "primitive.go",
-      "line": 671,
-      "is_exported": false,
-      "is_method": false,
-      "lines": {
-        "total": 126,
-        "code": 92,
-        "comments": 16,
-        "blank": 18
-      },
-      "signature": {
-        "parameter_count": 5,
-        "return_count": 2,
-        "has_variadic": false,
-        "returns_error": false,
-        "interface_parameters": 0,
-        "generic_parameters": null,
-        "signature_complexity": 3.1
+        "signature_complexity": 1
       },
       "complexity": {
         "cyclomatic": 1,
@@ -4311,9 +4451,44 @@
       },
       "documentation": {
         "has_comment": true,
-        "comment_length": 191,
+        "comment_length": 151,
         "has_example": false,
-        "quality_score": 0.5
+        "quality_score": 0.4
+      }
+    },
+    {
+      "name": "shiftLegPositionsX",
+      "package": "unpeople",
+      "file": "transforms.go",
+      "line": 720,
+      "is_exported": false,
+      "is_method": false,
+      "lines": {
+        "total": 11,
+        "code": 10,
+        "comments": 0,
+        "blank": 1
+      },
+      "signature": {
+        "parameter_count": 2,
+        "return_count": 0,
+        "has_variadic": false,
+        "returns_error": false,
+        "interface_parameters": 0,
+        "generic_parameters": null,
+        "signature_complexity": 1
+      },
+      "complexity": {
+        "cyclomatic": 1,
+        "cognitive": 1,
+        "nesting_depth": 0,
+        "overall": 1.3
+      },
+      "documentation": {
+        "has_comment": true,
+        "comment_length": 151,
+        "has_example": false,
+        "quality_score": 0.4
       }
     }
   ],
@@ -4424,14 +4599,6 @@
       "magic_numbers": [],
       "performance_antipatterns": [
         {
-          "type": "bare_error_return",
-          "description": "Error returned without context wrapping",
-          "severity": "high",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/material.go",
-          "line": 116,
-          "suggestion": "Wrap error with fmt.Errorf(\"context: %w\", err) to preserve error chain"
-        },
-        {
           "type": "unused_receiver",
           "description": "Method receiver is never referenced in method body",
           "severity": "low",
@@ -4443,49 +4610,33 @@
           "type": "bare_error_return",
           "description": "Error returned without context wrapping",
           "severity": "high",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/cache.go",
-          "line": 99,
-          "suggestion": "Wrap error with fmt.Errorf(\"context: %w\", err) to preserve error chain"
-        },
-        {
-          "type": "bare_error_return",
-          "description": "Error returned without context wrapping",
-          "severity": "high",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/cache.go",
-          "line": 110,
-          "suggestion": "Wrap error with fmt.Errorf(\"context: %w\", err) to preserve error chain"
-        },
-        {
-          "type": "bare_error_return",
-          "description": "Error returned without context wrapping",
-          "severity": "high",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/cache.go",
-          "line": 122,
+          "file": "/home/user/go/src/github.com/opd-ai/unpeople/material.go",
+          "line": 116,
           "suggestion": "Wrap error with fmt.Errorf(\"context: %w\", err) to preserve error chain"
         },
         {
           "type": "memory_allocation",
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/merge.go",
-          "line": 76,
+          "file": "/home/user/go/src/github.com/opd-ai/unpeople/mesh.go",
+          "line": 132,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
-          "type": "naked_return_long_function",
-          "description": "Naked return in long function with named returns",
-          "severity": "medium",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/merge.go",
-          "line": 91,
-          "suggestion": "Use explicit return values in long functions to improve readability"
+          "type": "string_concatenation",
+          "description": "String concatenation in loop",
+          "severity": "high",
+          "file": "/home/user/go/src/github.com/opd-ai/unpeople/params.go",
+          "line": 371,
+          "suggestion": "Use strings.Builder for efficient concatenation"
         },
         {
-          "type": "memory_allocation",
-          "description": "append() in loop without pre-allocation",
-          "severity": "medium",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/merge.go",
-          "line": 143,
-          "suggestion": "Pre-allocate slice with make() for known capacity"
+          "type": "string_concatenation",
+          "description": "String concatenation in loop",
+          "severity": "high",
+          "file": "/home/user/go/src/github.com/opd-ai/unpeople/params.go",
+          "line": 371,
+          "suggestion": "Use strings.Builder for efficient concatenation"
         },
         {
           "type": "bare_error_return",
@@ -4747,30 +4898,6 @@
           "type": "memory_allocation",
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/mesh.go",
-          "line": 132,
-          "suggestion": "Pre-allocate slice with make() for known capacity"
-        },
-        {
-          "type": "string_concatenation",
-          "description": "String concatenation in loop",
-          "severity": "high",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/params.go",
-          "line": 371,
-          "suggestion": "Use strings.Builder for efficient concatenation"
-        },
-        {
-          "type": "string_concatenation",
-          "description": "String concatenation in loop",
-          "severity": "high",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/params.go",
-          "line": 371,
-          "suggestion": "Use strings.Builder for efficient concatenation"
-        },
-        {
-          "type": "memory_allocation",
-          "description": "append() in loop without pre-allocation",
-          "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
           "line": 55,
           "suggestion": "Pre-allocate slice with make() for known capacity"
@@ -4804,7 +4931,7 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 177,
+          "line": 147,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
@@ -4812,7 +4939,7 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 192,
+          "line": 148,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
@@ -4828,14 +4955,6 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 244,
-          "suggestion": "Pre-allocate slice with make() for known capacity"
-        },
-        {
-          "type": "memory_allocation",
-          "description": "append() in loop without pre-allocation",
-          "severity": "medium",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
           "line": 251,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
@@ -4844,7 +4963,7 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 252,
+          "line": 258,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
@@ -4852,7 +4971,7 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 311,
+          "line": 259,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
@@ -4860,7 +4979,7 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 317,
+          "line": 318,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
@@ -4868,7 +4987,7 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 331,
+          "line": 324,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
@@ -4876,7 +4995,7 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 332,
+          "line": 338,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
@@ -4884,7 +5003,7 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 335,
+          "line": 339,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
@@ -4892,7 +5011,7 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 336,
+          "line": 342,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
@@ -4900,7 +5019,7 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 586,
+          "line": 343,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
@@ -4908,15 +5027,47 @@
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
           "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 601,
+          "line": 593,
+          "suggestion": "Pre-allocate slice with make() for known capacity"
+        },
+        {
+          "type": "bare_error_return",
+          "description": "Error returned without context wrapping",
+          "severity": "high",
+          "file": "/home/user/go/src/github.com/opd-ai/unpeople/cache.go",
+          "line": 99,
+          "suggestion": "Wrap error with fmt.Errorf(\"context: %w\", err) to preserve error chain"
+        },
+        {
+          "type": "bare_error_return",
+          "description": "Error returned without context wrapping",
+          "severity": "high",
+          "file": "/home/user/go/src/github.com/opd-ai/unpeople/cache.go",
+          "line": 110,
+          "suggestion": "Wrap error with fmt.Errorf(\"context: %w\", err) to preserve error chain"
+        },
+        {
+          "type": "bare_error_return",
+          "description": "Error returned without context wrapping",
+          "severity": "high",
+          "file": "/home/user/go/src/github.com/opd-ai/unpeople/cache.go",
+          "line": 122,
+          "suggestion": "Wrap error with fmt.Errorf(\"context: %w\", err) to preserve error chain"
+        },
+        {
+          "type": "memory_allocation",
+          "description": "append() in loop without pre-allocation",
+          "severity": "medium",
+          "file": "/home/user/go/src/github.com/opd-ai/unpeople/merge.go",
+          "line": 76,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         },
         {
           "type": "memory_allocation",
           "description": "append() in loop without pre-allocation",
           "severity": "medium",
-          "file": "/home/user/go/src/github.com/opd-ai/unpeople/primitive.go",
-          "line": 602,
+          "file": "/home/user/go/src/github.com/opd-ai/unpeople/merge.go",
+          "line": 143,
           "suggestion": "Pre-allocate slice with make() for known capacity"
         }
       ]

@@ -155,3 +155,69 @@ func AgeSkinMaterial(skinColor Color, age Age) Material {
 
 	return m
 }
+
+// ─── Musculature Material Support ────────────────────────────────────────────
+
+// MeshWithMusculature bundles a mesh with its material and musculature normal map.
+// This is the complete output format for characters that need muscle definition.
+type MeshWithMusculature struct {
+	Mesh           *Mesh
+	Material       Material
+	MusculatureMap *NormalMap
+}
+
+// GenerateWithMusculature produces a mesh, material, and musculature normal map.
+// The musculature detail intensity is driven by the Build parameter:
+// - Muscular builds show pronounced muscle definition
+// - Athletic and Lean builds show moderate definition
+// - Average and Stocky builds show subtle definition
+// - Fragile builds show no muscle definition
+func (g *Generator) GenerateWithMusculature(p Params) (*MeshWithMusculature, error) {
+	mesh, err := g.Generate(p)
+	if err != nil {
+		return nil, err
+	}
+
+	skinColor := ComputeSkinColor(p.SkinTone, p.SkinUndertone)
+	material := AgeSkinMaterial(skinColor, p.Age)
+
+	// Set normal scale based on muscle definition
+	def := BuildToMuscleDefinition(p.Build)
+	material.NormalScale = muscleDefinitionNormalScale(def)
+
+	// Generate musculature normal map atlas (512x512 default)
+	normalMap := GenerateMusculatureAtlas(p.Build, p.Seed, 512, 512)
+
+	return &MeshWithMusculature{
+		Mesh:           mesh,
+		Material:       material,
+		MusculatureMap: normalMap,
+	}, nil
+}
+
+// muscleDefinitionNormalScale returns the normal map intensity for the definition.
+func muscleDefinitionNormalScale(d MuscleDefinition) float32 {
+	switch d {
+	case MuscleDefinitionNone:
+		return 0.0
+	case MuscleDefinitionSubtle:
+		return 0.3
+	case MuscleDefinitionModerate:
+		return 0.6
+	case MuscleDefinitionPronounced:
+		return 0.85
+	case MuscleDefinitionExtreme:
+		return 1.0
+	default:
+		return 0.3
+	}
+}
+
+// BuildMaterial returns a skin material adjusted for both age and build.
+// This combines age-based roughness with build-based normal map intensity.
+func BuildMaterial(skinColor Color, age Age, build Build) Material {
+	m := AgeSkinMaterial(skinColor, age)
+	def := BuildToMuscleDefinition(build)
+	m.NormalScale = muscleDefinitionNormalScale(def)
+	return m
+}

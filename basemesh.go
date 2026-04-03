@@ -329,69 +329,48 @@ func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 		lonSegs  = 8 // longitude segments for ellipsoid head
 	)
 
+	// appendPart is a helper that generates geometry, remaps UVs, and appends to builder.
+	appendPart := func(verts []Vertex, idxs []uint32, uvRegion UVRegion) {
+		remapUVs(verts, uvRegion)
+		builder.append(verts, idxs)
+	}
+
+	// appendCyl generates a tapered cylinder and appends it to the mesh.
+	appendCyl := func(bottom, top Vec3, bottomR, topR float32, bottomCap, topCap bool, uv UVRegion) {
+		v, i := generateCylinder(bottom, top, bottomR, topR, circSegs, bottomCap, topCap)
+		appendPart(v, i, uv)
+	}
+
 	// Head
 	v, i := generateEllipsoid(layout.headCenter,
 		layout.headRX, layout.headRY, layout.headRZ, latSegs, lonSegs)
-	remapUVs(v, atlas.Head)
-	builder.append(v, i)
+	appendPart(v, i, atlas.Head)
 
 	// Face mesh (overlaid on head with distinct facial regions)
 	v, i = generateFaceMesh(layout.headCenter,
 		layout.headRX, layout.headRY, layout.headRZ,
 		opts.faceShape, opts.jaw, opts.brow)
-	remapUVs(v, atlas.Face)
-	builder.append(v, i)
+	appendPart(v, i, atlas.Face)
 
 	// Skull cap (hair slot placeholder)
 	if opts.hasHairSlot {
 		v, i = generateSkullCap(layout.headCenter, layout.headRX, layout.headRY, layout.headRZ)
-		remapUVs(v, atlas.SkullCap)
-		builder.append(v, i)
+		appendPart(v, i, atlas.SkullCap)
 	}
 
-	// Neck
-	v, i = generateCylinder(layout.neckBottom, layout.neckTop,
-		layout.neckRadius, layout.neckRadius, circSegs, false, false)
-	remapUVs(v, atlas.Neck)
-	builder.append(v, i)
+	// Torso segments
+	appendCyl(layout.neckBottom, layout.neckTop, layout.neckRadius, layout.neckRadius, false, false, atlas.Neck)
+	appendCyl(layout.chestBottom, layout.chestTop, layout.chestRX*0.82, layout.chestRX, false, false, atlas.Chest)
+	appendCyl(layout.abdomenBottom, layout.abdomenTop, layout.abdomenRX, layout.abdomenRX*0.88, false, false, atlas.Abdomen)
+	appendCyl(layout.hipsBottom, layout.hipsTop, layout.hipsRX, layout.hipsRX*0.95, true, false, atlas.Hips)
 
-	// Chest (tapered: slightly narrower at bottom)
-	v, i = generateCylinder(layout.chestBottom, layout.chestTop,
-		layout.chestRX*0.82, layout.chestRX, circSegs, false, false)
-	remapUVs(v, atlas.Chest)
-	builder.append(v, i)
+	// Upper arms (tapered toward elbow)
+	appendCyl(layout.upperArmTopL, layout.upperArmBottomL, layout.upperArmRadius, layout.upperArmRadius*0.85, false, false, atlas.UpperArmL)
+	appendCyl(layout.upperArmTopR, layout.upperArmBottomR, layout.upperArmRadius, layout.upperArmRadius*0.85, false, false, atlas.UpperArmR)
 
-	// Abdomen
-	v, i = generateCylinder(layout.abdomenBottom, layout.abdomenTop,
-		layout.abdomenRX, layout.abdomenRX*0.88, circSegs, false, false)
-	remapUVs(v, atlas.Abdomen)
-	builder.append(v, i)
-
-	// Hips / pelvis (closed at bottom)
-	v, i = generateCylinder(layout.hipsBottom, layout.hipsTop,
-		layout.hipsRX, layout.hipsRX*0.95, circSegs, true, false)
-	remapUVs(v, atlas.Hips)
-	builder.append(v, i)
-
-	// Upper arms
-	v, i = generateCylinder(layout.upperArmTopL, layout.upperArmBottomL,
-		layout.upperArmRadius, layout.upperArmRadius*0.85, circSegs, false, false)
-	remapUVs(v, atlas.UpperArmL)
-	builder.append(v, i)
-	v, i = generateCylinder(layout.upperArmTopR, layout.upperArmBottomR,
-		layout.upperArmRadius, layout.upperArmRadius*0.85, circSegs, false, false)
-	remapUVs(v, atlas.UpperArmR)
-	builder.append(v, i)
-
-	// Forearms
-	v, i = generateCylinder(layout.forearmTopL, layout.forearmBottomL,
-		layout.forearmRadius, layout.forearmRadius*0.80, circSegs, false, false)
-	remapUVs(v, atlas.ForearmL)
-	builder.append(v, i)
-	v, i = generateCylinder(layout.forearmTopR, layout.forearmBottomR,
-		layout.forearmRadius, layout.forearmRadius*0.80, circSegs, false, false)
-	remapUVs(v, atlas.ForearmR)
-	builder.append(v, i)
+	// Forearms (tapered toward wrist)
+	appendCyl(layout.forearmTopL, layout.forearmBottomL, layout.forearmRadius, layout.forearmRadius*0.80, false, false, atlas.ForearmL)
+	appendCyl(layout.forearmTopR, layout.forearmBottomR, layout.forearmRadius, layout.forearmRadius*0.80, false, false, atlas.ForearmR)
 
 	// Hands with fingers
 	fingerDir := Vec3{0, -1, 0} // fingers point down in T-pose
@@ -402,8 +381,7 @@ func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 		layout.thumbProximalLength, layout.thumbDistalLength,
 		layout.fingerSpacing, layout.fingerLengthMult,
 	)
-	remapUVs(v, atlas.HandL)
-	builder.append(v, i)
+	appendPart(v, i, atlas.HandL)
 	v, i = generateHand(
 		layout.handCenterR, layout.handHW, layout.handHH, layout.handHD,
 		fingerDir, false, // isLeftHand
@@ -411,28 +389,15 @@ func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 		layout.thumbProximalLength, layout.thumbDistalLength,
 		layout.fingerSpacing, layout.fingerLengthMult,
 	)
-	remapUVs(v, atlas.HandR)
-	builder.append(v, i)
+	appendPart(v, i, atlas.HandR)
 
-	// Upper legs
-	v, i = generateCylinder(layout.upperLegTopL, layout.upperLegBottomL,
-		layout.upperLegRadius, layout.upperLegRadius*0.85, circSegs, false, false)
-	remapUVs(v, atlas.UpperLegL)
-	builder.append(v, i)
-	v, i = generateCylinder(layout.upperLegTopR, layout.upperLegBottomR,
-		layout.upperLegRadius, layout.upperLegRadius*0.85, circSegs, false, false)
-	remapUVs(v, atlas.UpperLegR)
-	builder.append(v, i)
+	// Upper legs (tapered toward knee)
+	appendCyl(layout.upperLegTopL, layout.upperLegBottomL, layout.upperLegRadius, layout.upperLegRadius*0.85, false, false, atlas.UpperLegL)
+	appendCyl(layout.upperLegTopR, layout.upperLegBottomR, layout.upperLegRadius, layout.upperLegRadius*0.85, false, false, atlas.UpperLegR)
 
-	// Lower legs (closed at ankle)
-	v, i = generateCylinder(layout.lowerLegTopL, layout.lowerLegBottomL,
-		layout.lowerLegRadius, layout.lowerLegRadius*0.75, circSegs, false, true)
-	remapUVs(v, atlas.LowerLegL)
-	builder.append(v, i)
-	v, i = generateCylinder(layout.lowerLegTopR, layout.lowerLegBottomR,
-		layout.lowerLegRadius, layout.lowerLegRadius*0.75, circSegs, false, true)
-	remapUVs(v, atlas.LowerLegR)
-	builder.append(v, i)
+	// Lower legs (tapered toward ankle, closed at bottom)
+	appendCyl(layout.lowerLegTopL, layout.lowerLegBottomL, layout.lowerLegRadius, layout.lowerLegRadius*0.75, false, true, atlas.LowerLegL)
+	appendCyl(layout.lowerLegTopR, layout.lowerLegBottomR, layout.lowerLegRadius, layout.lowerLegRadius*0.75, false, true, atlas.LowerLegR)
 
 	// Feet with toes
 	toeDir := Vec3{0, 0, 1} // toes point forward in T-pose
@@ -443,8 +408,7 @@ func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 		layout.bigToeProximal, layout.bigToeDistal,
 		layout.toeSpacing,
 	)
-	remapUVs(v, atlas.FootL)
-	builder.append(v, i)
+	appendPart(v, i, atlas.FootL)
 	v, i = generateFoot(
 		layout.footCenterR, layout.footHW, layout.footHH, layout.footHD,
 		toeDir, false, // isLeftFoot
@@ -452,16 +416,13 @@ func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 		layout.bigToeProximal, layout.bigToeDistal,
 		layout.toeSpacing,
 	)
-	remapUVs(v, atlas.FootR)
-	builder.append(v, i)
+	appendPart(v, i, atlas.FootR)
 
 	// Ears
 	v, i = generateEar(layout.earAttachL, layout.earScale, true)
-	remapUVs(v, atlas.EarL)
-	builder.append(v, i)
+	appendPart(v, i, atlas.EarL)
 	v, i = generateEar(layout.earAttachR, layout.earScale, false)
-	remapUVs(v, atlas.EarR)
-	builder.append(v, i)
+	appendPart(v, i, atlas.EarR)
 
 	mesh := builder.build(key)
 

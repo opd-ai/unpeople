@@ -1292,3 +1292,363 @@ func TestUVAtlasDistribution(t *testing.T) {
 		t.Errorf("V range too small: %.3f (min=%.3f, max=%.3f)", vRange, minV, maxV)
 	}
 }
+
+// ─── Musculature Normal Map Tests ────────────────────────────────────────────
+
+// TestMusculatureNormalMapGeneration verifies that musculature normal maps
+// are generated correctly for all build types.
+func TestMusculatureNormalMapGeneration(t *testing.T) {
+	builds := []unpeople.Build{
+		unpeople.BuildMuscular,
+		unpeople.BuildAthletic,
+		unpeople.BuildAverage,
+		unpeople.BuildLean,
+		unpeople.BuildStocky,
+		unpeople.BuildFragile,
+	}
+
+	for _, build := range builds {
+		t.Run(buildName(build), func(t *testing.T) {
+			nm := unpeople.GenerateMusculatureAtlas(build, 42, 128, 128)
+			if nm == nil {
+				t.Fatal("GenerateMusculatureAtlas returned nil")
+			}
+			if nm.Width != 128 || nm.Height != 128 {
+				t.Errorf("wrong dimensions: %dx%d", nm.Width, nm.Height)
+			}
+			if len(nm.Pixels) != 128*128 {
+				t.Errorf("wrong pixel count: %d", len(nm.Pixels))
+			}
+
+			// Verify all pixels are valid normals
+			for i, p := range nm.Pixels {
+				// R, G, B should be in [0, 1]
+				if p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1 || p[2] < 0 || p[2] > 1 {
+					t.Errorf("pixel[%d] has invalid normal color: (%.3f, %.3f, %.3f)",
+						i, p[0], p[1], p[2])
+					break
+				}
+				// Alpha should be 1.0
+				if p[3] != 1.0 {
+					t.Errorf("pixel[%d] has invalid alpha: %.3f", i, p[3])
+					break
+				}
+			}
+		})
+	}
+}
+
+// buildName returns a string name for the build enum.
+func buildName(b unpeople.Build) string {
+	switch b {
+	case unpeople.BuildMuscular:
+		return "Muscular"
+	case unpeople.BuildAthletic:
+		return "Athletic"
+	case unpeople.BuildAverage:
+		return "Average"
+	case unpeople.BuildLean:
+		return "Lean"
+	case unpeople.BuildStocky:
+		return "Stocky"
+	case unpeople.BuildFragile:
+		return "Fragile"
+	default:
+		return "Unknown"
+	}
+}
+
+// TestMusculatureNormalMapDeterminism verifies that the same seed produces
+// the same normal map.
+func TestMusculatureNormalMapDeterminism(t *testing.T) {
+	nm1 := unpeople.GenerateMusculatureAtlas(unpeople.BuildMuscular, 123, 64, 64)
+	nm2 := unpeople.GenerateMusculatureAtlas(unpeople.BuildMuscular, 123, 64, 64)
+
+	if len(nm1.Pixels) != len(nm2.Pixels) {
+		t.Fatalf("pixel count mismatch: %d vs %d", len(nm1.Pixels), len(nm2.Pixels))
+	}
+
+	for i := range nm1.Pixels {
+		if nm1.Pixels[i] != nm2.Pixels[i] {
+			t.Errorf("pixel[%d] differs: (%.3f,%.3f,%.3f) vs (%.3f,%.3f,%.3f)",
+				i, nm1.Pixels[i][0], nm1.Pixels[i][1], nm1.Pixels[i][2],
+				nm2.Pixels[i][0], nm2.Pixels[i][1], nm2.Pixels[i][2])
+			break
+		}
+	}
+}
+
+// TestMusculatureDefinitionVaries verifies that different build types
+// produce different muscle definition levels.
+func TestMusculatureDefinitionVaries(t *testing.T) {
+	// Muscular should have more pronounced normals than Fragile
+	nmMuscular := unpeople.GenerateMusculatureAtlas(unpeople.BuildMuscular, 42, 64, 64)
+	nmFragile := unpeople.GenerateMusculatureAtlas(unpeople.BuildFragile, 42, 64, 64)
+
+	// Measure average deviation from flat normal (0.5, 0.5, 1.0)
+	muscularDev := measureNormalDeviation(nmMuscular.Pixels)
+	fragileDev := measureNormalDeviation(nmFragile.Pixels)
+
+	if muscularDev <= fragileDev {
+		t.Errorf("Muscular build should have more normal deviation than Fragile: %.4f vs %.4f",
+			muscularDev, fragileDev)
+	}
+}
+
+// measureNormalDeviation calculates the average deviation from flat normals.
+func measureNormalDeviation(pixels []unpeople.Color) float32 {
+	var totalDev float32
+	for _, p := range pixels {
+		// Deviation from flat normal (0.5, 0.5, 1.0)
+		dx := p[0] - 0.5
+		dy := p[1] - 0.5
+		totalDev += dx*dx + dy*dy
+	}
+	return totalDev / float32(len(pixels))
+}
+
+// TestGenerateWithMusculature verifies the full generation pipeline with
+// musculature normal maps.
+func TestGenerateWithMusculature(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Build = unpeople.BuildMuscular
+
+	result, err := g.GenerateWithMusculature(p)
+	if err != nil {
+		t.Fatalf("GenerateWithMusculature failed: %v", err)
+	}
+
+	if result.Mesh == nil {
+		t.Error("Mesh is nil")
+	}
+	if result.MusculatureMap == nil {
+		t.Error("MusculatureMap is nil")
+	}
+	if result.Material.NormalScale <= 0 {
+		t.Error("NormalScale should be positive for muscular build")
+	}
+}
+
+// TestBuildToMuscleDefinition verifies the mapping from Build to MuscleDefinition.
+func TestBuildToMuscleDefinition(t *testing.T) {
+	// Muscular should map to Pronounced
+	if def := unpeople.BuildToMuscleDefinition(unpeople.BuildMuscular); def != unpeople.MuscleDefinitionPronounced {
+		t.Errorf("Muscular should be Pronounced, got %d", def)
+	}
+
+	// Fragile should map to None
+	if def := unpeople.BuildToMuscleDefinition(unpeople.BuildFragile); def != unpeople.MuscleDefinitionNone {
+		t.Errorf("Fragile should be None, got %d", def)
+	}
+
+	// Athletic should map to Moderate
+	if def := unpeople.BuildToMuscleDefinition(unpeople.BuildAthletic); def != unpeople.MuscleDefinitionModerate {
+		t.Errorf("Athletic should be Moderate, got %d", def)
+	}
+}
+
+// TestNormalMapSampling verifies bilinear sampling works correctly.
+func TestNormalMapSampling(t *testing.T) {
+	nm := unpeople.GenerateMusculatureAtlas(unpeople.BuildMuscular, 42, 64, 64)
+
+	// Sample at corners
+	corners := [][2]float32{{0, 0}, {1, 0}, {0, 1}, {1, 1}}
+	for _, c := range corners {
+		sample := nm.SampleBilinear(c[0], c[1])
+		// Should be valid normal
+		if sample[0] < 0 || sample[0] > 1 || sample[1] < 0 || sample[1] > 1 {
+			t.Errorf("invalid sample at (%.1f, %.1f): (%.3f, %.3f, %.3f)",
+				c[0], c[1], sample[0], sample[1], sample[2])
+		}
+	}
+
+	// Sample in center
+	center := nm.SampleBilinear(0.5, 0.5)
+	if center[3] != 1.0 {
+		t.Errorf("center sample alpha should be 1.0, got %.3f", center[3])
+	}
+}
+
+// ─── Skin Texture Tests ──────────────────────────────────────────────────────
+
+// TestSkinTextureGeneration verifies that skin textures are generated correctly
+// for all skin tone and age combinations.
+func TestSkinTextureGeneration(t *testing.T) {
+	tones := []unpeople.SkinTone{
+		unpeople.SkinTonePale,
+		unpeople.SkinToneFair,
+		unpeople.SkinToneMedium,
+		unpeople.SkinToneDark,
+	}
+	ages := []unpeople.Age{
+		unpeople.AgeChild,
+		unpeople.AgeTeen,
+		unpeople.AgeAdult,
+		unpeople.AgeElderly,
+	}
+
+	for _, tone := range tones {
+		for _, age := range ages {
+			t.Run(skinToneName(tone)+"_"+ageName(age), func(t *testing.T) {
+				params := unpeople.DefaultSkinTextureParams(
+					tone, unpeople.SkinUndertoneNeutral, age, 42)
+				tex := unpeople.GenerateSkinTexture(params, 64, 64)
+
+				if tex == nil {
+					t.Fatal("GenerateSkinTexture returned nil")
+				}
+				if len(tex.Pixels) != 64*64 {
+					t.Errorf("wrong pixel count: %d", len(tex.Pixels))
+				}
+
+				// Verify all pixels are valid colors
+				for i, p := range tex.Pixels {
+					if p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1 ||
+						p[2] < 0 || p[2] > 1 || p[3] < 0 || p[3] > 1 {
+						t.Errorf("pixel[%d] has invalid color: (%.3f, %.3f, %.3f, %.3f)",
+							i, p[0], p[1], p[2], p[3])
+						break
+					}
+				}
+			})
+		}
+	}
+}
+
+// skinToneName returns a string name for the skin tone enum.
+func skinToneName(s unpeople.SkinTone) string {
+	switch s {
+	case unpeople.SkinTonePale:
+		return "Pale"
+	case unpeople.SkinToneFair:
+		return "Fair"
+	case unpeople.SkinToneMedium:
+		return "Medium"
+	case unpeople.SkinToneDark:
+		return "Dark"
+	default:
+		return "Unknown"
+	}
+}
+
+// TestSkinTextureDeterminism verifies deterministic texture generation.
+func TestSkinTextureDeterminism(t *testing.T) {
+	params := unpeople.DefaultSkinTextureParams(
+		unpeople.SkinToneMedium, unpeople.SkinUndertoneWarm, unpeople.AgeAdult, 123)
+
+	tex1 := unpeople.GenerateSkinTexture(params, 32, 32)
+	tex2 := unpeople.GenerateSkinTexture(params, 32, 32)
+
+	if len(tex1.Pixels) != len(tex2.Pixels) {
+		t.Fatalf("pixel count mismatch: %d vs %d", len(tex1.Pixels), len(tex2.Pixels))
+	}
+
+	for i := range tex1.Pixels {
+		if tex1.Pixels[i] != tex2.Pixels[i] {
+			t.Errorf("pixel[%d] differs: (%.3f,%.3f,%.3f) vs (%.3f,%.3f,%.3f)",
+				i, tex1.Pixels[i][0], tex1.Pixels[i][1], tex1.Pixels[i][2],
+				tex2.Pixels[i][0], tex2.Pixels[i][1], tex2.Pixels[i][2])
+			break
+		}
+	}
+}
+
+// TestSkinTextureVariesByAge verifies textures differ between ages.
+func TestSkinTextureVariesByAge(t *testing.T) {
+	baseParams := unpeople.DefaultSkinTextureParams(
+		unpeople.SkinToneFair, unpeople.SkinUndertoneNeutral, unpeople.AgeChild, 42)
+	elderlyParams := unpeople.DefaultSkinTextureParams(
+		unpeople.SkinToneFair, unpeople.SkinUndertoneNeutral, unpeople.AgeElderly, 42)
+
+	texChild := unpeople.GenerateSkinTexture(baseParams, 32, 32)
+	texElderly := unpeople.GenerateSkinTexture(elderlyParams, 32, 32)
+
+	// Count differing pixels
+	diffCount := 0
+	for i := range texChild.Pixels {
+		if texChild.Pixels[i] != texElderly.Pixels[i] {
+			diffCount++
+		}
+	}
+
+	// Should have significant differences
+	if diffCount < 10 {
+		t.Errorf("child and elderly textures should differ more (only %d pixels differ)", diffCount)
+	}
+}
+
+// TestGenerateWithTextures verifies the complete texture pipeline.
+func TestGenerateWithTextures(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.SkinTone = unpeople.SkinToneFair
+	p.Age = unpeople.AgeElderly
+	p.Build = unpeople.BuildMuscular
+
+	result, err := g.GenerateWithTextures(p)
+	if err != nil {
+		t.Fatalf("GenerateWithTextures failed: %v", err)
+	}
+
+	if result.Mesh == nil {
+		t.Error("Mesh is nil")
+	}
+	if result.AlbedoTexture == nil {
+		t.Error("AlbedoTexture is nil")
+	}
+	if result.NormalTexture == nil {
+		t.Error("NormalTexture is nil")
+	}
+	if result.AlbedoTexture.Width != 512 || result.AlbedoTexture.Height != 512 {
+		t.Errorf("unexpected texture size: %dx%d", result.AlbedoTexture.Width, result.AlbedoTexture.Height)
+	}
+}
+
+// TestTextureToRGBA8 verifies texture export to bytes.
+func TestTextureToRGBA8(t *testing.T) {
+	params := unpeople.DefaultSkinTextureParams(
+		unpeople.SkinToneMedium, unpeople.SkinUndertoneNeutral, unpeople.AgeAdult, 42)
+	tex := unpeople.GenerateSkinTexture(params, 16, 16)
+
+	data := tex.ToRGBA8()
+	expectedLen := 16 * 16 * 4
+	if len(data) != expectedLen {
+		t.Errorf("wrong data length: %d (expected %d)", len(data), expectedLen)
+	}
+
+	// Verify all bytes are in valid range (implicit 0-255)
+	// Just check that export worked without panic
+}
+
+// TestTextureSampling verifies texture bilinear sampling.
+func TestTextureSampling(t *testing.T) {
+	params := unpeople.DefaultSkinTextureParams(
+		unpeople.SkinToneMedium, unpeople.SkinUndertoneNeutral, unpeople.AgeAdult, 42)
+	tex := unpeople.GenerateSkinTexture(params, 32, 32)
+
+	// Sample at corners and center
+	samples := [][2]float32{{0, 0}, {1, 1}, {0.5, 0.5}}
+	for _, s := range samples {
+		c := tex.SampleBilinear(s[0], s[1])
+		// Should be valid color
+		if c[0] < 0 || c[0] > 1 || c[1] < 0 || c[1] > 1 ||
+			c[2] < 0 || c[2] > 1 || c[3] < 0 || c[3] > 1 {
+			t.Errorf("invalid sample at (%.1f, %.1f): %v", s[0], s[1], c)
+		}
+	}
+}
+
+// TestFreckleIntensityByTone verifies freckle intensity varies with skin tone.
+func TestFreckleIntensityByTone(t *testing.T) {
+	paleParams := unpeople.DefaultSkinTextureParams(
+		unpeople.SkinTonePale, unpeople.SkinUndertoneNeutral, unpeople.AgeAdult, 42)
+	darkParams := unpeople.DefaultSkinTextureParams(
+		unpeople.SkinToneDark, unpeople.SkinUndertoneNeutral, unpeople.AgeAdult, 42)
+
+	// Pale skin should have higher freckle intensity
+	if paleParams.FreckleIntensity <= darkParams.FreckleIntensity {
+		t.Errorf("pale skin should have more freckles: %.3f vs %.3f",
+			paleParams.FreckleIntensity, darkParams.FreckleIntensity)
+	}
+}

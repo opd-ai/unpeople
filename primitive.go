@@ -135,6 +135,22 @@ func generateCylinder(
 
 // ─── Sphere / Ellipsoid ──────────────────────────────────────────────────────
 
+// appendQuadGridIndices adds triangle indices for a lat×lon vertex grid.
+// The grid has (latSegs+1)×(lonSegs+1) vertices arranged in rows.
+// This creates two triangles per quad, suitable for ellipsoid-like surfaces.
+func appendQuadGridIndices(idxs []uint32, latSegs, lonSegs int) []uint32 {
+	stride := uint32(lonSegs + 1)
+	for lat := 0; lat < latSegs; lat++ {
+		for lon := 0; lon < lonSegs; lon++ {
+			a := uint32(lat)*stride + uint32(lon)
+			b := a + stride
+			idxs = append(idxs, a, b, a+1)
+			idxs = append(idxs, b, b+1, a+1)
+		}
+	}
+	return idxs
+}
+
 // generateEllipsoid builds a UV-sphere with independently controllable radii
 // on each axis, centred at center. latSegs × lonSegs controls resolution.
 func generateEllipsoid(
@@ -184,16 +200,7 @@ func generateEllipsoid(
 		}
 	}
 
-	stride := uint32(lonSegs + 1)
-	for lat := 0; lat < latSegs; lat++ {
-		for lon := 0; lon < lonSegs; lon++ {
-			a := uint32(lat)*stride + uint32(lon)
-			b := a + stride
-			idxs = append(idxs, a, b, a+1)
-			idxs = append(idxs, b, b+1, a+1)
-		}
-	}
-
+	idxs = appendQuadGridIndices(idxs, latSegs, lonSegs)
 	return verts, idxs
 }
 
@@ -593,16 +600,7 @@ func generateSkullCap(headCenter Vec3, rx, ry, rz float32) ([]Vertex, []uint32) 
 		}
 	}
 
-	stride := uint32(lonSegs + 1)
-	for lat := 0; lat < latSegs; lat++ {
-		for lon := 0; lon < lonSegs; lon++ {
-			a := uint32(lat)*stride + uint32(lon)
-			b := a + stride
-			idxs = append(idxs, a, b, a+1)
-			idxs = append(idxs, b, b+1, a+1)
-		}
-	}
-
+	idxs = appendQuadGridIndices(idxs, latSegs, lonSegs)
 	return verts, idxs
 }
 

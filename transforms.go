@@ -449,9 +449,26 @@ func applyFacialFeatures(l *bodyLayout, fs FaceShape, j Jaw, br Brow, e Ears) {
 
 // ─── Posture ─────────────────────────────────────────────────────────────────
 
-func applyPosture(l *bodyLayout, p Posture, rng *splitmix64) {
+// applyPosture adjusts the body layout based on stance. For elderly characters
+// (AgeDecrepit or AgeElderly) with PostureUpright, a subtle automatic slouch
+// is applied to reflect age-related posture changes.
+func applyPosture(l *bodyLayout, p Posture, a Age, rng *splitmix64) {
 	jitter := (rng.Float32() - 0.5) * 0.003
-	switch p {
+
+	// Auto-adjust posture for elderly characters when upright is requested
+	effectivePosture := p
+	if p == PostureUpright {
+		switch a {
+		case AgeDecrepit:
+			effectivePosture = PostureSlouched // Automatic mild slouch
+		case AgeElderly:
+			// Apply a subtle forward lean (less than full slouch)
+			shiftUpperBodyForward(l, 0.015+jitter)
+			return
+		}
+	}
+
+	switch effectivePosture {
 	case PostureUpright, PostureRigid:
 		// default (rigid = slightly stiffer but no visible geometry change)
 	case PostureSlouched:

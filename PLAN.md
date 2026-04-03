@@ -101,7 +101,7 @@
 - **Validation**: `go test ./... -run TestAllAges -v`
 
 ### Step 9: Add Posture × Age Interaction
-- [ ] **Pending**
+- [x] **Resolved**
 - **Deliverable**: Modify `applyPosture()` in `transforms.go` to auto-adjust posture for `AgeDecrepit`/`AgeElderly` when `PostureUpright` is set
 - **Dependencies**: Step 1 (TestAllPostures covers this)
 - **Goal Impact**: Addresses GAPS.md "Posture × Age Interaction Missing"

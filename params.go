@@ -263,6 +263,19 @@ const (
 	SkinUndertoneCool
 )
 
+// ─── SkeletonPose ────────────────────────────────────────────────────────────
+
+// SkeletonPose describes the bind pose for skeleton export.
+type SkeletonPose int
+
+const (
+	// SkeletonPoseTPose is the standard T-pose with arms horizontal (90° from body).
+	SkeletonPoseTPose SkeletonPose = iota
+	// SkeletonPoseAPose has arms angled ~45° downward from horizontal.
+	// A-pose provides better shoulder deformation during animation.
+	SkeletonPoseAPose
+)
+
 // ─── Params ──────────────────────────────────────────────────────────────────
 
 // Params is the complete set of inputs to the Generator. Every field has a
@@ -305,6 +318,9 @@ type Params struct {
 
 	// Optional mesh components
 	HasHairSlot bool // If true, generate skull cap placeholder for hair attachment
+
+	// Skeleton options
+	SkeletonPose SkeletonPose // Bind pose for skeleton export (T-pose or A-pose)
 }
 
 // DefaultParams returns a Params representing a generic Adult Human with
@@ -333,6 +349,7 @@ func DefaultParams() Params {
 		SkinTone:      SkinToneMedium,
 		SkinUndertone: SkinUndertoneNeutral,
 		HasHairSlot:   true,
+		SkeletonPose:  SkeletonPoseTPose,
 	}
 }
 
@@ -365,6 +382,7 @@ func (p *Params) Validate() error {
 		{int(p.FootSize), int(FootSizeLarge), int(FootSizeSmall), "FootSize"},
 		{int(p.SkinTone), int(SkinTonePale), int(SkinToneDark), "SkinTone"},
 		{int(p.SkinUndertone), int(SkinUndertoneNeutral), int(SkinUndertoneCool), "SkinUndertone"},
+		{int(p.SkeletonPose), int(SkeletonPoseTPose), int(SkeletonPoseAPose), "SkeletonPose"},
 	}
 	for _, c := range checks {
 		if c.val < c.min || c.val > c.max {

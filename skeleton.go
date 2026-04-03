@@ -6,7 +6,10 @@
 // the bodyLayout to ensure correspondence between skeleton and mesh.
 package unpeople
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // ─── Joint Types ─────────────────────────────────────────────────────────────
 
@@ -103,9 +106,20 @@ type Skeleton struct {
 
 // ─── Skeleton Generation ─────────────────────────────────────────────────────
 
+// aPoseAngle is the rotation angle for A-pose (45 degrees in radians).
+// A-pose rotates shoulders ~45° downward from horizontal T-pose.
+const aPoseAngle = math.Pi / 4.0 // 45 degrees
+
 // GenerateSkeleton creates a bind-pose skeleton matching the given body layout.
 // The skeleton joints are positioned to match the mesh geometry exactly.
+// This function generates a T-pose skeleton; use GenerateSkeletonWithPose for A-pose.
 func GenerateSkeleton(layout bodyLayout) *Skeleton {
+	return GenerateSkeletonWithPose(layout, SkeletonPoseTPose)
+}
+
+// GenerateSkeletonWithPose creates a skeleton with the specified bind pose.
+// For A-pose, shoulder joints are rotated ~45° downward and arm positions adjusted.
+func GenerateSkeletonWithPose(layout bodyLayout, pose SkeletonPose) *Skeleton {
 	skel := &Skeleton{
 		Joints: make([]Joint, JointCount),
 	}
@@ -124,10 +138,83 @@ func GenerateSkeleton(layout bodyLayout) *Skeleton {
 	// Calculate joint positions from body layout
 	computeJointPositions(skel, layout)
 
+	// Apply A-pose transformation if requested
+	if pose == SkeletonPoseAPose {
+		applyAPoseTransform(skel, layout)
+	}
+
 	// Compute inverse bind matrices
 	computeInverseBindMatrices(skel)
 
 	return skel
+}
+
+// applyAPoseTransform rotates shoulder joints and repositions arm chains for A-pose.
+// A-pose has arms at ~45° downward from horizontal, providing better shoulder deformation.
+func applyAPoseTransform(skel *Skeleton, l bodyLayout) {
+	// Create Z-axis rotation quaternion for ~45° downward angle
+	// Left arm rotates clockwise (-45°), right arm rotates counter-clockwise (+45°)
+	leftRot := quatFromAxisAngle(Vec3{0, 0, 1}, aPoseAngle)   // +45° around Z (arms down)
+	rightRot := quatFromAxisAngle(Vec3{0, 0, 1}, -aPoseAngle) // -45° around Z (arms down)
+
+	// Apply rotation to shoulder joints
+	skel.Joints[JointLeftShoulder].Rotation = leftRot
+	skel.Joints[JointRightShoulder].Rotation = rightRot
+
+	// Get shoulder pivot points
+	leftShoulderPos := skel.Joints[JointLeftShoulder].Position
+	rightShoulderPos := skel.Joints[JointRightShoulder].Position
+
+	// Rotate all joints in the left arm chain around the left shoulder
+	rotateArmChain(skel, leftShoulderPos, leftRot, []JointID{
+		JointLeftUpperArm, JointLeftForearm, JointLeftHand,
+		JointLeftThumb1, JointLeftThumb2,
+		JointLeftIndex1, JointLeftIndex2, JointLeftIndex3,
+		JointLeftMiddle1, JointLeftMiddle2, JointLeftMiddle3,
+		JointLeftRing1, JointLeftRing2, JointLeftRing3,
+		JointLeftPinky1, JointLeftPinky2, JointLeftPinky3,
+	})
+
+	// Rotate all joints in the right arm chain around the right shoulder
+	rotateArmChain(skel, rightShoulderPos, rightRot, []JointID{
+		JointRightUpperArm, JointRightForearm, JointRightHand,
+		JointRightThumb1, JointRightThumb2,
+		JointRightIndex1, JointRightIndex2, JointRightIndex3,
+		JointRightMiddle1, JointRightMiddle2, JointRightMiddle3,
+		JointRightRing1, JointRightRing2, JointRightRing3,
+		JointRightPinky1, JointRightPinky2, JointRightPinky3,
+	})
+}
+
+// rotateArmChain rotates a list of joint positions around a pivot point.
+func rotateArmChain(skel *Skeleton, pivot Vec3, rot Vec4, joints []JointID) {
+	for _, jid := range joints {
+		j := &skel.Joints[jid]
+		// Translate to origin relative to pivot
+		rel := vec3Sub(j.Position, pivot)
+		// Rotate the position
+		rotated := quatRotateVec3(rot, rel)
+		// Translate back
+		j.Position = vec3Add(pivot, rotated)
+	}
+}
+
+// quatFromAxisAngle creates a quaternion from an axis and angle (radians).
+func quatFromAxisAngle(axis Vec3, angle float32) Vec4 {
+	halfAngle := angle / 2.0
+	s := float32(math.Sin(float64(halfAngle)))
+	c := float32(math.Cos(float64(halfAngle)))
+	return Vec4{axis[0] * s, axis[1] * s, axis[2] * s, c}
+}
+
+// quatRotateVec3 rotates a vector by a quaternion.
+func quatRotateVec3(q Vec4, v Vec3) Vec3 {
+	// q * v * q^-1, using the optimized formula:
+	// t = 2 * cross(q.xyz, v)
+	// result = v + q.w * t + cross(q.xyz, t)
+	qv := Vec3{q[0], q[1], q[2]}
+	t := vec3Scale(vec3Cross(qv, v), 2.0)
+	return vec3Add(vec3Add(v, vec3Scale(t, q[3])), vec3Cross(qv, t))
 }
 
 // computeJointPositions sets joint positions based on body layout.
@@ -452,7 +539,7 @@ func (g *Generator) GenerateWithSkeleton(p Params) (*MeshWithSkeleton, error) {
 		return nil, err
 	}
 
-	skeleton := GenerateSkeleton(layout)
+	skeleton := GenerateSkeletonWithPose(layout, p.SkeletonPose)
 
 	return &MeshWithSkeleton{
 		Mesh:     mesh,

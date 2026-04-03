@@ -103,9 +103,9 @@ The original roadmap listed 6 phases with 42 feature items, all marked complete.
 
 The skeleton is currently generated in T-pose, but the roadmap claims "A-pose export". Game animation pipelines often prefer A-pose (shoulders rotated ~30-45° down) for better shoulder deformation.
 
-- [ ] Add `SkeletonPose` option to `Params` (enum: `TPose`, `APose`)
-- [ ] Implement shoulder joint rotation for A-pose in `skeleton.go` (~20 lines)
-- [ ] Rotate shoulder-attached vertices to match A-pose bind position
+- [x] Add `SkeletonPose` option to `Params` (enum: `TPose`, `APose`)
+- [x] Implement shoulder joint rotation for A-pose in `skeleton.go` (~20 lines)
+- [x] Rotate shoulder-attached vertices to match A-pose bind position
 - [ ] Add test `TestAPoseExport` verifying shoulder angles
 - [ ] Update CLI/server to expose pose selection
 - **Validation**: Export glTF with A-pose skeleton; import into Blender and verify ~45° shoulder angle

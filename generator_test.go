@@ -1358,6 +1358,30 @@ func buildName(b unpeople.Build) string {
 	}
 }
 
+// ageName returns a string name for the age enum.
+func ageName(a unpeople.Age) string {
+	switch a {
+	case unpeople.AgeDecrepit:
+		return "Decrepit"
+	case unpeople.AgeElderly:
+		return "Elderly"
+	case unpeople.AgeOld:
+		return "Old"
+	case unpeople.AgeAdult:
+		return "Adult"
+	case unpeople.AgeYouth:
+		return "Youth"
+	case unpeople.AgeTeen:
+		return "Teen"
+	case unpeople.AgeChild:
+		return "Child"
+	case unpeople.AgeToddler:
+		return "Toddler"
+	default:
+		return "Unknown"
+	}
+}
+
 // TestMusculatureNormalMapDeterminism verifies that the same seed produces
 // the same normal map.
 func TestMusculatureNormalMapDeterminism(t *testing.T) {
@@ -1650,5 +1674,335 @@ func TestFreckleIntensityByTone(t *testing.T) {
 	if paleParams.FreckleIntensity <= darkParams.FreckleIntensity {
 		t.Errorf("pale skin should have more freckles: %.3f vs %.3f",
 			paleParams.FreckleIntensity, darkParams.FreckleIntensity)
+	}
+}
+
+// ─── Skeleton Tests ──────────────────────────────────────────────────────────
+
+// TestSkeletonGeneration verifies that a skeleton is generated with correct structure.
+func TestSkeletonGeneration(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithSkeleton(p)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton failed: %v", err)
+	}
+
+	if result.Skeleton == nil {
+		t.Fatal("Skeleton is nil")
+	}
+	if len(result.Skeleton.Joints) != int(unpeople.JointCount) {
+		t.Errorf("wrong joint count: %d (expected %d)",
+			len(result.Skeleton.Joints), unpeople.JointCount)
+	}
+}
+
+// TestSkeletonValidation verifies skeleton hierarchy is valid.
+func TestSkeletonValidation(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithSkeleton(p)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton failed: %v", err)
+	}
+
+	if err := result.Skeleton.Validate(); err != nil {
+		t.Errorf("skeleton validation failed: %v", err)
+	}
+}
+
+// TestSkeletonJointHierarchy verifies parent-child relationships.
+func TestSkeletonJointHierarchy(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithSkeleton(p)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton failed: %v", err)
+	}
+	skel := result.Skeleton
+
+	// Root should have no parent
+	root := skel.Joint(unpeople.JointRoot)
+	if root.ParentID != -1 {
+		t.Errorf("Root should have no parent, got %d", root.ParentID)
+	}
+
+	// Hips should have Root as parent
+	hips := skel.Joint(unpeople.JointHips)
+	if hips.ParentID != unpeople.JointRoot {
+		t.Errorf("Hips should have Root as parent, got %d", hips.ParentID)
+	}
+
+	// Head should have Neck as parent
+	head := skel.Joint(unpeople.JointHead)
+	if head.ParentID != unpeople.JointNeck {
+		t.Errorf("Head should have Neck as parent, got %d", head.ParentID)
+	}
+
+	// LeftHand should have LeftForearm as parent
+	leftHand := skel.Joint(unpeople.JointLeftHand)
+	if leftHand.ParentID != unpeople.JointLeftForearm {
+		t.Errorf("LeftHand should have LeftForearm as parent, got %d", leftHand.ParentID)
+	}
+}
+
+// TestSkeletonJointPositions verifies joint positions are reasonable.
+func TestSkeletonJointPositions(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithSkeleton(p)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton failed: %v", err)
+	}
+	skel := result.Skeleton
+
+	// Head should be above hips
+	head := skel.Joint(unpeople.JointHead)
+	hips := skel.Joint(unpeople.JointHips)
+	if head.Position[1] <= hips.Position[1] {
+		t.Errorf("Head (Y=%.3f) should be above Hips (Y=%.3f)",
+			head.Position[1], hips.Position[1])
+	}
+
+	// Feet should be near the ground
+	leftFoot := skel.Joint(unpeople.JointLeftFoot)
+	rightFoot := skel.Joint(unpeople.JointRightFoot)
+	if leftFoot.Position[1] > 0.2 {
+		t.Errorf("LeftFoot (Y=%.3f) should be near ground", leftFoot.Position[1])
+	}
+	if rightFoot.Position[1] > 0.2 {
+		t.Errorf("RightFoot (Y=%.3f) should be near ground", rightFoot.Position[1])
+	}
+
+	// Left arm should be on the left side (negative X)
+	leftHand := skel.Joint(unpeople.JointLeftHand)
+	if leftHand.Position[0] >= 0 {
+		t.Errorf("LeftHand (X=%.3f) should have negative X", leftHand.Position[0])
+	}
+
+	// Right arm should be on the right side (positive X)
+	rightHand := skel.Joint(unpeople.JointRightHand)
+	if rightHand.Position[0] <= 0 {
+		t.Errorf("RightHand (X=%.3f) should have positive X", rightHand.Position[0])
+	}
+}
+
+// TestSkeletonVariesWithHeight verifies skeleton scales with height parameter.
+func TestSkeletonVariesWithHeight(t *testing.T) {
+	g := unpeople.NewGenerator()
+
+	pTall := unpeople.DefaultParams()
+	pTall.Height = unpeople.HeightTall
+	pShort := unpeople.DefaultParams()
+	pShort.Height = unpeople.HeightShort
+
+	resultTall, _ := g.GenerateWithSkeleton(pTall)
+	resultShort, _ := g.GenerateWithSkeleton(pShort)
+
+	headTall := resultTall.Skeleton.Joint(unpeople.JointHead)
+	headShort := resultShort.Skeleton.Joint(unpeople.JointHead)
+
+	// Tall character's head should be higher
+	if headTall.Position[1] <= headShort.Position[1] {
+		t.Errorf("Tall head (Y=%.3f) should be higher than short head (Y=%.3f)",
+			headTall.Position[1], headShort.Position[1])
+	}
+}
+
+// TestSkeletonBoneCount verifies total bone count.
+func TestSkeletonBoneCount(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithSkeleton(p)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton failed: %v", err)
+	}
+
+	boneCount := result.Skeleton.TotalBoneCount()
+	// Should have JointCount - 1 bones (root has no parent bone)
+	expectedBones := int(unpeople.JointCount) - 1
+	if boneCount != expectedBones {
+		t.Errorf("wrong bone count: %d (expected %d)", boneCount, expectedBones)
+	}
+}
+
+// TestSkeletonJointByName verifies finding joints by name.
+func TestSkeletonJointByName(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithSkeleton(p)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton failed: %v", err)
+	}
+
+	// Find specific joints by name
+	head := result.Skeleton.JointByName("Head")
+	if head == nil {
+		t.Error("Could not find joint named 'Head'")
+	} else if head.ID != unpeople.JointHead {
+		t.Errorf("Head joint has wrong ID: %d", head.ID)
+	}
+
+	// Non-existent joint
+	notFound := result.Skeleton.JointByName("NonExistentJoint")
+	if notFound != nil {
+		t.Error("Should not find non-existent joint")
+	}
+}
+
+// ─── Skinning Tests ──────────────────────────────────────────────────────────
+
+// TestSkinningWeightGeneration verifies skinning weights are computed correctly.
+func TestSkinningWeightGeneration(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithRig(p)
+	if err != nil {
+		t.Fatalf("GenerateWithRig failed: %v", err)
+	}
+
+	// Check all vertices have weights
+	for i, v := range result.Mesh.Vertices {
+		// At least one weight should be non-zero
+		hasWeight := v.JointWeights[0] > 0 || v.JointWeights[1] > 0 ||
+			v.JointWeights[2] > 0 || v.JointWeights[3] > 0
+		if !hasWeight {
+			t.Errorf("vertex[%d] has no skinning weights", i)
+			break
+		}
+	}
+}
+
+// TestSkinningWeightsNormalized verifies weights sum to approximately 1.0.
+func TestSkinningWeightsNormalized(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithRig(p)
+	if err != nil {
+		t.Fatalf("GenerateWithRig failed: %v", err)
+	}
+
+	for i, v := range result.Mesh.Vertices {
+		sum := v.JointWeights[0] + v.JointWeights[1] + v.JointWeights[2] + v.JointWeights[3]
+		if sum < 0.99 || sum > 1.01 {
+			t.Errorf("vertex[%d] weights sum to %.4f (expected ~1.0)", i, sum)
+			break
+		}
+	}
+}
+
+// TestSkinningValidation verifies the validation function works.
+func TestSkinningValidation(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithRig(p)
+	if err != nil {
+		t.Fatalf("GenerateWithRig failed: %v", err)
+	}
+
+	err = unpeople.ValidateSkinning(result.Mesh)
+	if err != nil {
+		t.Errorf("ValidateSkinning failed: %v", err)
+	}
+}
+
+// TestSkinningJointIDsValid verifies all joint IDs are within valid range.
+func TestSkinningJointIDsValid(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithRig(p)
+	if err != nil {
+		t.Fatalf("GenerateWithRig failed: %v", err)
+	}
+
+	for i, v := range result.Mesh.Vertices {
+		for slot := 0; slot < 4; slot++ {
+			if v.JointWeights[slot] > 0 {
+				jointID := v.JointIds[slot]
+				if jointID < 0 || jointID >= int32(unpeople.JointCount) {
+					t.Errorf("vertex[%d] has invalid joint ID %d in slot %d",
+						i, jointID, slot)
+				}
+			}
+		}
+	}
+}
+
+// TestSkinningHeadVertex verifies head vertices are weighted to head joint.
+func TestSkinningHeadVertex(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithRig(p)
+	if err != nil {
+		t.Fatalf("GenerateWithRig failed: %v", err)
+	}
+
+	// Find a vertex that should be on the head (high Y coordinate)
+	var headVertex *unpeople.Vertex
+	for i := range result.Mesh.Vertices {
+		v := &result.Mesh.Vertices[i]
+		if v.Position[1] > 1.6 { // Head region
+			headVertex = v
+			break
+		}
+	}
+
+	if headVertex == nil {
+		t.Skip("No vertex found in head region")
+		return
+	}
+
+	// Check that head joint has significant weight
+	headJointID := int32(unpeople.JointHead)
+	hasHeadInfluence := false
+	for slot := 0; slot < 4; slot++ {
+		if headVertex.JointIds[slot] == headJointID && headVertex.JointWeights[slot] > 0.1 {
+			hasHeadInfluence = true
+			break
+		}
+	}
+
+	if !hasHeadInfluence {
+		t.Error("Head vertex should have significant Head joint influence")
+	}
+}
+
+// TestSkinningAllSpecies verifies skinning works for all species.
+func TestSkinningAllSpecies(t *testing.T) {
+	g := unpeople.NewGenerator()
+
+	species := []unpeople.Species{
+		unpeople.SpeciesHuman,
+		unpeople.SpeciesElf,
+		unpeople.SpeciesDwarf,
+		unpeople.SpeciesOrc,
+		unpeople.SpeciesTroll,
+	}
+
+	for _, sp := range species {
+		p := unpeople.DefaultParams()
+		p.Species = sp
+
+		result, err := g.GenerateWithRig(p)
+		if err != nil {
+			t.Errorf("GenerateWithRig failed for species %d: %v", sp, err)
+			continue
+		}
+
+		err = unpeople.ValidateSkinning(result.Mesh)
+		if err != nil {
+			t.Errorf("ValidateSkinning failed for species %d: %v", sp, err)
+		}
 	}
 }

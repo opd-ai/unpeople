@@ -71,14 +71,14 @@ and must be addressed before or during Phase 2 implementation:
   `SkinTone` parameter (Pale → Dark, warm/cool undertone).
 - [x] **Material export** – Output a Kaiju-compatible `rendering.ShaderDef` or
   material descriptor alongside the mesh.
-- [ ] **Texture generation** – Noise-driven procedural skin texture baked to an
+- [x] **Texture generation** – Noise-driven procedural skin texture baked to an
   atlas (freckles, blemishes, age spots for elderly characters).
 
 ## Phase 4: Skeletal Rig Support
 
-- [ ] **Bind-pose skeleton** – Export a joint hierarchy (root → spine →
+- [x] **Bind-pose skeleton** – Export a joint hierarchy (root → spine →
   shoulders/hips → limb chains) matching the generated mesh.
-- [ ] **Vertex skinning weights** – Populate the `JointIds` / `JointWeights`
+- [x] **Vertex skinning weights** – Populate the `JointIds` / `JointWeights`
   fields in every `Vertex` so the mesh can be animated in Kaiju.
 - [ ] **MorphTarget support** – Fill `Vertex.MorphTarget` for blend-shape
   animation (facial expressions, breathing, etc.).

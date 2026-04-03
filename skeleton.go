@@ -1,0 +1,498 @@
+// Package unpeople – skeleton and joint hierarchy
+//
+// This file implements the bind-pose skeleton for humanoid meshes. The skeleton
+// consists of a joint hierarchy (root → spine → shoulders/hips → limb chains)
+// that matches the generated mesh geometry. Joint positions are derived from
+// the bodyLayout to ensure correspondence between skeleton and mesh.
+package unpeople
+
+import "fmt"
+
+// ─── Joint Types ─────────────────────────────────────────────────────────────
+
+// JointID uniquely identifies a joint within a skeleton.
+type JointID int
+
+// Joint IDs for the humanoid skeleton.
+// These correspond to standard rigging conventions used in game engines.
+const (
+	JointRoot JointID = iota
+	JointHips
+	JointSpine
+	JointSpine1
+	JointSpine2
+	JointNeck
+	JointHead
+	JointHeadTop // For hair attachment
+
+	// Left arm chain
+	JointLeftShoulder
+	JointLeftUpperArm
+	JointLeftForearm
+	JointLeftHand
+	JointLeftThumb1
+	JointLeftThumb2
+	JointLeftIndex1
+	JointLeftIndex2
+	JointLeftIndex3
+	JointLeftMiddle1
+	JointLeftMiddle2
+	JointLeftMiddle3
+	JointLeftRing1
+	JointLeftRing2
+	JointLeftRing3
+	JointLeftPinky1
+	JointLeftPinky2
+	JointLeftPinky3
+
+	// Right arm chain
+	JointRightShoulder
+	JointRightUpperArm
+	JointRightForearm
+	JointRightHand
+	JointRightThumb1
+	JointRightThumb2
+	JointRightIndex1
+	JointRightIndex2
+	JointRightIndex3
+	JointRightMiddle1
+	JointRightMiddle2
+	JointRightMiddle3
+	JointRightRing1
+	JointRightRing2
+	JointRightRing3
+	JointRightPinky1
+	JointRightPinky2
+	JointRightPinky3
+
+	// Left leg chain
+	JointLeftUpperLeg
+	JointLeftLowerLeg
+	JointLeftFoot
+	JointLeftToe
+
+	// Right leg chain
+	JointRightUpperLeg
+	JointRightLowerLeg
+	JointRightFoot
+	JointRightToe
+
+	// Total joint count
+	JointCount
+)
+
+// Joint represents a single bone/joint in the skeleton hierarchy.
+type Joint struct {
+	ID       JointID
+	Name     string
+	ParentID JointID // -1 for root
+
+	// Bind pose in world space
+	Position Vec3 // World position of joint
+	Rotation Vec4 // Quaternion rotation (x, y, z, w)
+	Scale    Vec3 // Usually (1, 1, 1)
+
+	// Inverse bind matrix (computed from position/rotation)
+	InverseBindMatrix [16]float32
+}
+
+// Skeleton represents the complete joint hierarchy for a humanoid mesh.
+type Skeleton struct {
+	Joints []Joint
+}
+
+// ─── Skeleton Generation ─────────────────────────────────────────────────────
+
+// GenerateSkeleton creates a bind-pose skeleton matching the given body layout.
+// The skeleton joints are positioned to match the mesh geometry exactly.
+func GenerateSkeleton(layout bodyLayout) *Skeleton {
+	skel := &Skeleton{
+		Joints: make([]Joint, JointCount),
+	}
+
+	// Initialize all joints with identity transforms
+	for i := range skel.Joints {
+		skel.Joints[i] = Joint{
+			ID:       JointID(i),
+			Name:     jointNames[i],
+			ParentID: jointParents[i],
+			Rotation: Vec4{0, 0, 0, 1}, // Identity quaternion
+			Scale:    Vec3{1, 1, 1},
+		}
+	}
+
+	// Calculate joint positions from body layout
+	computeJointPositions(skel, layout)
+
+	// Compute inverse bind matrices
+	computeInverseBindMatrices(skel)
+
+	return skel
+}
+
+// computeJointPositions sets joint positions based on body layout.
+func computeJointPositions(skel *Skeleton, l bodyLayout) {
+	// Root at ground level
+	skel.Joints[JointRoot].Position = Vec3{0, 0, 0}
+
+	// Hips at hip center (midpoint between hipsTop and hipsBottom)
+	hipsCenterY := (l.hipsTop[1] + l.hipsBottom[1]) / 2.0
+	skel.Joints[JointHips].Position = Vec3{0, hipsCenterY, 0}
+
+	// Spine chain
+	spineBaseY := l.abdomenBottom[1]
+	chestCenterY := (l.chestTop[1] + l.chestBottom[1]) / 2.0
+	spineStep := (chestCenterY - spineBaseY) / 3.0
+	skel.Joints[JointSpine].Position = Vec3{0, spineBaseY + spineStep, 0}
+	skel.Joints[JointSpine1].Position = Vec3{0, spineBaseY + spineStep*2, 0}
+	skel.Joints[JointSpine2].Position = Vec3{0, chestCenterY, 0}
+
+	// Neck center
+	neckCenterY := (l.neckTop[1] + l.neckBottom[1]) / 2.0
+	skel.Joints[JointNeck].Position = Vec3{0, neckCenterY, 0}
+	skel.Joints[JointHead].Position = l.headCenter
+	skel.Joints[JointHeadTop].Position = Vec3{
+		l.headCenter[0],
+		l.headCenter[1] + l.headRY,
+		l.headCenter[2],
+	}
+
+	// Left arm chain - shoulders attach at chest top
+	skel.Joints[JointLeftShoulder].Position = Vec3{-l.chestRX, l.chestTop[1], 0}
+	skel.Joints[JointLeftUpperArm].Position = l.upperArmTopL
+	skel.Joints[JointLeftForearm].Position = l.forearmTopL
+	skel.Joints[JointLeftHand].Position = l.handCenterL
+	computeFingerJoints(skel, l, true)
+
+	// Right arm chain
+	skel.Joints[JointRightShoulder].Position = Vec3{l.chestRX, l.chestTop[1], 0}
+	skel.Joints[JointRightUpperArm].Position = l.upperArmTopR
+	skel.Joints[JointRightForearm].Position = l.forearmTopR
+	skel.Joints[JointRightHand].Position = l.handCenterR
+	computeFingerJoints(skel, l, false)
+
+	// Left leg chain
+	skel.Joints[JointLeftUpperLeg].Position = l.upperLegTopL
+	skel.Joints[JointLeftLowerLeg].Position = l.lowerLegTopL
+	skel.Joints[JointLeftFoot].Position = l.footCenterL
+	skel.Joints[JointLeftToe].Position = Vec3{
+		l.footCenterL[0],
+		l.footCenterL[1],
+		l.footCenterL[2] + l.footHD*0.8,
+	}
+
+	// Right leg chain
+	skel.Joints[JointRightUpperLeg].Position = l.upperLegTopR
+	skel.Joints[JointRightLowerLeg].Position = l.lowerLegTopR
+	skel.Joints[JointRightFoot].Position = l.footCenterR
+	skel.Joints[JointRightToe].Position = Vec3{
+		l.footCenterR[0],
+		l.footCenterR[1],
+		l.footCenterR[2] + l.footHD*0.8,
+	}
+}
+
+// computeFingerJoints calculates finger joint positions.
+func computeFingerJoints(skel *Skeleton, l bodyLayout, isLeft bool) {
+	var handCenter Vec3
+	var baseID JointID
+	var sign float32 = 1.0
+
+	if isLeft {
+		handCenter = l.handCenterL
+		baseID = JointLeftThumb1
+		sign = -1.0
+	} else {
+		handCenter = l.handCenterR
+		baseID = JointRightThumb1
+		sign = 1.0
+	}
+
+	fingerLength := (l.proximalLength + l.middleLength + l.distalLength) * l.fingerLengthMult
+	phalanxLen := fingerLength / 3.0
+
+	// Finger X offsets from palm center (thumb is offset to side)
+	fingerOffsets := [5]float32{
+		-sign * l.handHW * 0.8, // Thumb (offset laterally)
+		-sign * l.handHW * 0.5, // Index
+		-sign * l.handHW * 0.2, // Middle
+		sign * l.handHW * 0.2,  // Ring
+		sign * l.handHW * 0.5,  // Pinky
+	}
+
+	// Fingers extend down from hand center
+	palmEdge := handCenter[1] - l.handHH
+
+	for f := 0; f < 5; f++ {
+		var numJoints int
+		if f == 0 { // Thumb has 2 joints
+			numJoints = 2
+		} else {
+			numJoints = 3
+		}
+
+		for j := 0; j < numJoints; j++ {
+			jointIdx := baseID + JointID(f*3+j)
+			if jointIdx >= JointCount {
+				break
+			}
+			yOffset := palmEdge - float32(j+1)*phalanxLen
+			skel.Joints[jointIdx].Position = Vec3{
+				handCenter[0] + fingerOffsets[f],
+				yOffset,
+				handCenter[2],
+			}
+		}
+	}
+}
+
+// ─── Inverse Bind Matrices ───────────────────────────────────────────────────
+
+// computeInverseBindMatrices calculates the inverse bind matrix for each joint.
+func computeInverseBindMatrices(skel *Skeleton) {
+	for i := range skel.Joints {
+		j := &skel.Joints[i]
+		// Inverse bind matrix = inverse of (translation * rotation * scale)
+		// For bind pose with identity rotation and unit scale, this is just
+		// the inverse translation matrix.
+		j.InverseBindMatrix = inverseTranslationMatrix(j.Position)
+	}
+}
+
+// inverseTranslationMatrix creates the inverse of a translation matrix.
+func inverseTranslationMatrix(pos Vec3) [16]float32 {
+	return [16]float32{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		-pos[0], -pos[1], -pos[2], 1,
+	}
+}
+
+// ─── Joint Hierarchy ─────────────────────────────────────────────────────────
+
+// jointNames maps joint IDs to human-readable names.
+var jointNames = [JointCount]string{
+	"Root",
+	"Hips",
+	"Spine",
+	"Spine1",
+	"Spine2",
+	"Neck",
+	"Head",
+	"HeadTop",
+	"LeftShoulder",
+	"LeftUpperArm",
+	"LeftForearm",
+	"LeftHand",
+	"LeftThumb1",
+	"LeftThumb2",
+	"LeftIndex1",
+	"LeftIndex2",
+	"LeftIndex3",
+	"LeftMiddle1",
+	"LeftMiddle2",
+	"LeftMiddle3",
+	"LeftRing1",
+	"LeftRing2",
+	"LeftRing3",
+	"LeftPinky1",
+	"LeftPinky2",
+	"LeftPinky3",
+	"RightShoulder",
+	"RightUpperArm",
+	"RightForearm",
+	"RightHand",
+	"RightThumb1",
+	"RightThumb2",
+	"RightIndex1",
+	"RightIndex2",
+	"RightIndex3",
+	"RightMiddle1",
+	"RightMiddle2",
+	"RightMiddle3",
+	"RightRing1",
+	"RightRing2",
+	"RightRing3",
+	"RightPinky1",
+	"RightPinky2",
+	"RightPinky3",
+	"LeftUpperLeg",
+	"LeftLowerLeg",
+	"LeftFoot",
+	"LeftToe",
+	"RightUpperLeg",
+	"RightLowerLeg",
+	"RightFoot",
+	"RightToe",
+}
+
+// jointParents defines the parent-child relationship of joints.
+// -1 indicates root joint (no parent).
+var jointParents = [JointCount]JointID{
+	-1,                 // Root
+	JointRoot,          // Hips
+	JointHips,          // Spine
+	JointSpine,         // Spine1
+	JointSpine1,        // Spine2
+	JointSpine2,        // Neck
+	JointNeck,          // Head
+	JointHead,          // HeadTop
+	JointSpine2,        // LeftShoulder
+	JointLeftShoulder,  // LeftUpperArm
+	JointLeftUpperArm,  // LeftForearm
+	JointLeftForearm,   // LeftHand
+	JointLeftHand,      // LeftThumb1
+	JointLeftThumb1,    // LeftThumb2
+	JointLeftHand,      // LeftIndex1
+	JointLeftIndex1,    // LeftIndex2
+	JointLeftIndex2,    // LeftIndex3
+	JointLeftHand,      // LeftMiddle1
+	JointLeftMiddle1,   // LeftMiddle2
+	JointLeftMiddle2,   // LeftMiddle3
+	JointLeftHand,      // LeftRing1
+	JointLeftRing1,     // LeftRing2
+	JointLeftRing2,     // LeftRing3
+	JointLeftHand,      // LeftPinky1
+	JointLeftPinky1,    // LeftPinky2
+	JointLeftPinky2,    // LeftPinky3
+	JointSpine2,        // RightShoulder
+	JointRightShoulder, // RightUpperArm
+	JointRightUpperArm, // RightForearm
+	JointRightForearm,  // RightHand
+	JointRightHand,     // RightThumb1
+	JointRightThumb1,   // RightThumb2
+	JointRightHand,     // RightIndex1
+	JointRightIndex1,   // RightIndex2
+	JointRightIndex2,   // RightIndex3
+	JointRightHand,     // RightMiddle1
+	JointRightMiddle1,  // RightMiddle2
+	JointRightMiddle2,  // RightMiddle3
+	JointRightHand,     // RightRing1
+	JointRightRing1,    // RightRing2
+	JointRightRing2,    // RightRing3
+	JointRightHand,     // RightPinky1
+	JointRightPinky1,   // RightPinky2
+	JointRightPinky2,   // RightPinky3
+	JointHips,          // LeftUpperLeg
+	JointLeftUpperLeg,  // LeftLowerLeg
+	JointLeftLowerLeg,  // LeftFoot
+	JointLeftFoot,      // LeftToe
+	JointHips,          // RightUpperLeg
+	JointRightUpperLeg, // RightLowerLeg
+	JointRightLowerLeg, // RightFoot
+	JointRightFoot,     // RightToe
+}
+
+// ─── Skeleton Accessors ──────────────────────────────────────────────────────
+
+// Joint returns the joint at the given ID.
+func (s *Skeleton) Joint(id JointID) *Joint {
+	if id < 0 || int(id) >= len(s.Joints) {
+		return nil
+	}
+	return &s.Joints[id]
+}
+
+// JointByName finds a joint by name.
+func (s *Skeleton) JointByName(name string) *Joint {
+	for i := range s.Joints {
+		if s.Joints[i].Name == name {
+			return &s.Joints[i]
+		}
+	}
+	return nil
+}
+
+// Parent returns the parent joint of the given joint.
+func (s *Skeleton) Parent(j *Joint) *Joint {
+	if j.ParentID < 0 {
+		return nil
+	}
+	return s.Joint(j.ParentID)
+}
+
+// Children returns all joints that have the given joint as parent.
+func (s *Skeleton) Children(j *Joint) []*Joint {
+	var children []*Joint
+	for i := range s.Joints {
+		if s.Joints[i].ParentID == j.ID {
+			children = append(children, &s.Joints[i])
+		}
+	}
+	return children
+}
+
+// ─── MeshWithSkeleton ────────────────────────────────────────────────────────
+
+// MeshWithSkeleton bundles a mesh with its corresponding skeleton.
+type MeshWithSkeleton struct {
+	Mesh     *Mesh
+	Skeleton *Skeleton
+}
+
+// GenerateWithSkeleton produces a mesh with its bind-pose skeleton.
+func (g *Generator) GenerateWithSkeleton(p Params) (*MeshWithSkeleton, error) {
+	if err := p.Validate(); err != nil {
+		return nil, fmt.Errorf("unpeople: invalid params: %w", err)
+	}
+
+	rng := newSplitmix64(p.Seed)
+	layout := computeBodyLayout(&p, rng)
+
+	mesh, err := g.Generate(p)
+	if err != nil {
+		return nil, err
+	}
+
+	skeleton := GenerateSkeleton(layout)
+
+	return &MeshWithSkeleton{
+		Mesh:     mesh,
+		Skeleton: skeleton,
+	}, nil
+}
+
+// ─── Skeleton Export ─────────────────────────────────────────────────────────
+
+// BoneLength returns the length of the bone from this joint to its first child.
+// Returns 0 if the joint has no children.
+func (s *Skeleton) BoneLength(j *Joint) float32 {
+	children := s.Children(j)
+	if len(children) == 0 {
+		return 0
+	}
+	// Return distance to first child
+	return vec3Len(vec3Sub(children[0].Position, j.Position))
+}
+
+// TotalBoneCount returns the number of bones (joint connections) in the skeleton.
+func (s *Skeleton) TotalBoneCount() int {
+	count := 0
+	for i := range s.Joints {
+		if s.Joints[i].ParentID >= 0 {
+			count++
+		}
+	}
+	return count
+}
+
+// Validate checks that the skeleton hierarchy is consistent.
+func (s *Skeleton) Validate() error {
+	for i := range s.Joints {
+		j := &s.Joints[i]
+
+		// Check parent reference is valid
+		if j.ParentID >= 0 {
+			if int(j.ParentID) >= len(s.Joints) {
+				return fmt.Errorf("joint %s has invalid parent ID %d", j.Name, j.ParentID)
+			}
+		}
+
+		// Check that joint ID matches index
+		if int(j.ID) != i {
+			return fmt.Errorf("joint at index %d has mismatched ID %d", i, j.ID)
+		}
+	}
+	return nil
+}

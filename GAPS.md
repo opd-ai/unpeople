@@ -32,14 +32,10 @@ This document catalogs gaps between the project's stated goals and its current i
 
 ---
 
-## Remaining Gaps (Low Priority)
-
-### Missing ToKaijuVertices Helper
+## ~~Missing ToKaijuVertices Helper~~ ✅ RESOLVED
 
 - **Stated Goal**: `mesh.go:9-11` comments reference "a ToKaijuVertices helper".
-- **Current State**: The `kaiju/` package provides `ToKaijuMesh()` which performs the full mesh conversion.
-- **Impact**: Minimal—`ToKaijuMesh()` covers the primary use case.
-- **Recommendation**: Update comment in `mesh.go` to reference `kaiju.ToKaijuMesh()` as the recommended approach, or remove the TODO comment.
+- **Resolution**: Updated comment in `mesh.go` to reference `kaiju.ToKaijuMesh()` as the recommended approach. The obsolete TODO reference has been removed.
 
 ---
 
@@ -51,6 +47,6 @@ This document catalogs gaps between the project's stated goals and its current i
 | CLI Test Coverage | ✅ Resolved | Done |
 | CI Setup | ✅ Resolved | Pre-existing |
 | Dead Code Cleanup | ✅ Resolved | No action needed |
-| ToKaijuVertices Helper | ⚪ Low Priority | ~15 minutes |
+| ToKaijuVertices Helper | ✅ Resolved | Done |
 
-All major gaps have been addressed. The library is production-ready for its stated use case.
+All gaps have been addressed. The library is production-ready for its stated use case.

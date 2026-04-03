@@ -215,10 +215,39 @@ type blendZone struct {
 	EndY      float32 // Y coordinate where blend ends
 }
 
+// upperLegJoints returns the joint assignments for the upper leg region.
+func upperLegJoints(isLeftSide bool) BodyPartJoints {
+	if isLeftSide {
+		return BodyPartJoints{
+			Primary:   JointLeftUpperLeg,
+			Secondary: []JointID{JointHips, JointLeftLowerLeg},
+		}
+	}
+	return BodyPartJoints{
+		Primary:   JointRightUpperLeg,
+		Secondary: []JointID{JointHips, JointRightLowerLeg},
+	}
+}
+
+// lowerLegJoints returns the joint assignments for the lower leg/foot region.
+func lowerLegJoints(isLeftSide bool) BodyPartJoints {
+	if isLeftSide {
+		return BodyPartJoints{
+			Primary:   JointLeftLowerLeg,
+			Secondary: []JointID{JointLeftFoot, JointLeftUpperLeg},
+		}
+	}
+	return BodyPartJoints{
+		Primary:   JointRightLowerLeg,
+		Secondary: []JointID{JointRightFoot, JointRightUpperLeg},
+	}
+}
+
 // GetBodyPartJoints returns the joint assignments for common body regions.
 // The Y coordinate of a vertex helps determine which region it belongs to.
 func GetBodyPartJoints(vertexY, vertexX float32) BodyPartJoints {
-	// Determine body region based on Y height
+	isLeftSide := vertexX < 0
+
 	switch {
 	case vertexY > 1.5: // Head and neck region
 		return BodyPartJoints{
@@ -241,27 +270,9 @@ func GetBodyPartJoints(vertexY, vertexX float32) BodyPartJoints {
 			Secondary: []JointID{JointSpine, JointLeftUpperLeg, JointRightUpperLeg},
 		}
 	case vertexY > 0.4: // Upper leg region
-		if vertexX < 0 {
-			return BodyPartJoints{
-				Primary:   JointLeftUpperLeg,
-				Secondary: []JointID{JointHips, JointLeftLowerLeg},
-			}
-		}
-		return BodyPartJoints{
-			Primary:   JointRightUpperLeg,
-			Secondary: []JointID{JointHips, JointRightLowerLeg},
-		}
+		return upperLegJoints(isLeftSide)
 	default: // Lower leg/foot region
-		if vertexX < 0 {
-			return BodyPartJoints{
-				Primary:   JointLeftLowerLeg,
-				Secondary: []JointID{JointLeftFoot, JointLeftUpperLeg},
-			}
-		}
-		return BodyPartJoints{
-			Primary:   JointRightLowerLeg,
-			Secondary: []JointID{JointRightFoot, JointRightUpperLeg},
-		}
+		return lowerLegJoints(isLeftSide)
 	}
 }
 

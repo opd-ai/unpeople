@@ -197,28 +197,42 @@ type edge struct {
 	cost   float32
 }
 
+// edgeKey computes a unique key for an edge, normalizing vertex order.
+func edgeKey(v0, v1 uint32) uint64 {
+	if v0 > v1 {
+		v0, v1 = v1, v0
+	}
+	return uint64(v0)<<32 | uint64(v1)
+}
+
+// triangleEdgePairs returns the three edge pairs for a triangle.
+func triangleEdgePairs(indices []uint32, triStart int) [3][2]uint32 {
+	return [3][2]uint32{
+		{indices[triStart], indices[triStart+1]},
+		{indices[triStart+1], indices[triStart+2]},
+		{indices[triStart+2], indices[triStart]},
+	}
+}
+
+// tryAddEdge adds an edge to the list if not already seen.
+func tryAddEdge(seen map[uint64]bool, edges *[]edge, vertices []Vertex, v0, v1 uint32) {
+	key := edgeKey(v0, v1)
+	if seen[key] {
+		return
+	}
+	seen[key] = true
+	cost := edgeCollapseCost(vertices, v0, v1)
+	*edges = append(*edges, edge{v0: v0, v1: v1, cost: cost})
+}
+
 // buildEdgeList extracts unique edges from the mesh.
 func buildEdgeList(vertices []Vertex, indices []uint32) []edge {
 	seen := make(map[uint64]bool)
 	var edges []edge
 
 	for i := 0; i < len(indices); i += 3 {
-		pairs := [][2]uint32{
-			{indices[i], indices[i+1]},
-			{indices[i+1], indices[i+2]},
-			{indices[i+2], indices[i]},
-		}
-		for _, p := range pairs {
-			v0, v1 := p[0], p[1]
-			if v0 > v1 {
-				v0, v1 = v1, v0
-			}
-			key := uint64(v0)<<32 | uint64(v1)
-			if !seen[key] {
-				seen[key] = true
-				cost := edgeCollapseCost(vertices, v0, v1)
-				edges = append(edges, edge{v0: v0, v1: v1, cost: cost})
-			}
+		for _, p := range triangleEdgePairs(indices, i) {
+			tryAddEdge(seen, &edges, vertices, p[0], p[1])
 		}
 	}
 	return edges

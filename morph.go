@@ -538,23 +538,32 @@ func sign(x float32) float32 {
 
 // ApplyMorphTargetToVertex applies morph target offsets to mesh vertex MorphTarget fields.
 // The primary morph target is stored in Vertex.MorphTarget for runtime blending.
-func ApplyMorphTargetToVertex(mesh *Mesh, morphSet *MorphTargetSet, targetType MorphTargetType) {
-	var target *MorphTarget
+// findMorphTarget searches for a morph target by type in the set.
+func findMorphTarget(morphSet *MorphTargetSet, targetType MorphTargetType) *MorphTarget {
 	for i := range morphSet.Targets {
 		if morphSet.Targets[i].Type == targetType {
-			target = &morphSet.Targets[i]
-			break
+			return &morphSet.Targets[i]
 		}
 	}
+	return nil
+}
+
+// applyMorphOffsets applies the morph target offsets to mesh vertices.
+func applyMorphOffsets(mesh *Mesh, offsets []Vec3) {
+	for i := range mesh.Vertices {
+		if i < len(offsets) {
+			mesh.Vertices[i].MorphTarget = offsets[i]
+		}
+	}
+}
+
+// ApplyMorphTargetToVertex applies a morph target's offsets to mesh vertices.
+func ApplyMorphTargetToVertex(mesh *Mesh, morphSet *MorphTargetSet, targetType MorphTargetType) {
+	target := findMorphTarget(morphSet, targetType)
 	if target == nil {
 		return
 	}
-
-	for i := range mesh.Vertices {
-		if i < len(target.Offsets) {
-			mesh.Vertices[i].MorphTarget = target.Offsets[i]
-		}
-	}
+	applyMorphOffsets(mesh, target.Offsets)
 }
 
 // ─── MorphTargetSet Accessors ────────────────────────────────────────────────

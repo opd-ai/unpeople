@@ -107,9 +107,10 @@ curl -X POST http://localhost:8080/generate \
 
 ## Documentation
 
-- [API Reference](docs/api.md)
-- [Kaiju Integration](docs/kaiju.md)
-- [Parameter Guide](docs/params.md)
+- [REST API Reference](docs/rest-api.md)
+- [Kaiju Integration](docs/kaiju-integration.md)
+- [Face Mesh Template](docs/face-mesh-template.md)
+- [Vertex Merging](docs/vertex-merging.md)
 
 ## License
 

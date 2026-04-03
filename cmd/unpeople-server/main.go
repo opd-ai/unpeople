@@ -131,25 +131,51 @@ func writeMeshResponse(w http.ResponseWriter, mesh *unpeople.Mesh, format string
 	}
 }
 
-func (s *Server) handleGenerate(w http.ResponseWriter, r *http.Request) {
+// validateGenerateRequest checks if the request method is POST.
+func validateGenerateRequest(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
+		return false
 	}
+	return true
+}
 
+// checkRateLimit verifies the request is within rate limits.
+func (s *Server) checkRateLimit(w http.ResponseWriter) bool {
 	if !s.rateLimiter.Allow() {
 		http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
-		return
+		return false
 	}
+	return true
+}
 
+// decodeAndValidateParams decodes JSON body and validates parameters.
+func decodeAndValidateParams(w http.ResponseWriter, r *http.Request) (unpeople.Params, bool) {
 	var params unpeople.Params
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
-		return
+		return params, false
 	}
 
 	if err := resolveParams(&params); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid parameters: %v", err), http.StatusBadRequest)
+		return params, false
+	}
+
+	return params, true
+}
+
+func (s *Server) handleGenerate(w http.ResponseWriter, r *http.Request) {
+	if !validateGenerateRequest(w, r) {
+		return
+	}
+
+	if !s.checkRateLimit(w) {
+		return
+	}
+
+	params, ok := decodeAndValidateParams(w, r)
+	if !ok {
 		return
 	}
 

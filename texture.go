@@ -234,48 +234,62 @@ func generateBlemishPositions(rng *splitmix64, intensity float32, age Age, maxCo
 
 // ─── Feature Sampling ────────────────────────────────────────────────────────
 
+// computeFeatureContrib calculates the contribution of a feature point at a UV coordinate.
+func computeFeatureContrib(u, v float32, f featurePoint) float32 {
+	du := u - f.u
+	dv := v - f.v
+	distSq := du*du + dv*dv
+	radiusSq := f.radius * f.radius
+
+	if distSq >= radiusSq {
+		return 0
+	}
+
+	t := 1.0 - distSq/radiusSq
+	return t * t * f.dark
+}
+
 // sampleFreckles computes freckle contribution at a UV coordinate.
 func sampleFreckles(u, v float32, freckles []featurePoint) float32 {
 	var maxContrib float32
 	for _, f := range freckles {
-		du := u - f.u
-		dv := v - f.v
-		distSq := du*du + dv*dv
-		radiusSq := f.radius * f.radius
-
-		if distSq < radiusSq {
-			// Soft-edged circle
-			t := 1.0 - distSq/radiusSq
-			contrib := t * t * f.dark
-			if contrib > maxContrib {
-				maxContrib = contrib
-			}
+		if contrib := computeFeatureContrib(u, v, f); contrib > maxContrib {
+			maxContrib = contrib
 		}
 	}
 	return maxContrib
+}
+
+// computeBlemishFalloff calculates the falloff value for a blemish based on age.
+func computeBlemishFalloff(t float32, age Age) float32 {
+	if age >= AgeElderly {
+		return t * t * t // Sharper falloff for age spots
+	}
+	return t * t
+}
+
+// computeBlemishContrib calculates the contribution of a blemish at a UV coordinate.
+func computeBlemishContrib(u, v float32, b featurePoint, age Age) float32 {
+	du := u - b.u
+	dv := v - b.v
+	distSq := du*du + dv*dv
+	radiusSq := b.radius * b.radius
+
+	if distSq >= radiusSq {
+		return 0
+	}
+
+	t := 1.0 - distSq/radiusSq
+	t = computeBlemishFalloff(t, age)
+	return t * b.dark
 }
 
 // sampleBlemishes computes blemish contribution at a UV coordinate.
 func sampleBlemishes(u, v float32, blemishes []featurePoint, age Age) float32 {
 	var maxContrib float32
 	for _, b := range blemishes {
-		du := u - b.u
-		dv := v - b.v
-		distSq := du*du + dv*dv
-		radiusSq := b.radius * b.radius
-
-		if distSq < radiusSq {
-			t := 1.0 - distSq/radiusSq
-			// Age spots have sharper edges for elderly
-			if age >= AgeElderly {
-				t = t * t * t // Sharper falloff
-			} else {
-				t = t * t
-			}
-			contrib := t * b.dark
-			if contrib > maxContrib {
-				maxContrib = contrib
-			}
+		if contrib := computeBlemishContrib(u, v, b, age); contrib > maxContrib {
+			maxContrib = contrib
 		}
 	}
 	return maxContrib

@@ -654,36 +654,55 @@ func (s *Skeleton) validateSpineUpward() *TPoseError {
 	return nil
 }
 
-// validateArmPosition checks that a hand is positioned correctly for A-pose.
-func validateArmPosition(hand, shoulder *Joint, isLeft bool) []error {
-	var errs []error
-	jointID := JointRightHand
+// selectHandJointID returns the appropriate joint ID for hand validation.
+func selectHandJointID(isLeft bool) JointID {
 	if isLeft {
-		jointID = JointLeftHand
+		return JointLeftHand
 	}
+	return JointRightHand
+}
 
-	// Arms should be below shoulders (A-pose)
+// validateHandHeight checks that hand is below shoulder (A-pose requirement).
+func validateHandHeight(hand, shoulder *Joint, jointID JointID) *TPoseError {
 	if hand.Position[1] >= shoulder.Position[1] {
-		errs = append(errs, &TPoseError{
+		return &TPoseError{
 			JointID: jointID,
 			Issue:   "hand not below shoulder",
 			Details: fmt.Sprintf("hand Y=%.3f, shoulder Y=%.3f", hand.Position[1], shoulder.Position[1]),
-		})
+		}
 	}
+	return nil
+}
 
-	// Check lateral position
+// validateHandLateral checks hand is on correct side of body.
+func validateHandLateral(hand *Joint, jointID JointID, isLeft bool) *TPoseError {
 	if isLeft && hand.Position[0] >= 0 {
-		errs = append(errs, &TPoseError{
+		return &TPoseError{
 			JointID: jointID,
 			Issue:   "left hand not on left side",
 			Details: fmt.Sprintf("hand X=%.3f", hand.Position[0]),
-		})
-	} else if !isLeft && hand.Position[0] <= 0 {
-		errs = append(errs, &TPoseError{
+		}
+	}
+	if !isLeft && hand.Position[0] <= 0 {
+		return &TPoseError{
 			JointID: jointID,
 			Issue:   "right hand not on right side",
 			Details: fmt.Sprintf("hand X=%.3f", hand.Position[0]),
-		})
+		}
+	}
+	return nil
+}
+
+// validateArmPosition checks that a hand is positioned correctly for A-pose.
+func validateArmPosition(hand, shoulder *Joint, isLeft bool) []error {
+	var errs []error
+	jointID := selectHandJointID(isLeft)
+
+	if err := validateHandHeight(hand, shoulder, jointID); err != nil {
+		errs = append(errs, err)
+	}
+	if err := validateHandLateral(hand, jointID, isLeft); err != nil {
+		errs = append(errs, err)
 	}
 	return errs
 }

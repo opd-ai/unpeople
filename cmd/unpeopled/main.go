@@ -103,16 +103,8 @@ Age Values:
   0=Decrepit, 1=Elderly, 2=Old, 3=Adult, 4=Youth, 5=Teen, 6=Child, 7=Toddler`)
 }
 
-func loadParams() (unpeople.Params, error) {
-	// If seed flag is set, use defaults with that seed
-	if *seedFlag != 0 {
-		p := unpeople.DefaultParams()
-		p.Seed = *seedFlag
-		applyPoseFlag(&p)
-		return p, nil
-	}
-
-	// Read JSON from stdin
+// readParamsFromStdin reads and parses JSON parameters from stdin.
+func readParamsFromStdin() (unpeople.Params, error) {
 	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return unpeople.Params{}, fmt.Errorf("reading stdin: %w", err)
@@ -126,15 +118,19 @@ func loadParams() (unpeople.Params, error) {
 		return p, nil
 	}
 
-	// Parse JSON into params
+	return parseParamsJSON(data)
+}
+
+// parseParamsJSON unmarshals JSON data into Params and applies defaults.
+func parseParamsJSON(data []byte) (unpeople.Params, error) {
 	var p unpeople.Params
 	if err := json.Unmarshal(data, &p); err != nil {
 		return unpeople.Params{}, fmt.Errorf("parsing JSON: %w", err)
 	}
 
 	// Apply defaults for zero values
-	defaults := unpeople.DefaultParams()
 	if p.Seed == 0 {
+		defaults := unpeople.DefaultParams()
 		p.Seed = defaults.Seed
 	}
 
@@ -142,6 +138,18 @@ func loadParams() (unpeople.Params, error) {
 	applyPoseFlag(&p)
 
 	return p, nil
+}
+
+func loadParams() (unpeople.Params, error) {
+	// If seed flag is set, use defaults with that seed
+	if *seedFlag != 0 {
+		p := unpeople.DefaultParams()
+		p.Seed = *seedFlag
+		applyPoseFlag(&p)
+		return p, nil
+	}
+
+	return readParamsFromStdin()
 }
 
 // applyPoseFlag applies the -pose flag to the params if specified.
@@ -223,21 +231,37 @@ func validateLODLevel(level int) error {
 	return nil
 }
 
+// writeVertices writes all vertices to the binary writer.
+func writeVertices(bw *unpeople.BinaryMeshWriter, vertices []unpeople.Vertex) error {
+	for _, v := range vertices {
+		if err := bw.WriteVertex(v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// writeIndices writes all indices to the binary writer.
+func writeIndices(bw *unpeople.BinaryMeshWriter, indices []uint32) error {
+	for _, idx := range indices {
+		if err := bw.WriteIndex(idx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // writeLODMesh writes the LOD mesh to the writer in binary format.
 func writeLODMesh(lodMesh *unpeople.LODMesh, w io.Writer) error {
 	bw := unpeople.NewBinaryMeshWriter(w)
 	if err := bw.WriteHeader(len(lodMesh.Mesh.Vertices), len(lodMesh.Mesh.Indices)); err != nil {
 		return err
 	}
-	for _, v := range lodMesh.Mesh.Vertices {
-		if err := bw.WriteVertex(v); err != nil {
-			return err
-		}
+	if err := writeVertices(bw, lodMesh.Mesh.Vertices); err != nil {
+		return err
 	}
-	for _, idx := range lodMesh.Mesh.Indices {
-		if err := bw.WriteIndex(idx); err != nil {
-			return err
-		}
+	if err := writeIndices(bw, lodMesh.Mesh.Indices); err != nil {
+		return err
 	}
 	return bw.Flush()
 }

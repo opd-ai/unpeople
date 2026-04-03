@@ -106,58 +106,42 @@ func applyHeight(l *bodyLayout, h Height) {
 
 // ─── Build ───────────────────────────────────────────────────────────────────
 
-// speciesBuildInteraction returns species-aware multipliers for build effects.
-// This addresses awkward combinations like Orc+Fragile or Troll+Lean where
+// buildMultipliers holds species-specific adjustment factors for build effects.
+type buildMultipliers struct {
+	chest, limb float32
+}
+
+// buildInteractionTable maps (Build, Species) pairs to adjustment multipliers.
+// These address awkward combinations like Orc+Fragile or Troll+Lean where
 // base build multipliers produce unnatural proportions.
+var buildInteractionTable = map[Build]map[Species]buildMultipliers{
+	BuildFragile: {
+		SpeciesOrc:   {1.15, 1.12}, // Orcs are naturally bulky
+		SpeciesTroll: {1.20, 1.15},
+		SpeciesOgre:  {1.25, 1.18},
+		SpeciesDwarf: {1.10, 1.08}, // Dwarves are stocky
+	},
+	BuildLean: {
+		SpeciesOrc:   {1.08, 1.06},
+		SpeciesTroll: {1.12, 1.10},
+		SpeciesOgre:  {1.15, 1.12},
+	},
+	BuildMuscular: {
+		SpeciesOrc:   {0.90, 0.92}, // Already-bulky species need less expansion
+		SpeciesTroll: {0.90, 0.92},
+		SpeciesOgre:  {0.90, 0.92},
+	},
+}
+
+// speciesBuildInteraction returns species-aware multipliers for build effects.
 // chestMult adjusts torso reduction/expansion, limbMult adjusts limb reduction.
 func speciesBuildInteraction(s Species, b Build) (chestMult, limbMult float32) {
-	// Default: no interaction adjustment
-	chestMult, limbMult = 1.0, 1.0
-
-	switch b {
-	case BuildFragile:
-		// Fragile builds on naturally bulky species should be less extreme
-		switch s {
-		case SpeciesOrc:
-			// Orcs are naturally bulky; fragile Orc is still somewhat broad
-			chestMult = 1.15 // Less chest reduction (0.80 * 1.15 = 0.92)
-			limbMult = 1.12  // Less limb reduction
-		case SpeciesTroll:
-			chestMult = 1.20
-			limbMult = 1.15
-		case SpeciesOgre:
-			chestMult = 1.25
-			limbMult = 1.18
-		case SpeciesDwarf:
-			// Dwarves are stocky; fragile Dwarf still retains some bulk
-			chestMult = 1.10
-			limbMult = 1.08
-		}
-
-	case BuildLean:
-		// Lean builds on bulky species need adjustment
-		switch s {
-		case SpeciesOrc:
-			chestMult = 1.08
-			limbMult = 1.06
-		case SpeciesTroll:
-			chestMult = 1.12
-			limbMult = 1.10
-		case SpeciesOgre:
-			chestMult = 1.15
-			limbMult = 1.12
-		}
-
-	case BuildMuscular:
-		// Muscular builds on already-bulky species should be less extreme
-		switch s {
-		case SpeciesOrc, SpeciesTroll, SpeciesOgre:
-			chestMult = 0.90 // Reduce muscle expansion
-			limbMult = 0.92
+	if speciesMap, ok := buildInteractionTable[b]; ok {
+		if mults, ok := speciesMap[s]; ok {
+			return mults.chest, mults.limb
 		}
 	}
-
-	return chestMult, limbMult
+	return 1.0, 1.0
 }
 
 func applyBuild(l *bodyLayout, b Build, s Species) {

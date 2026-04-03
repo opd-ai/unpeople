@@ -5,10 +5,9 @@ import "math"
 // ─── Vector / Color types ─────────────────────────────────────────────────────
 // These types are layout-compatible with kaiju's matrix.Vec2/Vec3/Vec4/Vec4i/Color.
 // Because Go's type system does not allow passing []unpeople.Vertex where
-// []rendering.Vertex is expected, callers must copy or unsafely reinterpret the
-// slice when integrating with the Kaiju rendering API directly.
-// See the package-level ToKaijuVertices helper (to be added in Phase 6) for a
-// safe conversion path once the Kaiju module is directly importable.
+// []rendering.Vertex is expected, callers must copy when integrating with the
+// Kaiju rendering API directly.
+// Use kaiju.ToKaijuMesh() for safe conversion when building with -tags kaiju.
 
 // Vec2 is a 2-component float32 vector (matches kaiju's matrix.Vec2).
 type Vec2 [2]float32

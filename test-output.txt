@@ -1,1 +1,5 @@
-xvfb-run: error: Xvfb failed to start
+ok  	github.com/opd-ai/unpeople	4.150s
+ok  	github.com/opd-ai/unpeople/cmd/unpeople-server	2.179s
+ok  	github.com/opd-ai/unpeople/cmd/unpeopled	2.176s
+ok  	github.com/opd-ai/unpeople/example	1.071s
+ok  	github.com/opd-ai/unpeople/kaiju	1.036s

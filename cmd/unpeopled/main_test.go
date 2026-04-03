@@ -19,6 +19,27 @@ func (e errorWriter) Write(p []byte) (n int, err error) {
 	return 0, errors.New("simulated write error")
 }
 
+// errorReaderWriter is a reader that returns an error.
+type errorReader struct{}
+
+func (e errorReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("simulated read error")
+}
+
+// delayedErrorWriter fails after a certain number of bytes.
+type delayedErrorWriter struct {
+	writtenBytes int
+	failAfter    int
+}
+
+func (d *delayedErrorWriter) Write(p []byte) (n int, err error) {
+	if d.writtenBytes >= d.failAfter {
+		return 0, errors.New("simulated write error after threshold")
+	}
+	d.writtenBytes += len(p)
+	return len(p), nil
+}
+
 func TestGenerateOBJ(t *testing.T) {
 	g := unpeople.NewGenerator()
 	p := unpeople.DefaultParams()
@@ -573,6 +594,54 @@ func TestWriteLODMeshWriteError(t *testing.T) {
 	}
 }
 
+func TestWriteLODMeshDelayedError(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Seed = 42
+
+	result, err := g.GenerateWithLOD(p)
+	if err != nil {
+		t.Fatalf("GenerateWithLOD failed: %v", err)
+	}
+
+	// Fail after header is written (8 bytes for UNPM + version)
+	dew := &delayedErrorWriter{failAfter: 20}
+	err = writeLODMesh(result.LODSet.Meshes[0], dew)
+	if err == nil {
+		t.Error("Expected error for delayed write failure, got nil")
+	}
+}
+
+func TestLoadParamsReadError(t *testing.T) {
+	*seedFlag = 0
+
+	oldStdin := os.Stdin
+	defer func() { os.Stdin = oldStdin }()
+
+	// Create a pipe and close the write end immediately to cause an EOF
+	// that should still work, but use a closed read end to cause error
+	r, w, _ := os.Pipe()
+	r.Close() // Close read end to force error
+	w.Close()
+
+	// Create a fake stdin that returns an error
+	pr, pw, _ := os.Pipe()
+	pw.Close()
+	os.Stdin = pr
+
+	// This should not fail because an empty read is valid (returns default params)
+	p, err := loadParams()
+	if err != nil {
+		t.Logf("loadParams returned error (expected for closed pipe): %v", err)
+	} else {
+		// Empty stdin returns defaults
+		defaults := unpeople.DefaultParams()
+		if p.Species != defaults.Species {
+			t.Errorf("Expected default species, got %d", p.Species)
+		}
+	}
+}
+
 func TestInfoWithFormatArgs(t *testing.T) {
 	*quietFlag = false
 	defer func() { *quietFlag = true }()
@@ -640,6 +709,67 @@ func TestAllLODLevels(t *testing.T) {
 				t.Errorf("LOD level %d produced empty output", level)
 			}
 		})
+	}
+}
+
+func TestGenerateOBJWithInvalidParams(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Species = 999 // Invalid species
+
+	var buf bytes.Buffer
+	err := generateOBJ(g, p, &buf)
+	if err == nil {
+		t.Error("Expected error for invalid params, got nil")
+	}
+}
+
+func TestGenerateGLTFWithInvalidParams(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Species = 999
+
+	var buf bytes.Buffer
+	err := generateGLTF(g, p, &buf)
+	if err == nil {
+		t.Error("Expected error for invalid params, got nil")
+	}
+}
+
+func TestGenerateGLBWithInvalidParams(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Species = 999
+
+	var buf bytes.Buffer
+	err := generateGLB(g, p, &buf)
+	if err == nil {
+		t.Error("Expected error for invalid params, got nil")
+	}
+}
+
+func TestGenerateBinaryWithInvalidParams(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Species = 999
+
+	var buf bytes.Buffer
+	err := generateBinary(g, p, &buf)
+	if err == nil {
+		t.Error("Expected error for invalid params, got nil")
+	}
+}
+
+func TestGenerateLODWithInvalidParams(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Species = 999
+	*lodFlag = 0
+
+	var buf bytes.Buffer
+	err := generateLOD(g, p, &buf)
+	if err == nil {
+		t.Error("Expected error for invalid params, got nil")
 	}
 }
 

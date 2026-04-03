@@ -24,6 +24,30 @@
 
 ## Phase 2: Enhanced Geometry
 
+### Technical Prerequisites
+
+The following technical requirements were identified during Phase 1 completion
+and must be addressed before or during Phase 2 implementation:
+
+1. **Vertex merging algorithm** – Topology upgrade requires an algorithm to
+   identify and merge boundary vertices between adjacent body parts (e.g.,
+   shoulder-to-upper-arm, hip-to-upper-leg). Candidates: KD-tree spatial
+   lookup with epsilon threshold, or explicit vertex correspondence tables.
+
+2. **Face mesh vertex positions** – Advanced facial morphing needs a predefined
+   face mesh template with named vertex groups for jaw, brow, cheekbones, nose,
+   and chin regions. Consider importing a simplified MakeHuman face topology.
+
+3. **Ear attachment coordinates** – Ear geometry requires precise attachment
+   points on the head mesh. Store as bodyLayout fields (earAttachL, earAttachR)
+   derived from headCenter and headRX.
+
+4. **Finger bone hierarchy** – Finger geometry needs a bone chain definition
+   for proximal/middle/distal phalanges per finger (5 fingers × 3 bones × 2
+   hands = 30 segments). Consider generating from hand box corner positions.
+
+### Feature Items
+
 - [ ] **Topology upgrade** – Replace cylindrical/box primitives with true
   subdivision-surface body parts that share vertices across part boundaries,
   eliminating visible seams at shoulders, hips, and ankles.

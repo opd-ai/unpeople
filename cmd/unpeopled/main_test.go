@@ -773,6 +773,48 @@ func TestGenerateLODWithInvalidParams(t *testing.T) {
 	}
 }
 
+func TestApplyPoseFlag(t *testing.T) {
+	tests := []struct {
+		flag     string
+		expected unpeople.SkeletonPose
+	}{
+		{"tpose", unpeople.SkeletonPoseTPose},
+		{"t-pose", unpeople.SkeletonPoseTPose},
+		{"t", unpeople.SkeletonPoseTPose},
+		{"apose", unpeople.SkeletonPoseAPose},
+		{"a-pose", unpeople.SkeletonPoseAPose},
+		{"a", unpeople.SkeletonPoseAPose},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.flag, func(t *testing.T) {
+			*poseFlag = tt.flag
+			p := unpeople.DefaultParams()
+			applyPoseFlag(&p)
+			if p.SkeletonPose != tt.expected {
+				t.Errorf("applyPoseFlag(%q): got %d, want %d", tt.flag, p.SkeletonPose, tt.expected)
+			}
+		})
+	}
+}
+
+func TestLoadParamsWithPoseFlag(t *testing.T) {
+	*seedFlag = 42
+	*poseFlag = "apose"
+	defer func() {
+		*seedFlag = 0
+		*poseFlag = "tpose"
+	}()
+
+	p, err := loadParams()
+	if err != nil {
+		t.Fatalf("loadParams failed: %v", err)
+	}
+	if p.SkeletonPose != unpeople.SkeletonPoseAPose {
+		t.Errorf("Expected A-pose, got %d", p.SkeletonPose)
+	}
+}
+
 func init() {
 	// Enable quiet mode by default for tests
 	*quietFlag = true

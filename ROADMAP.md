@@ -107,14 +107,14 @@ The skeleton is currently generated in T-pose, but the roadmap claims "A-pose ex
 - [x] Implement shoulder joint rotation for A-pose in `skeleton.go` (~20 lines)
 - [x] Rotate shoulder-attached vertices to match A-pose bind position
 - [x] Add test `TestAPoseExport` verifying shoulder angles
-- [ ] Update CLI/server to expose pose selection
+- [x] Update CLI/server to expose pose selection
 - **Validation**: Export glTF with A-pose skeleton; import into Blender and verify ~45° shoulder angle
 
 ### Priority 2: Continuous Integration Setup
 
 No CI exists. Given stdlib-only design, CI is trivial but valuable for preventing regressions.
 
-- [ ] Create `.github/workflows/ci.yml`:
+- [x] Create `.github/workflows/ci.yml`:
   ```yaml
   on: [push, pull_request]
   jobs:
@@ -129,7 +129,7 @@ No CI exists. Given stdlib-only design, CI is trivial but valuable for preventin
         - run: go build ./...
         - run: go test -race -cover ./...
   ```
-- [ ] Add badge to README
+- [x] Add badge to README
 - **Validation**: Green CI status on main branch
 
 ### Priority 3: Increase CLI Test Coverage (70.2% → 85%+)

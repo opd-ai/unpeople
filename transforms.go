@@ -435,16 +435,27 @@ func applyFacialFeatures(l *bodyLayout, fs FaceShape, j Jaw, br Brow, e Ears) {
 		// default
 	}
 
+	// Apply ear-specific modifications
 	switch e {
 	case EarsLarge:
-		l.headRX *= 1.05
+		l.earScale *= 1.30
 	case EarsPointed:
-		l.headRX *= 1.04
+		l.earScale *= 1.15 // Pointed ears are slightly larger
 	case EarsSmall:
-		l.headRX *= 0.97
+		l.earScale *= 0.70
 	case EarsMedium, EarsRounded:
-		// default
+		// default scale
 	}
+
+	// Update ear attachment points based on current head geometry.
+	// Ears attach at the lateral extent of the head at roughly eye level.
+	l.earAttachL[0] = -l.headRX
+	l.earAttachL[1] = l.headCenter[1] + l.headRY*0.15
+	l.earAttachL[2] = l.headCenter[2]
+
+	l.earAttachR[0] = l.headRX
+	l.earAttachR[1] = l.headCenter[1] + l.headRY*0.15
+	l.earAttachR[2] = l.headCenter[2]
 }
 
 // ─── Posture ─────────────────────────────────────────────────────────────────
@@ -509,6 +520,7 @@ func allPositionFields(l *bodyLayout) []*Vec3 {
 		&l.upperLegTopL, &l.upperLegBottomL, &l.upperLegTopR, &l.upperLegBottomR,
 		&l.lowerLegTopL, &l.lowerLegBottomL, &l.lowerLegTopR, &l.lowerLegBottomR,
 		&l.footCenterL, &l.footCenterR,
+		&l.earAttachL, &l.earAttachR,
 	}
 }
 
@@ -525,6 +537,7 @@ func allUniformRadii(l *bodyLayout) []*float32 {
 		&l.handHW, &l.handHH, &l.handHD,
 		&l.upperLegRadius, &l.lowerLegRadius,
 		&l.footHW, &l.footHH, &l.footHD,
+		&l.earScale,
 	}
 }
 

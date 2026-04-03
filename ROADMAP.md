@@ -53,7 +53,7 @@ and must be addressed before or during Phase 2 implementation:
   eliminating visible seams at shoulders, hips, and ankles.
 - [ ] **Advanced facial morphing** – Dedicated face mesh with blend-shape
   targets for jaw shape, brow ridge, cheekbones, nose bridge, and chin.
-- [ ] **Ear geometry** – Separate ear primitive (taper/point mesh) attached to
+- [x] **Ear geometry** – Separate ear primitive (taper/point mesh) attached to
   the head at the correct anatomical position.
 - [ ] **Finger geometry** – Individual finger segments (proximal / middle /
   distal phalanges) driven by the `FingerLength` parameter.

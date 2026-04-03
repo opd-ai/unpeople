@@ -69,6 +69,17 @@ const (
 	defaultHandHH      = 0.065 // Hand half-height (finger length)
 	defaultHandHD      = 0.022 // Hand half-depth (palm thickness)
 
+	// Finger dimensions (cylinder segments)
+	// Each finger has proximal, middle, and distal phalanges.
+	// Thumb has only proximal and distal (2 segments).
+	defaultFingerRadius        = 0.008  // Finger cylinder radius
+	defaultProximalLength      = 0.025  // Proximal phalanx length
+	defaultMiddleLength        = 0.018  // Middle phalanx length
+	defaultDistalLength        = 0.015  // Distal phalanx length
+	defaultThumbProximalLength = 0.020  // Thumb proximal length
+	defaultThumbDistalLength   = 0.018  // Thumb distal length
+	defaultFingerSpacing       = 0.0085 // Spacing between fingers
+
 	// Leg attachment (hip socket) X offset from centerline
 	defaultHipSocketX = 0.095
 
@@ -87,6 +98,12 @@ const (
 	defaultFootHW      = 0.058 // Foot half-width
 	defaultFootHH      = 0.038 // Foot half-height
 	defaultFootHD      = 0.120 // Foot half-depth (toe to heel)
+
+	// Ear dimensions
+	// Ears attach to the lateral sides of the head at roughly eye level.
+	// Ear scale factor controls overall ear size relative to head radius.
+	defaultEarScale  = 0.35 // Ear height as fraction of head lateral radius
+	defaultEarYRatio = 0.15 // Vertical offset from head center as fraction of headRY
 )
 
 // bodyLayout stores every dimensional parameter needed to assemble the mesh.
@@ -143,6 +160,17 @@ type bodyLayout struct {
 	handHH      float32 // half-height (finger direction)
 	handHD      float32 // half-depth
 
+	// ── Fingers ─────────────────────────────────────────────────────────────
+	// Finger segment lengths (phalanges) and radius
+	fingerRadius        float32
+	proximalLength      float32 // Proximal phalanx (closest to palm)
+	middleLength        float32 // Middle phalanx
+	distalLength        float32 // Distal phalanx (fingertip)
+	thumbProximalLength float32 // Thumb has different proportions
+	thumbDistalLength   float32
+	fingerSpacing       float32 // Lateral spacing between fingers
+	fingerLengthMult    float32 // Multiplier from FingerLength param
+
 	// ── Upper legs ──────────────────────────────────────────────────────────
 	upperLegTopL    Vec3
 	upperLegBottomL Vec3
@@ -163,6 +191,11 @@ type bodyLayout struct {
 	footHW      float32
 	footHH      float32
 	footHD      float32 // half-depth (toe-to-heel)
+
+	// ── Ears ────────────────────────────────────────────────────────────────
+	earAttachL Vec3    // Left ear attachment point (derived from head geometry)
+	earAttachR Vec3    // Right ear attachment point
+	earScale   float32 // Overall ear size multiplier
 }
 
 // defaultBodyLayout returns a neutral 1.75 m adult humanoid in T-pose.
@@ -212,6 +245,15 @@ func defaultBodyLayout() bodyLayout {
 		handHH:      defaultHandHH,
 		handHD:      defaultHandHD,
 
+		fingerRadius:        defaultFingerRadius,
+		proximalLength:      defaultProximalLength,
+		middleLength:        defaultMiddleLength,
+		distalLength:        defaultDistalLength,
+		thumbProximalLength: defaultThumbProximalLength,
+		thumbDistalLength:   defaultThumbDistalLength,
+		fingerSpacing:       defaultFingerSpacing,
+		fingerLengthMult:    1.0,
+
 		upperLegTopL:    Vec3{-defaultHipSocketX, defaultUpperLegTopY, 0},
 		upperLegBottomL: Vec3{-defaultHipSocketX, defaultUpperLegBottomY, 0},
 		upperLegTopR:    Vec3{defaultHipSocketX, defaultUpperLegTopY, 0},
@@ -229,6 +271,19 @@ func defaultBodyLayout() bodyLayout {
 		footHW:      defaultFootHW,
 		footHH:      defaultFootHH,
 		footHD:      defaultFootHD,
+
+		// Ears attach to the sides of the head at roughly eye level
+		earAttachL: Vec3{
+			-defaultHeadRX,
+			defaultHeadCenterY + defaultHeadRY*defaultEarYRatio,
+			0,
+		},
+		earAttachR: Vec3{
+			defaultHeadRX,
+			defaultHeadCenterY + defaultHeadRY*defaultEarYRatio,
+			0,
+		},
+		earScale: defaultEarScale,
 	}
 }
 
@@ -310,6 +365,12 @@ func buildMesh(layout bodyLayout, key string) *Mesh {
 	v, i = generateBox(layout.footCenterL, layout.footHW, layout.footHH, layout.footHD)
 	builder.append(v, i)
 	v, i = generateBox(layout.footCenterR, layout.footHW, layout.footHH, layout.footHD)
+	builder.append(v, i)
+
+	// Ears
+	v, i = generateEar(layout.earAttachL, layout.earScale, true)
+	builder.append(v, i)
+	v, i = generateEar(layout.earAttachR, layout.earScale, false)
 	builder.append(v, i)
 
 	return builder.build(key)

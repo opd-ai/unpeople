@@ -16,6 +16,50 @@ func perpendicular(v Vec3) Vec3 {
 
 // ─── Cylinder ────────────────────────────────────────────────────────────────
 
+// cylinderCapacity calculates vertex and index capacities for a cylinder.
+func cylinderCapacity(segments int, addBottomCap, addTopCap bool) (vertCap, idxCap int) {
+	vertCap = 2 * segments
+	idxCap = 6 * segments
+	if addBottomCap {
+		vertCap++
+		idxCap += 3 * segments
+	}
+	if addTopCap {
+		vertCap++
+		idxCap += 3 * segments
+	}
+	return vertCap, idxCap
+}
+
+// appendCylinderCap adds a flat disc cap to vertex/index buffers.
+// ringStart is the first vertex index of the ring. normal is the cap's facing
+// direction. flipWinding reverses triangle winding for bottom caps.
+func appendCylinderCap(
+	verts []Vertex,
+	idxs []uint32,
+	center Vec3,
+	normal Vec3,
+	ringStart, segments int,
+	flipWinding bool,
+) ([]Vertex, []uint32) {
+	capIdx := uint32(len(verts))
+	verts = append(verts, Vertex{
+		Position: center,
+		Normal:   normal,
+		UV0:      Vec2{0.5, 0.5},
+		Color:    ColorGray,
+	})
+	for i := 0; i < segments; i++ {
+		next := (i + 1) % segments
+		if flipWinding {
+			idxs = append(idxs, capIdx, uint32(ringStart+next), uint32(ringStart+i))
+		} else {
+			idxs = append(idxs, capIdx, uint32(ringStart+i), uint32(ringStart+next))
+		}
+	}
+	return verts, idxs
+}
+
 // generateCylinder builds a (possibly tapered) cylinder from bottomCenter to
 // topCenter. segments controls the radial resolution. addBottomCap /
 // addTopCap add flat disc endcaps.
@@ -25,19 +69,7 @@ func generateCylinder(
 	segments int,
 	addBottomCap, addTopCap bool,
 ) ([]Vertex, []uint32) {
-	// Pre-calculate capacities: 2 rings of segments vertices each,
-	// plus 1 center vertex per cap. Indices: 6 per side quad (2 triangles),
-	// plus 3*segments per cap.
-	vertCap := 2 * segments
-	idxCap := 6 * segments
-	if addBottomCap {
-		vertCap++
-		idxCap += 3 * segments
-	}
-	if addTopCap {
-		vertCap++
-		idxCap += 3 * segments
-	}
+	vertCap, idxCap := cylinderCapacity(segments, addBottomCap, addTopCap)
 	verts := make([]Vertex, 0, vertCap)
 	idxs := make([]uint32, 0, idxCap)
 
@@ -85,40 +117,17 @@ func generateCylinder(
 		b1 := uint32(bottomStart + next)
 		t0 := uint32(topStart + i)
 		t1 := uint32(topStart + next)
-		// Two triangles per quad, CCW winding when viewed from outside
 		idxs = append(idxs, b0, t0, b1)
 		idxs = append(idxs, b1, t0, t1)
 	}
 
-	// Bottom cap (normal = -axis)
+	// Caps
 	if addBottomCap {
-		capIdx := uint32(len(verts))
 		downNorm := vec3Scale(axis, -1)
-		verts = append(verts, Vertex{
-			Position: bottomCenter,
-			Normal:   downNorm,
-			UV0:      Vec2{0.5, 0.5},
-			Color:    ColorGray,
-		})
-		for i := 0; i < segments; i++ {
-			next := (i + 1) % segments
-			idxs = append(idxs, capIdx, uint32(bottomStart+next), uint32(bottomStart+i))
-		}
+		verts, idxs = appendCylinderCap(verts, idxs, bottomCenter, downNorm, bottomStart, segments, true)
 	}
-
-	// Top cap (normal = +axis)
 	if addTopCap {
-		capIdx := uint32(len(verts))
-		verts = append(verts, Vertex{
-			Position: topCenter,
-			Normal:   axis,
-			UV0:      Vec2{0.5, 0.5},
-			Color:    ColorGray,
-		})
-		for i := 0; i < segments; i++ {
-			next := (i + 1) % segments
-			idxs = append(idxs, capIdx, uint32(topStart+i), uint32(topStart+next))
-		}
+		verts, idxs = appendCylinderCap(verts, idxs, topCenter, axis, topStart, segments, false)
 	}
 
 	return verts, idxs
@@ -242,5 +251,91 @@ func generateBox(center Vec3, hw, hh, hd float32) ([]Vertex, []uint32) {
 		idxs = append(idxs, base, base+1, base+2)
 		idxs = append(idxs, base, base+2, base+3)
 	}
+	return verts, idxs
+}
+
+// ─── Ear ─────────────────────────────────────────────────────────────────────
+
+// generateEar creates a simplified ear mesh as a curved, tapered shell.
+// The ear is generated at the attachment point and oriented outward from the
+// head. isLeftEar determines which side the ear faces (left = -X, right = +X).
+// scale controls the overall size of the ear.
+func generateEar(attachPoint Vec3, scale float32, isLeftEar bool) ([]Vertex, []uint32) {
+	// Ear dimensions relative to scale
+	earHeight := scale * 0.28   // Vertical extent
+	earWidth := scale * 0.12    // Lateral protrusion from head
+	earDepth := scale * 0.08    // Front-to-back thickness
+	earCurve := scale * 0.04    // Curvature of the outer rim
+	earTipRatio := float32(0.3) // Top tapers to 30% of base width
+
+	// Direction multiplier: -1 for left ear, +1 for right ear
+	dir := float32(1.0)
+	if isLeftEar {
+		dir = -1.0
+	}
+
+	// Generate a simplified ear shape as a curved quad strip
+	// 4 vertical segments × 2 columns (inner/outer) = 8 vertices
+	const segs = 4
+	verts := make([]Vertex, 0, (segs+1)*2)
+	idxs := make([]uint32, 0, segs*6)
+
+	// Outer normal direction (pointing away from head)
+	outerNorm := Vec3{dir, 0, 0}
+
+	for i := 0; i <= segs; i++ {
+		t := float32(i) / float32(segs)
+
+		// Vertical position from bottom to top
+		y := attachPoint[1] - earHeight*0.4 + earHeight*t
+
+		// Taper width toward the top
+		widthMult := 1.0 - t*(1.0-earTipRatio)
+
+		// Curvature: ear bulges out in the middle vertically
+		curveOffset := earCurve * float32(math.Sin(float64(t*math.Pi)))
+
+		// Inner edge (closer to head)
+		innerX := attachPoint[0] + dir*0.002
+		innerZ := attachPoint[2] + earDepth*0.5*widthMult - curveOffset*0.5
+
+		// Outer edge (away from head)
+		outerX := attachPoint[0] + dir*(earWidth*widthMult+curveOffset)
+		outerZ := attachPoint[2] - earDepth*0.5*widthMult
+
+		// UV coordinates
+		uInner := float32(0.0)
+		uOuter := float32(1.0)
+		v := t
+
+		verts = append(verts, Vertex{
+			Position: Vec3{innerX, y, innerZ},
+			Normal:   outerNorm,
+			UV0:      Vec2{uInner, v},
+			Color:    ColorGray,
+		})
+		verts = append(verts, Vertex{
+			Position: Vec3{outerX, y, outerZ},
+			Normal:   outerNorm,
+			UV0:      Vec2{uOuter, v},
+			Color:    ColorGray,
+		})
+	}
+
+	// Generate quad strip indices
+	for i := 0; i < segs; i++ {
+		base := uint32(i * 2)
+		// Two triangles per quad, maintaining CCW winding from outside
+		if isLeftEar {
+			// Left ear faces -X, so triangles wind differently
+			idxs = append(idxs, base, base+2, base+1)
+			idxs = append(idxs, base+1, base+2, base+3)
+		} else {
+			// Right ear faces +X
+			idxs = append(idxs, base, base+1, base+2)
+			idxs = append(idxs, base+1, base+3, base+2)
+		}
+	}
+
 	return verts, idxs
 }

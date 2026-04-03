@@ -27,6 +27,7 @@ var (
 	formatFlag = flag.String("format", "obj", "Output format: obj, gltf, glb, binary, lod")
 	seedFlag   = flag.Int64("seed", 0, "Random seed (uses stdin params if 0)")
 	lodFlag    = flag.Int("lod", 0, "LOD level for lod format: 0, 1, or 2")
+	poseFlag   = flag.String("pose", "tpose", "Skeleton pose: tpose or apose")
 	quietFlag  = flag.Bool("q", false, "Quiet mode: suppress stderr messages")
 	helpFlag   = flag.Bool("h", false, "Show help")
 )
@@ -57,6 +58,7 @@ Usage:
   unpeopled -seed 12345 > output.obj
   unpeopled -seed 12345 -format gltf > output.gltf
   unpeopled -seed 12345 -format glb > output.glb
+  unpeopled -seed 12345 -pose apose -format gltf > output_apose.gltf
   echo '{"seed":42}' | unpeopled > output.obj
 
 Options:`)
@@ -72,7 +74,8 @@ Input:
     "species": 0,
     "height": 2,
     "build": 2,
-    "age": 2
+    "age": 2,
+    "skeletonpose": 1
   }
 
 Output Formats:
@@ -81,6 +84,10 @@ Output Formats:
   glb     - glTF 2.0 Binary format (single file)
   binary  - UNPM binary format (compact, fast loading)
   lod     - Binary format with LOD level selection (-lod flag)
+
+Skeleton Pose:
+  tpose   - T-pose with arms horizontal (default)
+  apose   - A-pose with arms angled ~45° down (better for animation)
 
 Species Values:
   0=Human, 1=Elf, 2=Dwarf, 3=Gnome, 4=Halfling,
@@ -101,6 +108,7 @@ func loadParams() (unpeople.Params, error) {
 	if *seedFlag != 0 {
 		p := unpeople.DefaultParams()
 		p.Seed = *seedFlag
+		applyPoseFlag(&p)
 		return p, nil
 	}
 
@@ -113,7 +121,9 @@ func loadParams() (unpeople.Params, error) {
 	// If empty, use defaults
 	if len(data) == 0 {
 		info("No input provided, using default parameters")
-		return unpeople.DefaultParams(), nil
+		p := unpeople.DefaultParams()
+		applyPoseFlag(&p)
+		return p, nil
 	}
 
 	// Parse JSON into params
@@ -128,7 +138,21 @@ func loadParams() (unpeople.Params, error) {
 		p.Seed = defaults.Seed
 	}
 
+	// Apply pose flag if specified (CLI flag overrides JSON)
+	applyPoseFlag(&p)
+
 	return p, nil
+}
+
+// applyPoseFlag applies the -pose flag to the params if specified.
+func applyPoseFlag(p *unpeople.Params) {
+	switch *poseFlag {
+	case "apose", "a-pose", "a":
+		p.SkeletonPose = unpeople.SkeletonPoseAPose
+	case "tpose", "t-pose", "t":
+		p.SkeletonPose = unpeople.SkeletonPoseTPose
+		// Default: leave as-is (from JSON or default)
+	}
 }
 
 func generate(p unpeople.Params, w io.Writer) error {

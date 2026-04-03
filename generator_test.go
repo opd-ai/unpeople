@@ -1856,6 +1856,84 @@ func TestSkeletonJointByName(t *testing.T) {
 	}
 }
 
+// TestAPoseExport verifies A-pose skeleton has correct shoulder angles.
+// In A-pose, arms are rotated ~45° downward from horizontal T-pose.
+func TestAPoseExport(t *testing.T) {
+	g := unpeople.NewGenerator()
+
+	// Generate T-pose skeleton for comparison
+	pTPose := unpeople.DefaultParams()
+	pTPose.SkeletonPose = unpeople.SkeletonPoseTPose
+	resultTPose, err := g.GenerateWithSkeleton(pTPose)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton (T-pose) failed: %v", err)
+	}
+
+	// Generate A-pose skeleton
+	pAPose := unpeople.DefaultParams()
+	pAPose.SkeletonPose = unpeople.SkeletonPoseAPose
+	resultAPose, err := g.GenerateWithSkeleton(pAPose)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton (A-pose) failed: %v", err)
+	}
+
+	// Get shoulder and hand positions
+	tposeLeftHand := resultTPose.Skeleton.Joint(unpeople.JointLeftHand)
+	tposeRightHand := resultTPose.Skeleton.Joint(unpeople.JointRightHand)
+	aposeLeftHand := resultAPose.Skeleton.Joint(unpeople.JointLeftHand)
+	aposeRightHand := resultAPose.Skeleton.Joint(unpeople.JointRightHand)
+
+	// In T-pose, hands should be at roughly the same Y as shoulders (horizontal arms)
+	// In A-pose, hands should be significantly lower (arms angled ~45° down)
+	tposeLeftShoulder := resultTPose.Skeleton.Joint(unpeople.JointLeftShoulder)
+	aposeLeftShoulder := resultAPose.Skeleton.Joint(unpeople.JointLeftShoulder)
+
+	// T-pose: hands near shoulder height (arms horizontal)
+	tposeHandDropL := tposeLeftShoulder.Position[1] - tposeLeftHand.Position[1]
+	if tposeHandDropL < 0 || tposeHandDropL > 0.1 {
+		t.Logf("T-pose left hand drop: %.3f (expected ~0 for horizontal arms)", tposeHandDropL)
+	}
+
+	// A-pose: hands should be notably lower than shoulders (arms angled down)
+	aposeHandDropL := aposeLeftShoulder.Position[1] - aposeLeftHand.Position[1]
+	if aposeHandDropL < 0.1 {
+		t.Errorf("A-pose left hand should be lower than shoulder; drop=%.3f", aposeHandDropL)
+	}
+
+	// Verify both arms are lowered symmetrically
+	aposeHandDropR := resultAPose.Skeleton.Joint(unpeople.JointRightShoulder).Position[1] -
+		aposeRightHand.Position[1]
+	if aposeHandDropR < 0.1 {
+		t.Errorf("A-pose right hand should be lower than shoulder; drop=%.3f", aposeHandDropR)
+	}
+
+	// Shoulder joints should have non-identity rotation in A-pose
+	leftShoulderRot := aposeLeftShoulder.Rotation
+	rightShoulderRot := resultAPose.Skeleton.Joint(unpeople.JointRightShoulder).Rotation
+	identityQuat := [4]float32{0, 0, 0, 1}
+
+	if leftShoulderRot == identityQuat {
+		t.Error("A-pose left shoulder should have non-identity rotation")
+	}
+	if rightShoulderRot == identityQuat {
+		t.Error("A-pose right shoulder should have non-identity rotation")
+	}
+
+	// Verify that T-pose shoulders have identity rotation
+	tposeLeftShoulderRot := tposeLeftShoulder.Rotation
+	if tposeLeftShoulderRot != identityQuat {
+		t.Errorf("T-pose left shoulder should have identity rotation, got %v", tposeLeftShoulderRot)
+	}
+
+	// Log for informational purposes
+	t.Logf("T-pose hands: L=(%.3f, %.3f, %.3f) R=(%.3f, %.3f, %.3f)",
+		tposeLeftHand.Position[0], tposeLeftHand.Position[1], tposeLeftHand.Position[2],
+		tposeRightHand.Position[0], tposeRightHand.Position[1], tposeRightHand.Position[2])
+	t.Logf("A-pose hands: L=(%.3f, %.3f, %.3f) R=(%.3f, %.3f, %.3f)",
+		aposeLeftHand.Position[0], aposeLeftHand.Position[1], aposeLeftHand.Position[2],
+		aposeRightHand.Position[0], aposeRightHand.Position[1], aposeRightHand.Position[2])
+}
+
 // ─── Skinning Tests ──────────────────────────────────────────────────────────
 
 // TestSkinningWeightGeneration verifies skinning weights are computed correctly.

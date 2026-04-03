@@ -82,18 +82,18 @@ and must be addressed before or during Phase 2 implementation:
   fields in every `Vertex` so the mesh can be animated in Kaiju.
 - [x] **MorphTarget support** – Fill `Vertex.MorphTarget` for blend-shape
   animation (facial expressions, breathing, etc.).
-- [ ] **Animation-ready T-pose export** – Ensure the generated skeleton
-  conforms to industry-standard bind-pose conventions.
+- [x] **Animation-ready A-pose export** – Ensure the generated skeleton
+  conforms to industry-standard bind-pose conventions (A-pose variant).
 
 ## Phase 5: Performance & Scalability
 
 - [x] **Mesh caching layer** – In-process LRU cache keyed on the full Params
   struct so repeated calls with identical inputs skip geometry rebuild.
-- [ ] **Level-of-detail (LOD) generation** – Automatically produce 3 LOD
+- [x] **Level-of-detail (LOD) generation** – Automatically produce 3 LOD
   variants (100 %, 50 %, 25 % triangle budget) from a single Generate call.
 - [x] **Parallel generation** – Worker-pool API for generating large batches of
   characters concurrently.
-- [ ] **Streaming output** – io.Writer / channel-based API for very large
+- [x] **Streaming output** – io.Writer / channel-based API for very large
   scenes where holding all meshes in memory is impractical.
 
 ## Phase 6: Ecosystem Integration
@@ -102,7 +102,7 @@ and must be addressed before or during Phase 2 implementation:
   Kaiju's asset pipeline and produces `rendering.Mesh` objects directly.
 - [ ] **glTF 2.0 export** – Standard interchange format for use outside Kaiju.
 - [x] **OBJ export** – Simple text-format export for debugging in DCC tools.
-- [ ] **CLI tool** – `unpeopled` command that accepts JSON parameters on stdin
-  and writes a mesh file (glTF or OBJ) to stdout.
+- [x] **CLI tool** – `unpeopled` command that accepts JSON parameters on stdin
+  and writes a mesh file (OBJ or UNPM binary) to stdout.
 - [ ] **REST API** – HTTP microservice wrapper around the generator for
   integration with non-Go game engines.

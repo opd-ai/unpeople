@@ -2144,3 +2144,704 @@ func TestApplyMorphTarget(t *testing.T) {
 		t.Error("No vertices have MorphTarget set after apply")
 	}
 }
+
+// ─── A-Pose / Bind-Pose Validation Tests ─────────────────────────────────────
+//
+// The unpeople library uses an A-pose (arms at sides) rather than T-pose (arms
+// horizontal). This is a design choice that provides better shoulder deformation
+// during animation. The ValidateTPose method checks A-pose conventions.
+
+// TestBindPoseValidation verifies the skeleton passes A-pose validation.
+func TestBindPoseValidation(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithSkeleton(p)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton failed: %v", err)
+	}
+
+	errs := result.Skeleton.ValidateTPose()
+	if len(errs) > 0 {
+		t.Errorf("Bind-pose validation found %d errors:", len(errs))
+		for _, e := range errs {
+			t.Errorf("  - %v", e)
+		}
+	}
+}
+
+// TestBindPoseRootAtOrigin verifies root joint is at origin.
+func TestBindPoseRootAtOrigin(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithSkeleton(p)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton failed: %v", err)
+	}
+
+	root := result.Skeleton.Joint(unpeople.JointRoot)
+	if root.Position[0] != 0 || root.Position[1] != 0 || root.Position[2] != 0 {
+		t.Errorf("Root not at origin: (%.3f, %.3f, %.3f)",
+			root.Position[0], root.Position[1], root.Position[2])
+	}
+}
+
+// TestAPoseArmsDown verifies arms are in A-pose (hands below shoulders).
+func TestAPoseArmsDown(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithSkeleton(p)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton failed: %v", err)
+	}
+
+	leftShoulder := result.Skeleton.Joint(unpeople.JointLeftShoulder)
+	leftHand := result.Skeleton.Joint(unpeople.JointLeftHand)
+
+	// In A-pose, left arm should be on left side (negative X)
+	if leftHand.Position[0] >= 0 {
+		t.Errorf("Left hand not on left side: hand X=%.3f", leftHand.Position[0])
+	}
+
+	// Hand should be below shoulder (A-pose, not T-pose)
+	if leftHand.Position[1] >= leftShoulder.Position[1] {
+		t.Errorf("A-pose: left hand should be below shoulder: hand Y=%.3f, shoulder Y=%.3f",
+			leftHand.Position[1], leftShoulder.Position[1])
+	}
+}
+
+// TestIsBindPoseValid verifies the IsTPoseValid helper.
+func TestIsBindPoseValid(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithSkeleton(p)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton failed: %v", err)
+	}
+
+	if !result.Skeleton.IsTPoseValid() {
+		t.Error("Default skeleton should have valid A-pose")
+	}
+}
+
+// TestAnimationReadyExport verifies complete animation-ready export.
+func TestAnimationReadyExport(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateAnimationReady(p)
+	if err != nil {
+		t.Fatalf("GenerateAnimationReady failed: %v", err)
+	}
+
+	if result.Mesh == nil {
+		t.Error("Mesh is nil")
+	}
+	if result.Skeleton == nil {
+		t.Error("Skeleton is nil")
+	}
+	if result.SkeletonData == nil {
+		t.Error("SkeletonData is nil")
+	}
+	if result.MorphTargets == nil {
+		t.Error("MorphTargets is nil")
+	}
+	if !result.TPoseValid {
+		t.Errorf("Bind-pose not valid: %d errors", len(result.ValidationErrs))
+	}
+}
+
+// TestSkeletonExportData verifies export data is populated correctly.
+func TestSkeletonExportData(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithSkeleton(p)
+	if err != nil {
+		t.Fatalf("GenerateWithSkeleton failed: %v", err)
+	}
+
+	data := result.Skeleton.ExportData()
+
+	if len(data.JointNames) != int(unpeople.JointCount) {
+		t.Errorf("wrong joint name count: %d", len(data.JointNames))
+	}
+	if len(data.ParentIndices) != int(unpeople.JointCount) {
+		t.Errorf("wrong parent indices count: %d", len(data.ParentIndices))
+	}
+	if len(data.InverseBindMatrices) != int(unpeople.JointCount) {
+		t.Errorf("wrong inverse bind matrix count: %d", len(data.InverseBindMatrices))
+	}
+
+	// Root should have parent index -1
+	if data.ParentIndices[0] != -1 {
+		t.Errorf("Root parent index should be -1, got %d", data.ParentIndices[0])
+	}
+}
+
+// ─── LOD Generation Tests ────────────────────────────────────────────────────
+
+// TestGenerateWithLOD verifies LOD generation produces 3 detail levels.
+func TestGenerateWithLOD(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithLOD(p)
+	if err != nil {
+		t.Fatalf("GenerateWithLOD failed: %v", err)
+	}
+
+	// Should have 3 LOD levels
+	if result.LODSet == nil {
+		t.Fatal("LODSet is nil")
+	}
+
+	for i := unpeople.LOD0; i < unpeople.LODCount; i++ {
+		if result.LODSet.Meshes[i] == nil {
+			t.Errorf("LODSet.Meshes[%d] is nil", i)
+		}
+	}
+}
+
+// TestLODTriangleReduction verifies LOD levels have progressively fewer triangles.
+func TestLODTriangleReduction(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithLOD(p)
+	if err != nil {
+		t.Fatalf("GenerateWithLOD failed: %v", err)
+	}
+
+	counts := result.LODSet.TriangleCounts()
+
+	// LOD0 should have more triangles than LOD1
+	if counts[unpeople.LOD1] >= counts[unpeople.LOD0] {
+		t.Errorf("LOD1 (%d) should have fewer triangles than LOD0 (%d)",
+			counts[unpeople.LOD1], counts[unpeople.LOD0])
+	}
+
+	// LOD1 should have more triangles than LOD2
+	if counts[unpeople.LOD2] >= counts[unpeople.LOD1] {
+		t.Errorf("LOD2 (%d) should have fewer triangles than LOD1 (%d)",
+			counts[unpeople.LOD2], counts[unpeople.LOD1])
+	}
+
+	t.Logf("Triangle counts: LOD0=%d, LOD1=%d, LOD2=%d", counts[0], counts[1], counts[2])
+}
+
+// TestLODTriangleRatios verifies LOD ratios are approximately correct.
+func TestLODTriangleRatios(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithLOD(p)
+	if err != nil {
+		t.Fatalf("GenerateWithLOD failed: %v", err)
+	}
+
+	ratios := result.LODSet.TriangleRatios()
+
+	// LOD0 should always be 1.0
+	if ratios[unpeople.LOD0] != 1.0 {
+		t.Errorf("LOD0 ratio should be 1.0, got %.2f", ratios[unpeople.LOD0])
+	}
+
+	// LOD1 should be roughly 50% (allow some variance)
+	if ratios[unpeople.LOD1] < 0.3 || ratios[unpeople.LOD1] > 0.7 {
+		t.Errorf("LOD1 ratio should be ~0.5, got %.2f", ratios[unpeople.LOD1])
+	}
+
+	// LOD2 should be roughly 25% (allow some variance)
+	if ratios[unpeople.LOD2] < 0.1 || ratios[unpeople.LOD2] > 0.4 {
+		t.Errorf("LOD2 ratio should be ~0.25, got %.2f", ratios[unpeople.LOD2])
+	}
+
+	t.Logf("Triangle ratios: LOD0=%.2f, LOD1=%.2f, LOD2=%.2f",
+		ratios[0], ratios[1], ratios[2])
+}
+
+// TestLODMeshValidity verifies all LOD meshes are valid.
+func TestLODMeshValidity(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithLOD(p)
+	if err != nil {
+		t.Fatalf("GenerateWithLOD failed: %v", err)
+	}
+
+	for level := unpeople.LOD0; level < unpeople.LODCount; level++ {
+		mesh := result.LODSet.Meshes[level].Mesh
+
+		// Check vertex count
+		if len(mesh.Vertices) == 0 {
+			t.Errorf("LOD%d: No vertices", level)
+			continue
+		}
+
+		// Check index count (must be multiple of 3)
+		if len(mesh.Indices)%3 != 0 {
+			t.Errorf("LOD%d: Index count %d not a multiple of 3",
+				level, len(mesh.Indices))
+		}
+
+		// Check indices are within bounds
+		maxIdx := uint32(len(mesh.Vertices))
+		for i, idx := range mesh.Indices {
+			if idx >= maxIdx {
+				t.Errorf("LOD%d: Index %d at position %d exceeds vertex count %d",
+					level, idx, i, maxIdx)
+				break
+			}
+		}
+	}
+}
+
+// TestGetLOD verifies GetLOD returns correct meshes.
+func TestGetLOD(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	result, err := g.GenerateWithLOD(p)
+	if err != nil {
+		t.Fatalf("GenerateWithLOD failed: %v", err)
+	}
+
+	for level := unpeople.LOD0; level < unpeople.LODCount; level++ {
+		mesh := result.LODSet.GetLOD(level)
+		if mesh != result.LODSet.Meshes[level].Mesh {
+			t.Errorf("GetLOD(%d) returned wrong mesh", level)
+		}
+	}
+}
+
+// TestSelectLOD verifies distance-based LOD selection.
+func TestSelectLOD(t *testing.T) {
+	lod0Dist, lod1Dist := unpeople.DefaultLODDistances()
+
+	tests := []struct {
+		distance float32
+		expected unpeople.LODLevel
+	}{
+		{0.0, unpeople.LOD0},
+		{5.0, unpeople.LOD0},
+		{10.0, unpeople.LOD0},
+		{15.0, unpeople.LOD1},
+		{25.0, unpeople.LOD1},
+		{30.0, unpeople.LOD2},
+		{100.0, unpeople.LOD2},
+	}
+
+	for _, tt := range tests {
+		got := unpeople.SelectLOD(tt.distance, lod0Dist, lod1Dist)
+		if got != tt.expected {
+			t.Errorf("SelectLOD(%.1f) = %d, want %d",
+				tt.distance, got, tt.expected)
+		}
+	}
+}
+
+// TestLODDeterminism verifies LOD generation is deterministic.
+func TestLODDeterminism(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Seed = 12345
+
+	result1, err := g.GenerateWithLOD(p)
+	if err != nil {
+		t.Fatalf("First GenerateWithLOD failed: %v", err)
+	}
+
+	result2, err := g.GenerateWithLOD(p)
+	if err != nil {
+		t.Fatalf("Second GenerateWithLOD failed: %v", err)
+	}
+
+	// All LOD levels should be identical
+	for level := unpeople.LOD0; level < unpeople.LODCount; level++ {
+		mesh1 := result1.LODSet.Meshes[level].Mesh
+		mesh2 := result2.LODSet.Meshes[level].Mesh
+
+		if len(mesh1.Vertices) != len(mesh2.Vertices) {
+			t.Errorf("LOD%d: Vertex count differs: %d vs %d",
+				level, len(mesh1.Vertices), len(mesh2.Vertices))
+		}
+
+		if len(mesh1.Indices) != len(mesh2.Indices) {
+			t.Errorf("LOD%d: Index count differs: %d vs %d",
+				level, len(mesh1.Indices), len(mesh2.Indices))
+		}
+	}
+}
+
+// TestLODAllSpecies verifies LOD generation works for all species.
+func TestLODAllSpecies(t *testing.T) {
+	g := unpeople.NewGenerator()
+
+	species := []unpeople.Species{
+		unpeople.SpeciesHuman, unpeople.SpeciesElf, unpeople.SpeciesDwarf, unpeople.SpeciesGnome,
+		unpeople.SpeciesHalfling, unpeople.SpeciesGoblin, unpeople.SpeciesKobold, unpeople.SpeciesOrc,
+		unpeople.SpeciesTroll, unpeople.SpeciesOgre,
+	}
+
+	for _, sp := range species {
+		p := unpeople.DefaultParams()
+		p.Species = sp
+
+		result, err := g.GenerateWithLOD(p)
+		if err != nil {
+			t.Errorf("Species %d: GenerateWithLOD failed: %v", sp, err)
+			continue
+		}
+
+		// Verify all LOD levels are present
+		for level := unpeople.LOD0; level < unpeople.LODCount; level++ {
+			if result.LODSet.Meshes[level] == nil {
+				t.Errorf("Species %d: LOD%d mesh is nil", sp, level)
+			}
+		}
+	}
+}
+
+// ─── Streaming Output Tests ──────────────────────────────────────────────────
+
+// TestGenerateStream verifies basic streaming generation.
+func TestGenerateStream(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	var buf bytes.Buffer
+	w := unpeople.NewBinaryMeshWriter(&buf)
+
+	result, err := g.GenerateStream(p, w)
+	if err != nil {
+		t.Fatalf("GenerateStream failed: %v", err)
+	}
+
+	if result.VertexCount == 0 {
+		t.Error("VertexCount is 0")
+	}
+	if result.IndexCount == 0 {
+		t.Error("IndexCount is 0")
+	}
+	if result.TriangleCount == 0 {
+		t.Error("TriangleCount is 0")
+	}
+
+	// Verify bytes were written
+	if buf.Len() == 0 {
+		t.Error("No bytes written to buffer")
+	}
+}
+
+// TestBinaryMeshWriterHeader verifies the binary header format.
+func TestBinaryMeshWriterHeader(t *testing.T) {
+	var buf bytes.Buffer
+	w := unpeople.NewBinaryMeshWriter(&buf)
+
+	err := w.WriteHeader(100, 300)
+	if err != nil {
+		t.Fatalf("WriteHeader failed: %v", err)
+	}
+
+	data := buf.Bytes()
+
+	// Check magic number
+	if string(data[0:4]) != "UNPM" {
+		t.Errorf("Magic number incorrect: got %q, want 'UNPM'", string(data[0:4]))
+	}
+
+	// Check header size (16 bytes: 4 magic + 4 version + 4 vcount + 4 icount)
+	if len(data) != 16 {
+		t.Errorf("Header size incorrect: got %d, want 16", len(data))
+	}
+}
+
+// TestStreamingDeterminism verifies streamed output is deterministic.
+func TestStreamingDeterminism(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Seed = 98765
+
+	var buf1, buf2 bytes.Buffer
+	w1 := unpeople.NewBinaryMeshWriter(&buf1)
+	w2 := unpeople.NewBinaryMeshWriter(&buf2)
+
+	_, err1 := g.GenerateStream(p, w1)
+	_, err2 := g.GenerateStream(p, w2)
+
+	if err1 != nil || err2 != nil {
+		t.Fatalf("GenerateStream failed: err1=%v, err2=%v", err1, err2)
+	}
+
+	if !bytes.Equal(buf1.Bytes(), buf2.Bytes()) {
+		t.Error("Streaming output is not deterministic")
+	}
+}
+
+// TestGenerateToChan verifies channel-based generation.
+func TestGenerateToChan(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	// Use a large buffer to avoid blocking
+	mc := unpeople.NewMeshChan(10000)
+	g.GenerateToChan(p, mc)
+
+	vertexCount := 0
+	indexCount := 0
+
+	// Wait for completion by draining channels with timeout
+	timeout := time.After(30 * time.Second)
+	vertsClosed := false
+	idxsClosed := false
+
+drain:
+	for {
+		select {
+		case _, ok := <-mc.Vertices:
+			if !ok {
+				vertsClosed = true
+			} else {
+				vertexCount++
+			}
+		case _, ok := <-mc.Indices:
+			if !ok {
+				idxsClosed = true
+			} else {
+				indexCount++
+			}
+		case err := <-mc.Err:
+			t.Fatalf("Error from channel: %v", err)
+		case <-timeout:
+			t.Fatal("Timeout waiting for channel generation")
+		}
+
+		if vertsClosed && idxsClosed {
+			break drain
+		}
+	}
+
+	if vertexCount == 0 {
+		t.Error("No vertices received from channel")
+	}
+	if indexCount == 0 {
+		t.Error("No indices received from channel")
+	}
+	if indexCount%3 != 0 {
+		t.Errorf("Index count %d not a multiple of 3", indexCount)
+	}
+}
+
+// TestVertexSize verifies vertex size calculation.
+func TestVertexSize(t *testing.T) {
+	expected := 88 // Position(12) + Normal(12) + Tangent(16) + UV0(8) + Color(4) + JointIds(8) + JointWeights(16) + MorphTarget(12)
+	got := unpeople.VertexSize()
+	if got != expected {
+		t.Errorf("VertexSize() = %d, want %d", got, expected)
+	}
+}
+
+// TestEstimateMeshSize verifies mesh size estimation.
+func TestEstimateMeshSize(t *testing.T) {
+	// 100 vertices, 300 indices
+	estimated := unpeople.EstimateMeshSize(100, 300)
+
+	// 16 header + 100*88 vertices + 300*4 indices = 16 + 8800 + 1200 = 10016
+	expected := 16 + 100*88 + 300*4
+	if estimated != expected {
+		t.Errorf("EstimateMeshSize(100, 300) = %d, want %d", estimated, expected)
+	}
+}
+
+// TestBatchStreamGeneration verifies batch streaming.
+func TestBatchStreamGeneration(t *testing.T) {
+	g := unpeople.NewGenerator()
+
+	params := make([]unpeople.Params, 3)
+	for i := range params {
+		params[i] = unpeople.DefaultParams()
+		params[i].Seed = int64(i + 1)
+	}
+
+	var buf bytes.Buffer
+	w := unpeople.NewBinaryMeshWriter(&buf)
+
+	result, err := g.GenerateBatchStream(params, w)
+	if err != nil {
+		t.Fatalf("GenerateBatchStream failed: %v", err)
+	}
+
+	if len(result.MeshResults) != 3 {
+		t.Errorf("Expected 3 mesh results, got %d", len(result.MeshResults))
+	}
+
+	if result.TotalBytes == 0 {
+		t.Error("TotalBytes is 0")
+	}
+}
+
+// ─── glTF Export Tests ───────────────────────────────────────────────────────
+
+// TestExportGLTFDefault verifies basic glTF export.
+func TestExportGLTFDefault(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	mesh, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	var buf bytes.Buffer
+	if err := unpeople.ExportGLTFDefault(&buf, mesh); err != nil {
+		t.Fatalf("ExportGLTFDefault failed: %v", err)
+	}
+
+	// Verify output is valid JSON
+	output := buf.Bytes()
+	if len(output) == 0 {
+		t.Error("Output is empty")
+	}
+
+	// Check for glTF markers
+	if !bytes.Contains(output, []byte(`"version": "2.0"`)) {
+		t.Error("Missing glTF version")
+	}
+	if !bytes.Contains(output, []byte(`"generator": "unpeople"`)) {
+		t.Error("Missing generator tag")
+	}
+	if !bytes.Contains(output, []byte(`"POSITION"`)) {
+		t.Error("Missing POSITION attribute")
+	}
+}
+
+// TestExportGLTFWithOptions verifies glTF export with custom options.
+func TestExportGLTFWithOptions(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	mesh, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	opts := unpeople.GLTFExportOptions{
+		EmbedBuffers:    true,
+		IncludeNormals:  true,
+		IncludeUVs:      true,
+		IncludeColors:   true,
+		IncludeTangents: true,
+		IncludeSkinning: true,
+		AssetName:       "test_character",
+	}
+
+	var buf bytes.Buffer
+	if err := unpeople.ExportGLTF(&buf, mesh, opts); err != nil {
+		t.Fatalf("ExportGLTF failed: %v", err)
+	}
+
+	output := buf.Bytes()
+
+	// Check for additional attributes
+	if !bytes.Contains(output, []byte(`"NORMAL"`)) {
+		t.Error("Missing NORMAL attribute")
+	}
+	if !bytes.Contains(output, []byte(`"TEXCOORD_0"`)) {
+		t.Error("Missing TEXCOORD_0 attribute")
+	}
+	if !bytes.Contains(output, []byte(`"COLOR_0"`)) {
+		t.Error("Missing COLOR_0 attribute")
+	}
+	if !bytes.Contains(output, []byte(`"TANGENT"`)) {
+		t.Error("Missing TANGENT attribute")
+	}
+	if !bytes.Contains(output, []byte(`"JOINTS_0"`)) {
+		t.Error("Missing JOINTS_0 attribute")
+	}
+	if !bytes.Contains(output, []byte(`"WEIGHTS_0"`)) {
+		t.Error("Missing WEIGHTS_0 attribute")
+	}
+	if !bytes.Contains(output, []byte(`"test_character"`)) {
+		t.Error("Missing asset name")
+	}
+}
+
+// TestExportGLB verifies GLB binary export.
+func TestExportGLB(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+
+	mesh, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	var buf bytes.Buffer
+	opts := unpeople.DefaultGLTFOptions()
+	if err := unpeople.ExportGLB(&buf, mesh, opts); err != nil {
+		t.Fatalf("ExportGLB failed: %v", err)
+	}
+
+	output := buf.Bytes()
+
+	// Check GLB magic number
+	if len(output) < 12 {
+		t.Fatal("Output too short for GLB header")
+	}
+	if string(output[0:4]) != "glTF" {
+		t.Errorf("Invalid GLB magic: got %q, want 'glTF'", string(output[0:4]))
+	}
+
+	// Check version (little-endian uint32)
+	version := uint32(output[4]) | uint32(output[5])<<8 | uint32(output[6])<<16 | uint32(output[7])<<24
+	if version != 2 {
+		t.Errorf("Invalid GLB version: got %d, want 2", version)
+	}
+}
+
+// TestGLTFDeterminism verifies glTF export is deterministic.
+func TestGLTFDeterminism(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Seed = 54321
+
+	mesh1, _ := g.Generate(p)
+	mesh2, _ := g.Generate(p)
+
+	var buf1, buf2 bytes.Buffer
+	_ = unpeople.ExportGLTFDefault(&buf1, mesh1)
+	_ = unpeople.ExportGLTFDefault(&buf2, mesh2)
+
+	if !bytes.Equal(buf1.Bytes(), buf2.Bytes()) {
+		t.Error("glTF export is not deterministic")
+	}
+}
+
+// TestDefaultGLTFOptions verifies default options are sensible.
+func TestDefaultGLTFOptions(t *testing.T) {
+	opts := unpeople.DefaultGLTFOptions()
+
+	if !opts.EmbedBuffers {
+		t.Error("EmbedBuffers should be true by default")
+	}
+	if !opts.IncludeNormals {
+		t.Error("IncludeNormals should be true by default")
+	}
+	if !opts.IncludeUVs {
+		t.Error("IncludeUVs should be true by default")
+	}
+	if !opts.IncludeColors {
+		t.Error("IncludeColors should be true by default")
+	}
+	if opts.IncludeTangents {
+		t.Error("IncludeTangents should be false by default")
+	}
+	if opts.IncludeSkinning {
+		t.Error("IncludeSkinning should be false by default")
+	}
+}

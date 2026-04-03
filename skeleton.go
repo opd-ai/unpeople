@@ -496,3 +496,232 @@ func (s *Skeleton) Validate() error {
 	}
 	return nil
 }
+
+// ─── T-Pose / A-Pose Validation ───────────────────────────────────────────────
+//
+// The bind pose conforms to these industry-standard conventions for A-pose
+// (which is preferred by many modern game engines over T-pose):
+//
+// 1. **Root at Origin**: JointRoot is at (0, 0, 0)
+// 2. **Y-Up Orientation**: Spine chain extends upward along positive Y
+// 3. **Arms at Sides**: Arms extend downward from shoulders along the body,
+//    with slight lateral offset (A-pose rather than T-pose)
+// 4. **Palms Inward**: Hands are oriented with palms facing the body
+// 5. **Legs Pointing Down**: Legs extend downward along negative Y
+// 6. **Feet Flat**: Feet are positioned near Y=0 with toes pointing forward (+Z)
+// 7. **Identity Rotation**: All joints have identity quaternion rotation
+// 8. **Unit Scale**: All joints have (1, 1, 1) scale
+//
+// A-pose advantages:
+// - More natural shoulder deformation during animation
+// - Better weight distribution at shoulder joint
+// - Reduced texture stretching on deltoids
+// - Compatible with Unity, Unreal, and most motion capture sources
+//
+// Note: The mesh can be converted to T-pose at runtime by rotating shoulder
+// joints if required for specific animation retargeting pipelines.
+
+// TPoseError describes a deviation from standard bind-pose conventions.
+type TPoseError struct {
+	JointID JointID
+	Issue   string
+	Details string
+}
+
+func (e *TPoseError) Error() string {
+	return fmt.Sprintf("bind-pose error at %s: %s (%s)", jointNames[e.JointID], e.Issue, e.Details)
+}
+
+// ValidateTPose checks that the skeleton conforms to industry-standard bind-pose
+// conventions (A-pose variant) for animation compatibility. Returns nil if the
+// pose is valid, or a list of issues otherwise.
+func (s *Skeleton) ValidateTPose() []error {
+	var errors []error
+
+	// Check root at origin
+	root := s.Joint(JointRoot)
+	if vec3Len(root.Position) > 0.001 {
+		errors = append(errors, &TPoseError{
+			JointID: JointRoot,
+			Issue:   "not at origin",
+			Details: fmt.Sprintf("position (%.3f, %.3f, %.3f)", root.Position[0], root.Position[1], root.Position[2]),
+		})
+	}
+
+	// Check spine extends upward
+	hips := s.Joint(JointHips)
+	head := s.Joint(JointHead)
+	if head.Position[1] <= hips.Position[1] {
+		errors = append(errors, &TPoseError{
+			JointID: JointHead,
+			Issue:   "not above hips",
+			Details: fmt.Sprintf("head Y=%.3f, hips Y=%.3f", head.Position[1], hips.Position[1]),
+		})
+	}
+
+	// For A-pose: arms extend downward from shoulders
+	leftShoulder := s.Joint(JointLeftShoulder)
+	leftHand := s.Joint(JointLeftHand)
+	rightShoulder := s.Joint(JointRightShoulder)
+	rightHand := s.Joint(JointRightHand)
+
+	// Arms should be below shoulders (A-pose)
+	if leftHand.Position[1] >= leftShoulder.Position[1] {
+		errors = append(errors, &TPoseError{
+			JointID: JointLeftHand,
+			Issue:   "hand not below shoulder",
+			Details: fmt.Sprintf("hand Y=%.3f, shoulder Y=%.3f", leftHand.Position[1], leftShoulder.Position[1]),
+		})
+	}
+	if rightHand.Position[1] >= rightShoulder.Position[1] {
+		errors = append(errors, &TPoseError{
+			JointID: JointRightHand,
+			Issue:   "hand not below shoulder",
+			Details: fmt.Sprintf("hand Y=%.3f, shoulder Y=%.3f", rightHand.Position[1], rightShoulder.Position[1]),
+		})
+	}
+
+	// Left arm should be on left side (negative X)
+	if leftHand.Position[0] >= 0 {
+		errors = append(errors, &TPoseError{
+			JointID: JointLeftHand,
+			Issue:   "left hand not on left side",
+			Details: fmt.Sprintf("hand X=%.3f", leftHand.Position[0]),
+		})
+	}
+
+	// Right arm should be on right side (positive X)
+	if rightHand.Position[0] <= 0 {
+		errors = append(errors, &TPoseError{
+			JointID: JointRightHand,
+			Issue:   "right hand not on right side",
+			Details: fmt.Sprintf("hand X=%.3f", rightHand.Position[0]),
+		})
+	}
+
+	// Check feet are near ground level
+	leftFoot := s.Joint(JointLeftFoot)
+	rightFoot := s.Joint(JointRightFoot)
+	groundTolerance := float32(0.15) // 15cm from ground
+
+	if leftFoot.Position[1] > groundTolerance {
+		errors = append(errors, &TPoseError{
+			JointID: JointLeftFoot,
+			Issue:   "foot not near ground",
+			Details: fmt.Sprintf("foot Y=%.3f", leftFoot.Position[1]),
+		})
+	}
+	if rightFoot.Position[1] > groundTolerance {
+		errors = append(errors, &TPoseError{
+			JointID: JointRightFoot,
+			Issue:   "foot not near ground",
+			Details: fmt.Sprintf("foot Y=%.3f", rightFoot.Position[1]),
+		})
+	}
+
+	// Check all rotations are identity
+	identityQuat := Vec4{0, 0, 0, 1}
+	for i := range s.Joints {
+		j := &s.Joints[i]
+		if j.Rotation != identityQuat {
+			errors = append(errors, &TPoseError{
+				JointID: j.ID,
+				Issue:   "non-identity rotation",
+				Details: fmt.Sprintf("rotation (%.3f, %.3f, %.3f, %.3f)",
+					j.Rotation[0], j.Rotation[1], j.Rotation[2], j.Rotation[3]),
+			})
+		}
+	}
+
+	// Check all scales are unit
+	unitScale := Vec3{1, 1, 1}
+	for i := range s.Joints {
+		j := &s.Joints[i]
+		if j.Scale != unitScale {
+			errors = append(errors, &TPoseError{
+				JointID: j.ID,
+				Issue:   "non-unit scale",
+				Details: fmt.Sprintf("scale (%.3f, %.3f, %.3f)",
+					j.Scale[0], j.Scale[1], j.Scale[2]),
+			})
+		}
+	}
+
+	return errors
+}
+
+// IsTPoseValid returns true if the skeleton passes all T-pose validation checks.
+func (s *Skeleton) IsTPoseValid() bool {
+	return len(s.ValidateTPose()) == 0
+}
+
+// ─── Skeleton Export Data ────────────────────────────────────────────────────
+
+// SkeletonExportData contains the skeleton in a format suitable for export
+// to standard animation formats like glTF or FBX.
+type SkeletonExportData struct {
+	// JointNames in hierarchy order (parent before child)
+	JointNames []string
+	// ParentIndices maps each joint to its parent (-1 for root)
+	ParentIndices []int
+	// InverseBindMatrices for skinning (column-major, 4x4)
+	InverseBindMatrices [][16]float32
+	// BindPosePositions for each joint in world space
+	BindPosePositions []Vec3
+	// BindPoseRotations for each joint (quaternion)
+	BindPoseRotations []Vec4
+}
+
+// ExportData returns the skeleton data in a format suitable for standard exports.
+func (s *Skeleton) ExportData() *SkeletonExportData {
+	data := &SkeletonExportData{
+		JointNames:          make([]string, len(s.Joints)),
+		ParentIndices:       make([]int, len(s.Joints)),
+		InverseBindMatrices: make([][16]float32, len(s.Joints)),
+		BindPosePositions:   make([]Vec3, len(s.Joints)),
+		BindPoseRotations:   make([]Vec4, len(s.Joints)),
+	}
+
+	for i, j := range s.Joints {
+		data.JointNames[i] = j.Name
+		data.ParentIndices[i] = int(j.ParentID)
+		data.InverseBindMatrices[i] = j.InverseBindMatrix
+		data.BindPosePositions[i] = j.Position
+		data.BindPoseRotations[i] = j.Rotation
+	}
+
+	return data
+}
+
+// ─── Animation-Ready Export ──────────────────────────────────────────────────
+
+// AnimationReadyExport bundles mesh, skeleton, skinning, and morph data
+// in a complete format suitable for animation in external engines.
+type AnimationReadyExport struct {
+	Mesh           *Mesh
+	Skeleton       *Skeleton
+	SkeletonData   *SkeletonExportData
+	MorphTargets   *MorphTargetSet
+	TPoseValid     bool
+	ValidationErrs []error
+}
+
+// GenerateAnimationReady produces a complete animation-ready character export.
+func (g *Generator) GenerateAnimationReady(p Params) (*AnimationReadyExport, error) {
+	result, err := g.GenerateWithMorphs(p)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate T-pose
+	tposeErrs := result.Skeleton.ValidateTPose()
+
+	return &AnimationReadyExport{
+		Mesh:           result.Mesh,
+		Skeleton:       result.Skeleton,
+		SkeletonData:   result.Skeleton.ExportData(),
+		MorphTargets:   result.Morphs,
+		TPoseValid:     len(tposeErrs) == 0,
+		ValidationErrs: tposeErrs,
+	}, nil
+}

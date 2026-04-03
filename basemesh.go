@@ -13,6 +13,82 @@
 // arm span ≈ height, etc.).
 package unpeople
 
+// ─── Default Body Dimensions (metres) ────────────────────────────────────────
+// These constants define a neutral adult humanoid body matching MakeHuman
+// proportions. All values are in metres. See MakeHuman documentation for
+// anatomical reference points.
+
+const (
+	// Overall body measurements
+	defaultTotalHeight = 1.75 // Adult average standing height
+
+	// Head dimensions (ellipsoid radii)
+	defaultHeadCenterY = 1.665 // Vertical center of head ellipsoid
+	defaultHeadRX      = 0.090 // Lateral radius (ear to ear)
+	defaultHeadRY      = 0.115 // Vertical radius (chin to crown)
+	defaultHeadRZ      = 0.090 // Front-back radius (nose to occiput)
+
+	// Neck dimensions
+	defaultNeckBottomY = 1.500 // Base of neck (at shoulders)
+	defaultNeckTopY    = 1.555 // Top of neck (at skull base)
+	defaultNeckRadius  = 0.045 // Neck cylinder radius
+
+	// Chest/thorax dimensions
+	defaultChestBottomY = 1.150 // Bottom of chest (at diaphragm)
+	defaultChestTopY    = 1.500 // Top of chest (at clavicle)
+	defaultChestRX      = 0.185 // Chest lateral half-width
+	defaultChestRZ      = 0.115 // Chest front-back half-depth
+
+	// Abdomen dimensions
+	defaultAbdomenBottomY = 0.950 // Bottom of abdomen (at iliac crest)
+	defaultAbdomenTopY    = 1.150 // Top of abdomen (at diaphragm)
+	defaultAbdomenRX      = 0.155 // Abdomen lateral half-width
+	defaultAbdomenRZ      = 0.095 // Abdomen front-back half-depth
+
+	// Hips/pelvis dimensions
+	defaultHipsBottomY = 0.820 // Bottom of hips (at hip joint)
+	defaultHipsTopY    = 0.950 // Top of hips (at iliac crest)
+	defaultHipsRX      = 0.165 // Hips lateral half-width
+	defaultHipsRZ      = 0.110 // Hips front-back half-depth
+
+	// Arm attachment (shoulder) X offset from centerline
+	defaultShoulderX = 0.235
+
+	// Upper arm dimensions
+	defaultUpperArmTopY    = 1.430 // Shoulder height
+	defaultUpperArmBottomY = 1.100 // Elbow height
+	defaultUpperArmRadius  = 0.048 // Upper arm cylinder radius
+
+	// Forearm dimensions
+	defaultForearmBottomY = 0.780 // Wrist height
+	defaultForearmRadius  = 0.038 // Forearm cylinder radius
+
+	// Hand dimensions (box half-extents)
+	defaultHandCenterY = 0.710 // Hand center height (palm)
+	defaultHandHW      = 0.045 // Hand half-width (across palm)
+	defaultHandHH      = 0.065 // Hand half-height (finger length)
+	defaultHandHD      = 0.022 // Hand half-depth (palm thickness)
+
+	// Leg attachment (hip socket) X offset from centerline
+	defaultHipSocketX = 0.095
+
+	// Upper leg dimensions
+	defaultUpperLegTopY    = 0.820 // Hip joint height
+	defaultUpperLegBottomY = 0.480 // Knee height
+	defaultUpperLegRadius  = 0.078 // Upper leg cylinder radius
+
+	// Lower leg dimensions
+	defaultLowerLegBottomY = 0.090 // Ankle height
+	defaultLowerLegRadius  = 0.055 // Lower leg cylinder radius
+
+	// Foot dimensions (box half-extents)
+	defaultFootCenterY = 0.038 // Foot center height (mid-foot)
+	defaultFootCenterZ = 0.040 // Foot center offset (forward)
+	defaultFootHW      = 0.058 // Foot half-width
+	defaultFootHH      = 0.038 // Foot half-height
+	defaultFootHD      = 0.120 // Foot half-depth (toe to heel)
+)
+
 // bodyLayout stores every dimensional parameter needed to assemble the mesh.
 type bodyLayout struct {
 	totalHeight float32
@@ -92,67 +168,67 @@ type bodyLayout struct {
 // defaultBodyLayout returns a neutral 1.75 m adult humanoid in T-pose.
 func defaultBodyLayout() bodyLayout {
 	return bodyLayout{
-		totalHeight: 1.75,
+		totalHeight: defaultTotalHeight,
 
-		headCenter: Vec3{0, 1.665, 0},
-		headRX:     0.090,
-		headRY:     0.115,
-		headRZ:     0.090,
+		headCenter: Vec3{0, defaultHeadCenterY, 0},
+		headRX:     defaultHeadRX,
+		headRY:     defaultHeadRY,
+		headRZ:     defaultHeadRZ,
 
-		neckBottom: Vec3{0, 1.500, 0},
-		neckTop:    Vec3{0, 1.555, 0},
-		neckRadius: 0.045,
+		neckBottom: Vec3{0, defaultNeckBottomY, 0},
+		neckTop:    Vec3{0, defaultNeckTopY, 0},
+		neckRadius: defaultNeckRadius,
 
-		chestBottom: Vec3{0, 1.150, 0},
-		chestTop:    Vec3{0, 1.500, 0},
-		chestRX:     0.185,
-		chestRZ:     0.115,
+		chestBottom: Vec3{0, defaultChestBottomY, 0},
+		chestTop:    Vec3{0, defaultChestTopY, 0},
+		chestRX:     defaultChestRX,
+		chestRZ:     defaultChestRZ,
 
-		abdomenBottom: Vec3{0, 0.950, 0},
-		abdomenTop:    Vec3{0, 1.150, 0},
-		abdomenRX:     0.155,
-		abdomenRZ:     0.095,
+		abdomenBottom: Vec3{0, defaultAbdomenBottomY, 0},
+		abdomenTop:    Vec3{0, defaultAbdomenTopY, 0},
+		abdomenRX:     defaultAbdomenRX,
+		abdomenRZ:     defaultAbdomenRZ,
 
-		hipsBottom: Vec3{0, 0.820, 0},
-		hipsTop:    Vec3{0, 0.950, 0},
-		hipsRX:     0.165,
-		hipsRZ:     0.110,
+		hipsBottom: Vec3{0, defaultHipsBottomY, 0},
+		hipsTop:    Vec3{0, defaultHipsTopY, 0},
+		hipsRX:     defaultHipsRX,
+		hipsRZ:     defaultHipsRZ,
 
-		upperArmTopL:    Vec3{-0.235, 1.430, 0},
-		upperArmBottomL: Vec3{-0.235, 1.100, 0},
-		upperArmTopR:    Vec3{0.235, 1.430, 0},
-		upperArmBottomR: Vec3{0.235, 1.100, 0},
-		upperArmRadius:  0.048,
+		upperArmTopL:    Vec3{-defaultShoulderX, defaultUpperArmTopY, 0},
+		upperArmBottomL: Vec3{-defaultShoulderX, defaultUpperArmBottomY, 0},
+		upperArmTopR:    Vec3{defaultShoulderX, defaultUpperArmTopY, 0},
+		upperArmBottomR: Vec3{defaultShoulderX, defaultUpperArmBottomY, 0},
+		upperArmRadius:  defaultUpperArmRadius,
 
-		forearmTopL:    Vec3{-0.235, 1.100, 0},
-		forearmBottomL: Vec3{-0.235, 0.780, 0},
-		forearmTopR:    Vec3{0.235, 1.100, 0},
-		forearmBottomR: Vec3{0.235, 0.780, 0},
-		forearmRadius:  0.038,
+		forearmTopL:    Vec3{-defaultShoulderX, defaultUpperArmBottomY, 0},
+		forearmBottomL: Vec3{-defaultShoulderX, defaultForearmBottomY, 0},
+		forearmTopR:    Vec3{defaultShoulderX, defaultUpperArmBottomY, 0},
+		forearmBottomR: Vec3{defaultShoulderX, defaultForearmBottomY, 0},
+		forearmRadius:  defaultForearmRadius,
 
-		handCenterL: Vec3{-0.235, 0.710, 0},
-		handCenterR: Vec3{0.235, 0.710, 0},
-		handHW:      0.045,
-		handHH:      0.065,
-		handHD:      0.022,
+		handCenterL: Vec3{-defaultShoulderX, defaultHandCenterY, 0},
+		handCenterR: Vec3{defaultShoulderX, defaultHandCenterY, 0},
+		handHW:      defaultHandHW,
+		handHH:      defaultHandHH,
+		handHD:      defaultHandHD,
 
-		upperLegTopL:    Vec3{-0.095, 0.820, 0},
-		upperLegBottomL: Vec3{-0.095, 0.480, 0},
-		upperLegTopR:    Vec3{0.095, 0.820, 0},
-		upperLegBottomR: Vec3{0.095, 0.480, 0},
-		upperLegRadius:  0.078,
+		upperLegTopL:    Vec3{-defaultHipSocketX, defaultUpperLegTopY, 0},
+		upperLegBottomL: Vec3{-defaultHipSocketX, defaultUpperLegBottomY, 0},
+		upperLegTopR:    Vec3{defaultHipSocketX, defaultUpperLegTopY, 0},
+		upperLegBottomR: Vec3{defaultHipSocketX, defaultUpperLegBottomY, 0},
+		upperLegRadius:  defaultUpperLegRadius,
 
-		lowerLegTopL:    Vec3{-0.095, 0.480, 0},
-		lowerLegBottomL: Vec3{-0.095, 0.090, 0},
-		lowerLegTopR:    Vec3{0.095, 0.480, 0},
-		lowerLegBottomR: Vec3{0.095, 0.090, 0},
-		lowerLegRadius:  0.055,
+		lowerLegTopL:    Vec3{-defaultHipSocketX, defaultUpperLegBottomY, 0},
+		lowerLegBottomL: Vec3{-defaultHipSocketX, defaultLowerLegBottomY, 0},
+		lowerLegTopR:    Vec3{defaultHipSocketX, defaultUpperLegBottomY, 0},
+		lowerLegBottomR: Vec3{defaultHipSocketX, defaultLowerLegBottomY, 0},
+		lowerLegRadius:  defaultLowerLegRadius,
 
-		footCenterL: Vec3{-0.095, 0.038, 0.040},
-		footCenterR: Vec3{0.095, 0.038, 0.040},
-		footHW:      0.058,
-		footHH:      0.038,
-		footHD:      0.120,
+		footCenterL: Vec3{-defaultHipSocketX, defaultFootCenterY, defaultFootCenterZ},
+		footCenterR: Vec3{defaultHipSocketX, defaultFootCenterY, defaultFootCenterZ},
+		footHW:      defaultFootHW,
+		footHH:      defaultFootHH,
+		footHD:      defaultFootHD,
 	}
 }
 

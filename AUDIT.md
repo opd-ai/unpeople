@@ -47,27 +47,29 @@
 
 ### HIGH
 
-- [ ] **H1: ProportionsHeroic incomplete** — `transforms.go:156-159` — The Heroic proportion style widens shoulders and narrows hips but does NOT elongate legs, which is a key characteristic of heroic proportions per industry convention. The GAPS.md acknowledges this requires setting `LimbLengthLong` separately. — **Remediation:** Add `scaleLimbs(l, 1.08)` call within `case ProportionsHeroic:` to automatically lengthen legs. Validation: `go test -v ./... -run TestAllProportions` (add test if missing).
+*No critical findings. All documented Phase 1 features are implemented and functional.*
 
-- [ ] **H2: ProportionsCaricature inconsistent** — `transforms.go:167-172` — Caricature enlarges head but does NOT shrink hands/feet, contrary to typical caricature style where extremities are proportionally reduced. — **Remediation:** Add `l.handHW *= 0.85; l.handHH *= 0.85; l.footHW *= 0.85; l.footHD *= 0.85` within `case ProportionsCaricature:`. Validation: visual inspection of generated mesh proportions.
+- [x] **H1: ProportionsHeroic incomplete** — `transforms.go:156-159` — The Heroic proportion style widens shoulders and narrows hips but does NOT elongate legs, which is a key characteristic of heroic proportions per industry convention. The GAPS.md acknowledges this requires setting `LimbLengthLong` separately. — **Remediation:** Add `scaleLimbs(l, 1.08)` call within `case ProportionsHeroic:` to automatically lengthen legs. Validation: `go test -v ./... -run TestAllProportions` (add test if missing).
 
-- [ ] **H3: Validate() high cyclomatic complexity** — `params.go:303-359` — Function has cyclomatic complexity of 19 (threshold: 10), making it error-prone for maintenance when adding new parameters. — **Remediation:** Refactor to table-driven validation using a slice of `{field, min, max, name}` structs with a loop. Validation: `go-stats-generator analyze . --format json | jq '.functions.statistics'` should show complexity < 10.
+- [x] **H2: ProportionsCaricature inconsistent** — `transforms.go:167-172` — Caricature enlarges head but does NOT shrink hands/feet, contrary to typical caricature style where extremities are proportionally reduced. — **Remediation:** Add `l.handHW *= 0.85; l.handHH *= 0.85; l.footHW *= 0.85; l.footHD *= 0.85` within `case ProportionsCaricature:`. Validation: visual inspection of generated mesh proportions.
+
+- [x] **H3: Validate() high cyclomatic complexity** — `params.go:303-359` — Function has cyclomatic complexity of 19 (threshold: 10), making it error-prone for maintenance when adding new parameters. — **Remediation:** Refactor to table-driven validation using a slice of `{field, min, max, name}` structs with a loop. Validation: `go-stats-generator analyze . --format json | jq '.functions.statistics'` should show complexity < 10.
 
 ### MEDIUM
 
-- [ ] **M1: Mesh discontinuity (visible seams)** — `basemesh.go:159-240` — Body assembled from disconnected primitives; vertices at part boundaries are not shared. Visible gaps at shoulder, hip, elbow, knee, ankle, neck. — **Remediation:** Phase 2 topology upgrade (per ROADMAP); for now, document limitation clearly. Validation: N/A (known limitation).
+- [x] **M1: Mesh discontinuity (visible seams)** — `basemesh.go:159-240` — Body assembled from disconnected primitives; vertices at part boundaries are not shared. Visible gaps at shoulder, hip, elbow, knee, ankle, neck. — **Remediation:** Phase 2 topology upgrade (per ROADMAP); for now, document limitation clearly. Validation: N/A (known limitation, documented in GAPS.md).
 
-- [ ] **M2: Facial geometry limited to ellipsoid scaling** — `transforms.go:376-426` — Facial feature params (`FaceShape`, `Jaw`, `Brow`, `Ears`) only adjust head ellipsoid radii. No dedicated face mesh for jaw prominence, brow ridge, cheekbones, nasal structure. — **Remediation:** Phase 2 enhanced geometry (per ROADMAP). Validation: N/A (known limitation).
+- [x] **M2: Facial geometry limited to ellipsoid scaling** — `transforms.go:376-426` — Facial feature params (`FaceShape`, `Jaw`, `Brow`, `Ears`) only adjust head ellipsoid radii. No dedicated face mesh for jaw prominence, brow ridge, cheekbones, nasal structure. — **Remediation:** Phase 2 enhanced geometry (per ROADMAP). Validation: N/A (known limitation, documented in GAPS.md).
 
 - [ ] **M3: Code duplication in transforms.go** — `transforms.go:463-598` — 19.4% duplication ratio (343 duplicated lines). `scaleAll`/`scaleHeight`/`scaleLimbs` repeat similar field lists. — **Remediation:** Create a table of layout field pointers and iterate, or use reflection sparingly. Validation: `go-stats-generator analyze . | grep 'Duplication Ratio'` should show < 10%.
 
 - [ ] **M4: Magic float constants in basemesh.go** — `basemesh.go:94-156` — Body dimensions are hard-coded literals (e.g., `0.090`, `1.665`, `0.045`) without named constants or documentation of their anatomical meaning. — **Remediation:** Extract to named constants (e.g., `const headRadiusX = 0.090 // metres, MakeHuman neutral adult`) or a data table. Validation: code review for magic number reduction.
 
-- [ ] **M5: Missing test for Proportions enum** — `generator_test.go` — Tests exist for Species, Height, Build, Age but NOT Proportions or Phenotype enum ranges. — **Remediation:** Add `TestAllProportions` and `TestAllPhenotypes` following the pattern of `TestAllSpecies`. Validation: `go test -v ./... -run TestAllProportions`.
+- [x] **M5: Missing test for Proportions enum** — `generator_test.go` — Tests exist for Species, Height, Build, Age but NOT Proportions or Phenotype enum ranges. — **Remediation:** Add `TestAllProportions` and `TestAllPhenotypes` following the pattern of `TestAllSpecies`. Validation: `go test -v ./... -run TestAllProportions`.
 
-- [ ] **M6: Missing test for Posture enum** — `generator_test.go` — No `TestAllPostures` iterating through PostureUpright to PostureRigid. — **Remediation:** Add `TestAllPostures` test function. Validation: `go test -v ./... -run TestAllPostures`.
+- [x] **M6: Missing test for Posture enum** — `generator_test.go` — No `TestAllPostures` iterating through PostureUpright to PostureRigid. — **Remediation:** Add `TestAllPostures` test function. Validation: `go test -v ./... -run TestAllPostures`.
 
-- [ ] **M7: Missing tests for facial feature enums** — `generator_test.go` — No tests iterating through `FaceShape`, `Jaw`, `Brow`, `Ears` enum values. — **Remediation:** Add `TestAllFaceShapes`, `TestAllJaws`, `TestAllBrows`, `TestAllEars` test functions. Validation: `go test -v ./...`.
+- [x] **M7: Missing tests for facial feature enums** — `generator_test.go` — No tests iterating through `FaceShape`, `Jaw`, `Brow`, `Ears` enum values. — **Remediation:** Add `TestAllFaceShapes`, `TestAllJaws`, `TestAllBrows`, `TestAllEars` test functions. Validation: `go test -v ./...`.
 
 ### LOW
 

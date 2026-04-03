@@ -408,48 +408,7 @@ func (nm *NormalMap) At(x, y int) Color {
 }
 
 // SampleBilinear samples the normal map with bilinear interpolation.
-// UV coordinates are in [0,1] range.
+// UV coordinates are in [0,1] range. Alpha is always 1.0 for normal maps.
 func (nm *NormalMap) SampleBilinear(u, v float32) Color {
-	// Clamp UVs
-	u = clampFloat32(u, 0, 1)
-	v = clampFloat32(v, 0, 1)
-
-	// Convert to pixel coordinates
-	px := u * float32(nm.Width-1)
-	py := v * float32(nm.Height-1)
-
-	// Get integer and fractional parts
-	x0 := int(px)
-	y0 := int(py)
-	x1 := minInt(x0+1, nm.Width-1)
-	y1 := minInt(y0+1, nm.Height-1)
-	fx := px - float32(x0)
-	fy := py - float32(y0)
-
-	// Sample four corners
-	c00 := nm.At(x0, y0)
-	c10 := nm.At(x1, y0)
-	c01 := nm.At(x0, y1)
-	c11 := nm.At(x1, y1)
-
-	// Bilinear interpolation
-	return Color{
-		lerpFloat32(lerpFloat32(c00[0], c10[0], fx), lerpFloat32(c01[0], c11[0], fx), fy),
-		lerpFloat32(lerpFloat32(c00[1], c10[1], fx), lerpFloat32(c01[1], c11[1], fx), fy),
-		lerpFloat32(lerpFloat32(c00[2], c10[2], fx), lerpFloat32(c01[2], c11[2], fx), fy),
-		1.0,
-	}
-}
-
-// lerpFloat32 linearly interpolates between a and b.
-func lerpFloat32(a, b, t float32) float32 {
-	return a + (b-a)*t
-}
-
-// minInt returns the minimum of two integers.
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
+	return sampleBilinear(u, v, nm.Width, nm.Height, nm.At, false)
 }

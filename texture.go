@@ -451,31 +451,9 @@ func (t *Texture) At(x, y int) Color {
 }
 
 // SampleBilinear samples the texture with bilinear interpolation.
+// UV coordinates are in [0,1] range.
 func (t *Texture) SampleBilinear(u, v float32) Color {
-	u = clampFloat32(u, 0, 1)
-	v = clampFloat32(v, 0, 1)
-
-	px := u * float32(t.Width-1)
-	py := v * float32(t.Height-1)
-
-	x0 := int(px)
-	y0 := int(py)
-	x1 := minInt(x0+1, t.Width-1)
-	y1 := minInt(y0+1, t.Height-1)
-	fx := px - float32(x0)
-	fy := py - float32(y0)
-
-	c00 := t.At(x0, y0)
-	c10 := t.At(x1, y0)
-	c01 := t.At(x0, y1)
-	c11 := t.At(x1, y1)
-
-	return Color{
-		lerpFloat32(lerpFloat32(c00[0], c10[0], fx), lerpFloat32(c01[0], c11[0], fx), fy),
-		lerpFloat32(lerpFloat32(c00[1], c10[1], fx), lerpFloat32(c01[1], c11[1], fx), fy),
-		lerpFloat32(lerpFloat32(c00[2], c10[2], fx), lerpFloat32(c01[2], c11[2], fx), fy),
-		lerpFloat32(lerpFloat32(c00[3], c10[3], fx), lerpFloat32(c01[3], c11[3], fx), fy),
-	}
+	return sampleBilinear(u, v, t.Width, t.Height, t.At, true)
 }
 
 // ─── Export Utilities ────────────────────────────────────────────────────────

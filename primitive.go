@@ -4,6 +4,39 @@ import "math"
 
 const tau = math.Pi * 2.0
 
+// ─── Ellipsoid Vertex Helper ──────────────────────────────────────────────────
+
+// ellipsoidVertex computes a single vertex on an ellipsoid surface given spherical
+// angles theta (latitude) and phi (longitude), center position, radii, and UV coords.
+func ellipsoidVertex(center Vec3, rx, ry, rz, theta, phi float32, uvU, uvV float32) Vertex {
+	sinT := float32(math.Sin(float64(theta)))
+	cosT := float32(math.Cos(float64(theta)))
+	sinP := float32(math.Sin(float64(phi)))
+	cosP := float32(math.Cos(float64(phi)))
+
+	// Unit-sphere direction
+	nx := cosP * sinT
+	ny := cosT
+	nz := sinP * sinT
+
+	pos := Vec3{
+		center[0] + rx*nx,
+		center[1] + ry*ny,
+		center[2] + rz*nz,
+	}
+	// Normal on an ellipsoid is the gradient of the implicit function,
+	// proportional to (nx/rx², ny/ry², nz/rz²).
+	n := vec3Normalize(Vec3{nx / (rx * rx), ny / (ry * ry), nz / (rz * rz)})
+
+	return Vertex{
+		Position: pos,
+		Normal:   n,
+		UV0:      Vec2{uvU, uvV},
+		Color:    ColorGray,
+		Tangent:  Vec4{-sinP, 0, cosP, 1},
+	}
+}
+
 // ─── perpendicular ───────────────────────────────────────────────────────────
 
 // perpendicular returns a unit vector perpendicular to v.
@@ -167,36 +200,12 @@ func generateEllipsoid(
 
 	for lat := 0; lat <= latSegs; lat++ {
 		theta := float32(lat) * float32(math.Pi) / float32(latSegs)
-		sinT := float32(math.Sin(float64(theta)))
-		cosT := float32(math.Cos(float64(theta)))
+		uvV := float32(lat) / float32(latSegs)
 
 		for lon := 0; lon <= lonSegs; lon++ {
 			phi := float32(lon) * float32(tau) / float32(lonSegs)
-			sinP := float32(math.Sin(float64(phi)))
-			cosP := float32(math.Cos(float64(phi)))
-
-			// Unit-sphere direction
-			nx := cosP * sinT
-			ny := cosT
-			nz := sinP * sinT
-
-			pos := Vec3{
-				center[0] + rx*nx,
-				center[1] + ry*ny,
-				center[2] + rz*nz,
-			}
-			// Normal on an ellipsoid is the gradient of the implicit function,
-			// proportional to (nx/rx², ny/ry², nz/rz²).
-			n := vec3Normalize(Vec3{nx / (rx * rx), ny / (ry * ry), nz / (rz * rz)})
-			uv := Vec2{float32(lon) / float32(lonSegs), float32(lat) / float32(latSegs)}
-
-			verts = append(verts, Vertex{
-				Position: pos,
-				Normal:   n,
-				UV0:      uv,
-				Color:    ColorGray,
-				Tangent:  Vec4{-sinP, 0, cosP, 1},
-			})
+			uvU := float32(lon) / float32(lonSegs)
+			verts = append(verts, ellipsoidVertex(center, rx, ry, rz, theta, phi, uvU, uvV))
 		}
 	}
 
@@ -569,34 +578,11 @@ func generateSkullCap(headCenter Vec3, rx, ry, rz float32) ([]Vertex, []uint32) 
 	for lat := 0; lat <= latSegs; lat++ {
 		t := float32(lat) / float32(latSegs)
 		theta := startTheta + t*(endTheta-startTheta)
-		sinT := float32(math.Sin(float64(theta)))
-		cosT := float32(math.Cos(float64(theta)))
 
 		for lon := 0; lon <= lonSegs; lon++ {
 			phi := float32(lon) * float32(tau) / float32(lonSegs)
-			sinP := float32(math.Sin(float64(phi)))
-			cosP := float32(math.Cos(float64(phi)))
-
-			// Unit-sphere direction
-			nx := cosP * sinT
-			ny := cosT
-			nz := sinP * sinT
-
-			pos := Vec3{
-				headCenter[0] + capRX*nx,
-				headCenter[1] + capRY*ny,
-				headCenter[2] + capRZ*nz,
-			}
-			n := vec3Normalize(Vec3{nx / (capRX * capRX), ny / (capRY * capRY), nz / (capRZ * capRZ)})
-			uv := Vec2{float32(lon) / float32(lonSegs), t}
-
-			verts = append(verts, Vertex{
-				Position: pos,
-				Normal:   n,
-				UV0:      uv,
-				Color:    ColorGray,
-				Tangent:  Vec4{-sinP, 0, cosP, 1},
-			})
+			uvU := float32(lon) / float32(lonSegs)
+			verts = append(verts, ellipsoidVertex(headCenter, capRX, capRY, capRZ, theta, phi, uvU, t))
 		}
 	}
 
@@ -749,54 +735,52 @@ func generateFaceMesh(
 	mouthRightIdx := addVertex(0.030, -0.050, 0.075, 0.2, -0.2, 0.9)
 	mouthCenterIdx := addVertex(0, -0.055, 0.080, 0, -0.2, 1)
 
-	// Build triangles connecting the face regions (CCW winding)
-	idxs := make([]uint32, 0, 96)
-
-	addTri := func(a, b, c int) {
-		idxs = append(idxs, uint32(a), uint32(b), uint32(c))
+	// Face triangle topology - each row defines 3 vertex indices forming a CCW triangle.
+	// This static table describes the face mesh connectivity.
+	faceTriangles := [][3]int{
+		// Brow region
+		{browCenterIdx, browLeftIdx, noseBridgeIdx},
+		{browCenterIdx, noseBridgeIdx, browRightIdx},
+		{browLeftIdx, browOuterLeftIdx, cheekHighLeftIdx},
+		{browLeftIdx, cheekHighLeftIdx, noseBridgeIdx},
+		{browRightIdx, noseBridgeIdx, cheekHighRightIdx},
+		{browRightIdx, cheekHighRightIdx, browOuterRightIdx},
+		// Nose region
+		{noseBridgeIdx, cheekHighLeftIdx, noseLeftIdx},
+		{noseBridgeIdx, noseLeftIdx, noseTipIdx},
+		{noseBridgeIdx, noseTipIdx, noseRightIdx},
+		{noseBridgeIdx, noseRightIdx, cheekHighRightIdx},
+		// Cheek region
+		{cheekHighLeftIdx, cheekMidLeftIdx, noseLeftIdx},
+		{noseLeftIdx, cheekMidLeftIdx, cheekLowLeftIdx},
+		{cheekHighRightIdx, noseRightIdx, cheekMidRightIdx},
+		{noseRightIdx, cheekLowRightIdx, cheekMidRightIdx},
+		// Mouth area
+		{noseLeftIdx, cheekLowLeftIdx, mouthLeftIdx},
+		{noseLeftIdx, mouthLeftIdx, noseTipIdx},
+		{noseTipIdx, mouthLeftIdx, mouthCenterIdx},
+		{noseTipIdx, mouthCenterIdx, mouthRightIdx},
+		{noseTipIdx, mouthRightIdx, noseRightIdx},
+		{noseRightIdx, mouthRightIdx, cheekLowRightIdx},
+		// Jaw region
+		{cheekMidLeftIdx, jawCornerLeftIdx, cheekLowLeftIdx},
+		{cheekLowLeftIdx, jawCornerLeftIdx, mandibleLeftIdx},
+		{cheekLowLeftIdx, mandibleLeftIdx, mouthLeftIdx},
+		{mouthLeftIdx, mandibleLeftIdx, chinLeftIdx},
+		{mouthLeftIdx, chinLeftIdx, mouthCenterIdx},
+		{mouthCenterIdx, chinLeftIdx, chinCenterIdx},
+		{mouthCenterIdx, chinCenterIdx, chinRightIdx},
+		{mouthCenterIdx, chinRightIdx, mouthRightIdx},
+		{mouthRightIdx, chinRightIdx, mandibleRightIdx},
+		{mouthRightIdx, mandibleRightIdx, cheekLowRightIdx},
+		{cheekLowRightIdx, mandibleRightIdx, jawCornerRightIdx},
+		{cheekLowRightIdx, jawCornerRightIdx, cheekMidRightIdx},
 	}
 
-	// Brow region triangles
-	addTri(browCenterIdx, browLeftIdx, noseBridgeIdx)
-	addTri(browCenterIdx, noseBridgeIdx, browRightIdx)
-	addTri(browLeftIdx, browOuterLeftIdx, cheekHighLeftIdx)
-	addTri(browLeftIdx, cheekHighLeftIdx, noseBridgeIdx)
-	addTri(browRightIdx, noseBridgeIdx, cheekHighRightIdx)
-	addTri(browRightIdx, cheekHighRightIdx, browOuterRightIdx)
-
-	// Nose region triangles
-	addTri(noseBridgeIdx, cheekHighLeftIdx, noseLeftIdx)
-	addTri(noseBridgeIdx, noseLeftIdx, noseTipIdx)
-	addTri(noseBridgeIdx, noseTipIdx, noseRightIdx)
-	addTri(noseBridgeIdx, noseRightIdx, cheekHighRightIdx)
-
-	// Cheek region triangles
-	addTri(cheekHighLeftIdx, cheekMidLeftIdx, noseLeftIdx)
-	addTri(noseLeftIdx, cheekMidLeftIdx, cheekLowLeftIdx)
-	addTri(cheekHighRightIdx, noseRightIdx, cheekMidRightIdx)
-	addTri(noseRightIdx, cheekLowRightIdx, cheekMidRightIdx)
-
-	// Mouth area triangles
-	addTri(noseLeftIdx, cheekLowLeftIdx, mouthLeftIdx)
-	addTri(noseLeftIdx, mouthLeftIdx, noseTipIdx)
-	addTri(noseTipIdx, mouthLeftIdx, mouthCenterIdx)
-	addTri(noseTipIdx, mouthCenterIdx, mouthRightIdx)
-	addTri(noseTipIdx, mouthRightIdx, noseRightIdx)
-	addTri(noseRightIdx, mouthRightIdx, cheekLowRightIdx)
-
-	// Jaw region triangles
-	addTri(cheekMidLeftIdx, jawCornerLeftIdx, cheekLowLeftIdx)
-	addTri(cheekLowLeftIdx, jawCornerLeftIdx, mandibleLeftIdx)
-	addTri(cheekLowLeftIdx, mandibleLeftIdx, mouthLeftIdx)
-	addTri(mouthLeftIdx, mandibleLeftIdx, chinLeftIdx)
-	addTri(mouthLeftIdx, chinLeftIdx, mouthCenterIdx)
-	addTri(mouthCenterIdx, chinLeftIdx, chinCenterIdx)
-	addTri(mouthCenterIdx, chinCenterIdx, chinRightIdx)
-	addTri(mouthCenterIdx, chinRightIdx, mouthRightIdx)
-	addTri(mouthRightIdx, chinRightIdx, mandibleRightIdx)
-	addTri(mouthRightIdx, mandibleRightIdx, cheekLowRightIdx)
-	addTri(cheekLowRightIdx, mandibleRightIdx, jawCornerRightIdx)
-	addTri(cheekLowRightIdx, jawCornerRightIdx, cheekMidRightIdx)
+	idxs := make([]uint32, 0, len(faceTriangles)*3)
+	for _, tri := range faceTriangles {
+		idxs = append(idxs, uint32(tri[0]), uint32(tri[1]), uint32(tri[2]))
+	}
 
 	return verts, idxs
 }

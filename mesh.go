@@ -174,3 +174,58 @@ func vec3Normalize(a Vec3) Vec3 {
 	}
 	return Vec3{a[0] / l, a[1] / l, a[2] / l}
 }
+
+// ─── Bilinear Sampling Helpers ────────────────────────────────────────────────
+
+// colorSampler is a function that samples a color at integer pixel coordinates.
+type colorSampler func(x, y int) Color
+
+// sampleBilinear performs bilinear interpolation on a grid with the given dimensions.
+// The sampler function retrieves pixel colors at integer coordinates.
+// UV coordinates are in [0,1] range. interpolateAlpha controls whether the alpha
+// channel is interpolated (true) or fixed to 1.0 (false).
+func sampleBilinear(u, v float32, width, height int, sampler colorSampler, interpolateAlpha bool) Color {
+	u = clampFloat32(u, 0, 1)
+	v = clampFloat32(v, 0, 1)
+
+	px := u * float32(width-1)
+	py := v * float32(height-1)
+
+	x0 := int(px)
+	y0 := int(py)
+	x1 := minInt(x0+1, width-1)
+	y1 := minInt(y0+1, height-1)
+	fx := px - float32(x0)
+	fy := py - float32(y0)
+
+	c00 := sampler(x0, y0)
+	c10 := sampler(x1, y0)
+	c01 := sampler(x0, y1)
+	c11 := sampler(x1, y1)
+
+	r := lerpFloat32(lerpFloat32(c00[0], c10[0], fx), lerpFloat32(c01[0], c11[0], fx), fy)
+	g := lerpFloat32(lerpFloat32(c00[1], c10[1], fx), lerpFloat32(c01[1], c11[1], fx), fy)
+	b := lerpFloat32(lerpFloat32(c00[2], c10[2], fx), lerpFloat32(c01[2], c11[2], fx), fy)
+
+	var a float32
+	if interpolateAlpha {
+		a = lerpFloat32(lerpFloat32(c00[3], c10[3], fx), lerpFloat32(c01[3], c11[3], fx), fy)
+	} else {
+		a = 1.0
+	}
+
+	return Color{r, g, b, a}
+}
+
+// lerpFloat32 linearly interpolates between a and b by t.
+func lerpFloat32(a, b, t float32) float32 {
+	return a + (b-a)*t
+}
+
+// minInt returns the smaller of two integers.
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}

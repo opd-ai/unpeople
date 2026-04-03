@@ -699,34 +699,29 @@ func scaleV3Y(v *Vec3, s float32) {
 
 // ─── Limb Position Shift Helpers ──────────────────────────────────────────────
 
+// shiftLimbPairX applies a lateral shift to a left/right pair of joint positions.
+// Left position shifts by +delta, right by -delta.
+func shiftLimbPairX(left, right *Vec3, delta float32) {
+	left[0] += delta
+	right[0] -= delta
+}
+
 // shiftArmPositionsX laterally shifts all arm joint positions by the given delta.
 // Left arm positions move by +delta, right arm positions move by -delta.
 func shiftArmPositionsX(l *bodyLayout, delta float32) {
-	l.upperArmTopL[0] += delta
-	l.upperArmBottomL[0] += delta
-	l.forearmTopL[0] += delta
-	l.forearmBottomL[0] += delta
-	l.handCenterL[0] += delta
-
-	l.upperArmTopR[0] -= delta
-	l.upperArmBottomR[0] -= delta
-	l.forearmTopR[0] -= delta
-	l.forearmBottomR[0] -= delta
-	l.handCenterR[0] -= delta
+	shiftLimbPairX(&l.upperArmTopL, &l.upperArmTopR, delta)
+	shiftLimbPairX(&l.upperArmBottomL, &l.upperArmBottomR, delta)
+	shiftLimbPairX(&l.forearmTopL, &l.forearmTopR, delta)
+	shiftLimbPairX(&l.forearmBottomL, &l.forearmBottomR, delta)
+	shiftLimbPairX(&l.handCenterL, &l.handCenterR, delta)
 }
 
 // shiftLegPositionsX laterally shifts all leg joint positions by the given delta.
 // Left leg positions move by +delta, right leg positions move by -delta.
 func shiftLegPositionsX(l *bodyLayout, delta float32) {
-	l.upperLegTopL[0] += delta
-	l.upperLegBottomL[0] += delta
-	l.lowerLegTopL[0] += delta
-	l.lowerLegBottomL[0] += delta
-	l.footCenterL[0] += delta
-
-	l.upperLegTopR[0] -= delta
-	l.upperLegBottomR[0] -= delta
-	l.lowerLegTopR[0] -= delta
-	l.lowerLegBottomR[0] -= delta
-	l.footCenterR[0] -= delta
+	shiftLimbPairX(&l.upperLegTopL, &l.upperLegTopR, delta)
+	shiftLimbPairX(&l.upperLegBottomL, &l.upperLegBottomR, delta)
+	shiftLimbPairX(&l.lowerLegTopL, &l.lowerLegTopR, delta)
+	shiftLimbPairX(&l.lowerLegBottomL, &l.lowerLegBottomR, delta)
+	shiftLimbPairX(&l.footCenterL, &l.footCenterR, delta)
 }

@@ -673,6 +673,148 @@ func getBrowDisplacement(br Brow) faceDisplacement {
 	}
 }
 
+// faceVertexIndices holds the vertex indices for all face regions.
+type faceVertexIndices struct {
+	browCenter, browLeft, browRight, browOuterLeft, browOuterRight      int
+	noseBridge, noseTip, noseLeft, noseRight                            int
+	cheekHighLeft, cheekHighRight, cheekMidLeft, cheekMidRight          int
+	cheekLowLeft, cheekLowRight                                         int
+	jawCornerLeft, jawCornerRight, mandibleLeft, mandibleRight          int
+	chinCenter, chinLeft, chinRight, mouthLeft, mouthRight, mouthCenter int
+}
+
+// faceBuilder helps build face mesh vertices.
+type faceBuilder struct {
+	verts         []Vertex
+	headCenter    Vec3
+	headRX        float32
+	headRY        float32
+	sx, sy, sz    float32
+	surfaceOffset float32
+}
+
+// addVertex adds a face vertex at the specified relative position and normal.
+func (fb *faceBuilder) addVertex(relX, relY, relZ, nx, ny, nz float32) int {
+	pos := Vec3{
+		fb.headCenter[0] + relX*fb.sx + fb.surfaceOffset*nx,
+		fb.headCenter[1] + relY*fb.sy + fb.surfaceOffset*ny,
+		fb.headCenter[2] + relZ*fb.sz + fb.surfaceOffset*nz,
+	}
+	fb.verts = append(fb.verts, Vertex{
+		Position: pos,
+		Normal:   vec3Normalize(Vec3{nx, ny, nz}),
+		UV0:      Vec2{0.5 + relX/(2*fb.headRX), 0.5 + relY/(2*fb.headRY)},
+		Color:    ColorGray,
+	})
+	return len(fb.verts) - 1
+}
+
+// buildBrowVertices creates the brow region vertices.
+func (fb *faceBuilder) buildBrowVertices(disp faceDisplacement, idx *faceVertexIndices) {
+	idx.browCenter = fb.addVertex(0, 0.040+disp.browRidgeY, 0.080+disp.browRidgeZ, 0, 0.3, 1)
+	idx.browLeft = fb.addVertex(-0.045, 0.038+disp.browRidgeY, 0.075+disp.browRidgeZ, -0.2, 0.3, 1)
+	idx.browRight = fb.addVertex(0.045, 0.038+disp.browRidgeY, 0.075+disp.browRidgeZ, 0.2, 0.3, 1)
+	idx.browOuterLeft = fb.addVertex(-0.065, 0.030+disp.browRidgeY, 0.060+disp.browRidgeZ, -0.4, 0.2, 0.8)
+	idx.browOuterRight = fb.addVertex(0.065, 0.030+disp.browRidgeY, 0.060+disp.browRidgeZ, 0.4, 0.2, 0.8)
+}
+
+// buildNoseVertices creates the nose region vertices.
+func (fb *faceBuilder) buildNoseVertices(idx *faceVertexIndices) {
+	idx.noseBridge = fb.addVertex(0, 0.020, 0.088, 0, 0.1, 1)
+	idx.noseTip = fb.addVertex(0, -0.020, 0.095, 0, -0.1, 1)
+	idx.noseLeft = fb.addVertex(-0.015, -0.025, 0.085, -0.3, -0.1, 0.9)
+	idx.noseRight = fb.addVertex(0.015, -0.025, 0.085, 0.3, -0.1, 0.9)
+}
+
+// buildCheekVertices creates the cheekbone region vertices.
+func (fb *faceBuilder) buildCheekVertices(disp faceDisplacement, idx *faceVertexIndices) {
+	idx.cheekHighLeft = fb.addVertex(-0.070+disp.cheekX, 0.005, 0.050, -0.7, 0.1, 0.6)
+	idx.cheekHighRight = fb.addVertex(0.070+disp.cheekX, 0.005, 0.050, 0.7, 0.1, 0.6)
+	idx.cheekMidLeft = fb.addVertex(-0.078+disp.cheekX, -0.020, 0.035, -0.8, -0.1, 0.5)
+	idx.cheekMidRight = fb.addVertex(0.078+disp.cheekX, -0.020, 0.035, 0.8, -0.1, 0.5)
+	idx.cheekLowLeft = fb.addVertex(-0.065+disp.cheekX*0.5, -0.045, 0.045, -0.6, -0.2, 0.6)
+	idx.cheekLowRight = fb.addVertex(0.065+disp.cheekX*0.5, -0.045, 0.045, 0.6, -0.2, 0.6)
+}
+
+// buildJawAndMouthVertices creates the jaw and mouth region vertices.
+func (fb *faceBuilder) buildJawAndMouthVertices(disp faceDisplacement, idx *faceVertexIndices) {
+	idx.jawCornerLeft = fb.addVertex(-0.072+disp.jawCornerX, -0.055, 0.020, -0.8, -0.3, 0.3)
+	idx.jawCornerRight = fb.addVertex(0.072+disp.jawCornerX, -0.055, 0.020, 0.8, -0.3, 0.3)
+	idx.mandibleLeft = fb.addVertex(-0.050+disp.jawCornerX*0.6, -0.075, 0.040+disp.chinZ*0.5, -0.5, -0.4, 0.6)
+	idx.mandibleRight = fb.addVertex(0.050+disp.jawCornerX*0.6, -0.075, 0.040+disp.chinZ*0.5, 0.5, -0.4, 0.6)
+	idx.chinCenter = fb.addVertex(0, -0.090+disp.chinY, 0.065+disp.chinZ, 0, -0.5, 0.8)
+	idx.chinLeft = fb.addVertex(-0.025, -0.085+disp.chinY, 0.060+disp.chinZ, -0.2, -0.5, 0.8)
+	idx.chinRight = fb.addVertex(0.025, -0.085+disp.chinY, 0.060+disp.chinZ, 0.2, -0.5, 0.8)
+	idx.mouthLeft = fb.addVertex(-0.030, -0.050, 0.075, -0.2, -0.2, 0.9)
+	idx.mouthRight = fb.addVertex(0.030, -0.050, 0.075, 0.2, -0.2, 0.9)
+	idx.mouthCenter = fb.addVertex(0, -0.055, 0.080, 0, -0.2, 1)
+}
+
+// buildFaceTriangles creates the face triangle topology from vertex indices.
+func buildFaceTriangles(idx faceVertexIndices) []uint32 {
+	triangles := [][3]int{
+		// Brow region
+		{idx.browCenter, idx.browLeft, idx.noseBridge},
+		{idx.browCenter, idx.noseBridge, idx.browRight},
+		{idx.browLeft, idx.browOuterLeft, idx.cheekHighLeft},
+		{idx.browLeft, idx.cheekHighLeft, idx.noseBridge},
+		{idx.browRight, idx.noseBridge, idx.cheekHighRight},
+		{idx.browRight, idx.cheekHighRight, idx.browOuterRight},
+		// Nose region
+		{idx.noseBridge, idx.cheekHighLeft, idx.noseLeft},
+		{idx.noseBridge, idx.noseLeft, idx.noseTip},
+		{idx.noseBridge, idx.noseTip, idx.noseRight},
+		{idx.noseBridge, idx.noseRight, idx.cheekHighRight},
+		// Cheek region
+		{idx.cheekHighLeft, idx.cheekMidLeft, idx.noseLeft},
+		{idx.noseLeft, idx.cheekMidLeft, idx.cheekLowLeft},
+		{idx.cheekHighRight, idx.noseRight, idx.cheekMidRight},
+		{idx.noseRight, idx.cheekLowRight, idx.cheekMidRight},
+		// Mouth area
+		{idx.noseLeft, idx.cheekLowLeft, idx.mouthLeft},
+		{idx.noseLeft, idx.mouthLeft, idx.noseTip},
+		{idx.noseTip, idx.mouthLeft, idx.mouthCenter},
+		{idx.noseTip, idx.mouthCenter, idx.mouthRight},
+		{idx.noseTip, idx.mouthRight, idx.noseRight},
+		{idx.noseRight, idx.mouthRight, idx.cheekLowRight},
+		// Jaw region
+		{idx.cheekMidLeft, idx.jawCornerLeft, idx.cheekLowLeft},
+		{idx.cheekLowLeft, idx.jawCornerLeft, idx.mandibleLeft},
+		{idx.cheekLowLeft, idx.mandibleLeft, idx.mouthLeft},
+		{idx.mouthLeft, idx.mandibleLeft, idx.chinLeft},
+		{idx.mouthLeft, idx.chinLeft, idx.mouthCenter},
+		{idx.mouthCenter, idx.chinLeft, idx.chinCenter},
+		{idx.mouthCenter, idx.chinCenter, idx.chinRight},
+		{idx.mouthCenter, idx.chinRight, idx.mouthRight},
+		{idx.mouthRight, idx.chinRight, idx.mandibleRight},
+		{idx.mouthRight, idx.mandibleRight, idx.cheekLowRight},
+		{idx.cheekLowRight, idx.mandibleRight, idx.jawCornerRight},
+		{idx.cheekLowRight, idx.jawCornerRight, idx.cheekMidRight},
+	}
+
+	idxs := make([]uint32, 0, len(triangles)*3)
+	for _, tri := range triangles {
+		idxs = append(idxs, uint32(tri[0]), uint32(tri[1]), uint32(tri[2]))
+	}
+	return idxs
+}
+
+// combineFaceDisplacements merges displacements from face shape, jaw, and brow.
+func combineFaceDisplacements(fs FaceShape, j Jaw, br Brow) faceDisplacement {
+	fsDisp := getFaceShapeDisplacement(fs)
+	jawDisp := getJawDisplacement(j)
+	browDisp := getBrowDisplacement(br)
+
+	return faceDisplacement{
+		chinZ:      fsDisp.chinZ + jawDisp.chinZ,
+		chinY:      fsDisp.chinY + jawDisp.chinY,
+		jawCornerX: fsDisp.jawCornerX + jawDisp.jawCornerX,
+		browRidgeZ: fsDisp.browRidgeZ + browDisp.browRidgeZ,
+		browRidgeY: fsDisp.browRidgeY + browDisp.browRidgeY,
+		cheekX:     fsDisp.cheekX,
+	}
+}
+
 // generateFaceMesh creates simplified face geometry overlaid on the head.
 // The face mesh provides distinct regions for jaw, brow, and cheeks that
 // respond to FaceShape, Jaw, and Brow parameters.
@@ -683,128 +825,24 @@ func generateFaceMesh(
 	j Jaw,
 	br Brow,
 ) ([]Vertex, []uint32) {
-	// Combine displacements from all parameters
-	fsDisp := getFaceShapeDisplacement(fs)
-	jawDisp := getJawDisplacement(j)
-	browDisp := getBrowDisplacement(br)
+	disp := combineFaceDisplacements(fs, j, br)
 
-	disp := faceDisplacement{
-		chinZ:      fsDisp.chinZ + jawDisp.chinZ,
-		chinY:      fsDisp.chinY + jawDisp.chinY,
-		jawCornerX: fsDisp.jawCornerX + jawDisp.jawCornerX,
-		browRidgeZ: fsDisp.browRidgeZ + browDisp.browRidgeZ,
-		browRidgeY: fsDisp.browRidgeY + browDisp.browRidgeY,
-		cheekX:     fsDisp.cheekX,
+	fb := &faceBuilder{
+		verts:         make([]Vertex, 0, 32),
+		headCenter:    headCenter,
+		headRX:        headRX,
+		headRY:        headRY,
+		sx:            headRX / 0.090,
+		sy:            headRY / 0.115,
+		sz:            headRZ / 0.090,
+		surfaceOffset: 0.003,
 	}
 
-	// Scale factors for head dimensions
-	sx := headRX / 0.090 // Scale relative to default head
-	sy := headRY / 0.115
-	sz := headRZ / 0.090
+	var idx faceVertexIndices
+	fb.buildBrowVertices(disp, &idx)
+	fb.buildNoseVertices(&idx)
+	fb.buildCheekVertices(disp, &idx)
+	fb.buildJawAndMouthVertices(disp, &idx)
 
-	// Offset to sit slightly above head surface
-	const surfaceOffset = 0.003
-
-	// Build face vertices organized by region
-	verts := make([]Vertex, 0, 32)
-
-	// Helper to add a face vertex
-	addVertex := func(relX, relY, relZ, nx, ny, nz float32) int {
-		pos := Vec3{
-			headCenter[0] + relX*sx + surfaceOffset*nx,
-			headCenter[1] + relY*sy + surfaceOffset*ny,
-			headCenter[2] + relZ*sz + surfaceOffset*nz,
-		}
-		verts = append(verts, Vertex{
-			Position: pos,
-			Normal:   vec3Normalize(Vec3{nx, ny, nz}),
-			UV0:      Vec2{0.5 + relX/(2*headRX), 0.5 + relY/(2*headRY)},
-			Color:    ColorGray,
-		})
-		return len(verts) - 1
-	}
-
-	// Brow region (upper face)
-	browCenterIdx := addVertex(0, 0.040+disp.browRidgeY, 0.080+disp.browRidgeZ, 0, 0.3, 1)
-	browLeftIdx := addVertex(-0.045, 0.038+disp.browRidgeY, 0.075+disp.browRidgeZ, -0.2, 0.3, 1)
-	browRightIdx := addVertex(0.045, 0.038+disp.browRidgeY, 0.075+disp.browRidgeZ, 0.2, 0.3, 1)
-	browOuterLeftIdx := addVertex(-0.065, 0.030+disp.browRidgeY, 0.060+disp.browRidgeZ, -0.4, 0.2, 0.8)
-	browOuterRightIdx := addVertex(0.065, 0.030+disp.browRidgeY, 0.060+disp.browRidgeZ, 0.4, 0.2, 0.8)
-
-	// Nose region
-	noseBridgeIdx := addVertex(0, 0.020, 0.088, 0, 0.1, 1)
-	noseTipIdx := addVertex(0, -0.020, 0.095, 0, -0.1, 1)
-	noseLeftIdx := addVertex(-0.015, -0.025, 0.085, -0.3, -0.1, 0.9)
-	noseRightIdx := addVertex(0.015, -0.025, 0.085, 0.3, -0.1, 0.9)
-
-	// Cheekbone region
-	cheekHighLeftIdx := addVertex(-0.070+disp.cheekX, 0.005, 0.050, -0.7, 0.1, 0.6)
-	cheekHighRightIdx := addVertex(0.070+disp.cheekX, 0.005, 0.050, 0.7, 0.1, 0.6)
-	cheekMidLeftIdx := addVertex(-0.078+disp.cheekX, -0.020, 0.035, -0.8, -0.1, 0.5)
-	cheekMidRightIdx := addVertex(0.078+disp.cheekX, -0.020, 0.035, 0.8, -0.1, 0.5)
-	cheekLowLeftIdx := addVertex(-0.065+disp.cheekX*0.5, -0.045, 0.045, -0.6, -0.2, 0.6)
-	cheekLowRightIdx := addVertex(0.065+disp.cheekX*0.5, -0.045, 0.045, 0.6, -0.2, 0.6)
-
-	// Jaw region
-	jawCornerLeftIdx := addVertex(-0.072+disp.jawCornerX, -0.055, 0.020, -0.8, -0.3, 0.3)
-	jawCornerRightIdx := addVertex(0.072+disp.jawCornerX, -0.055, 0.020, 0.8, -0.3, 0.3)
-	mandibleLeftIdx := addVertex(-0.050+disp.jawCornerX*0.6, -0.075, 0.040+disp.chinZ*0.5, -0.5, -0.4, 0.6)
-	mandibleRightIdx := addVertex(0.050+disp.jawCornerX*0.6, -0.075, 0.040+disp.chinZ*0.5, 0.5, -0.4, 0.6)
-	chinCenterIdx := addVertex(0, -0.090+disp.chinY, 0.065+disp.chinZ, 0, -0.5, 0.8)
-	chinLeftIdx := addVertex(-0.025, -0.085+disp.chinY, 0.060+disp.chinZ, -0.2, -0.5, 0.8)
-	chinRightIdx := addVertex(0.025, -0.085+disp.chinY, 0.060+disp.chinZ, 0.2, -0.5, 0.8)
-
-	// Mouth area (connects nose to jaw)
-	mouthLeftIdx := addVertex(-0.030, -0.050, 0.075, -0.2, -0.2, 0.9)
-	mouthRightIdx := addVertex(0.030, -0.050, 0.075, 0.2, -0.2, 0.9)
-	mouthCenterIdx := addVertex(0, -0.055, 0.080, 0, -0.2, 1)
-
-	// Face triangle topology - each row defines 3 vertex indices forming a CCW triangle.
-	// This static table describes the face mesh connectivity.
-	faceTriangles := [][3]int{
-		// Brow region
-		{browCenterIdx, browLeftIdx, noseBridgeIdx},
-		{browCenterIdx, noseBridgeIdx, browRightIdx},
-		{browLeftIdx, browOuterLeftIdx, cheekHighLeftIdx},
-		{browLeftIdx, cheekHighLeftIdx, noseBridgeIdx},
-		{browRightIdx, noseBridgeIdx, cheekHighRightIdx},
-		{browRightIdx, cheekHighRightIdx, browOuterRightIdx},
-		// Nose region
-		{noseBridgeIdx, cheekHighLeftIdx, noseLeftIdx},
-		{noseBridgeIdx, noseLeftIdx, noseTipIdx},
-		{noseBridgeIdx, noseTipIdx, noseRightIdx},
-		{noseBridgeIdx, noseRightIdx, cheekHighRightIdx},
-		// Cheek region
-		{cheekHighLeftIdx, cheekMidLeftIdx, noseLeftIdx},
-		{noseLeftIdx, cheekMidLeftIdx, cheekLowLeftIdx},
-		{cheekHighRightIdx, noseRightIdx, cheekMidRightIdx},
-		{noseRightIdx, cheekLowRightIdx, cheekMidRightIdx},
-		// Mouth area
-		{noseLeftIdx, cheekLowLeftIdx, mouthLeftIdx},
-		{noseLeftIdx, mouthLeftIdx, noseTipIdx},
-		{noseTipIdx, mouthLeftIdx, mouthCenterIdx},
-		{noseTipIdx, mouthCenterIdx, mouthRightIdx},
-		{noseTipIdx, mouthRightIdx, noseRightIdx},
-		{noseRightIdx, mouthRightIdx, cheekLowRightIdx},
-		// Jaw region
-		{cheekMidLeftIdx, jawCornerLeftIdx, cheekLowLeftIdx},
-		{cheekLowLeftIdx, jawCornerLeftIdx, mandibleLeftIdx},
-		{cheekLowLeftIdx, mandibleLeftIdx, mouthLeftIdx},
-		{mouthLeftIdx, mandibleLeftIdx, chinLeftIdx},
-		{mouthLeftIdx, chinLeftIdx, mouthCenterIdx},
-		{mouthCenterIdx, chinLeftIdx, chinCenterIdx},
-		{mouthCenterIdx, chinCenterIdx, chinRightIdx},
-		{mouthCenterIdx, chinRightIdx, mouthRightIdx},
-		{mouthRightIdx, chinRightIdx, mandibleRightIdx},
-		{mouthRightIdx, mandibleRightIdx, cheekLowRightIdx},
-		{cheekLowRightIdx, mandibleRightIdx, jawCornerRightIdx},
-		{cheekLowRightIdx, jawCornerRightIdx, cheekMidRightIdx},
-	}
-
-	idxs := make([]uint32, 0, len(faceTriangles)*3)
-	for _, tri := range faceTriangles {
-		idxs = append(idxs, uint32(tri[0]), uint32(tri[1]), uint32(tri[2]))
-	}
-
-	return verts, idxs
+	return fb.verts, buildFaceTriangles(idx)
 }

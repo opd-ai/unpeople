@@ -316,124 +316,130 @@ func defaultBodyLayout() bodyLayout {
 	}
 }
 
+// meshBuildContext holds state for mesh assembly operations.
+type meshBuildContext struct {
+	builder  *meshBuilder
+	atlas    UVAtlas
+	circSegs int // radial resolution for cylinders
+}
+
+// appendPart generates geometry, remaps UVs, and appends to the builder.
+func (ctx *meshBuildContext) appendPart(verts []Vertex, idxs []uint32, uvRegion UVRegion) {
+	remapUVs(verts, uvRegion)
+	ctx.builder.append(verts, idxs)
+}
+
+// appendCyl generates a tapered cylinder and appends it to the mesh.
+func (ctx *meshBuildContext) appendCyl(bottom, top Vec3, bottomR, topR float32, bottomCap, topCap bool, uv UVRegion) {
+	v, i := generateCylinder(bottom, top, bottomR, topR, ctx.circSegs, bottomCap, topCap)
+	ctx.appendPart(v, i, uv)
+}
+
+// buildHeadParts assembles the head, face, and optional skull cap.
+func (ctx *meshBuildContext) buildHeadParts(layout bodyLayout, opts buildOptions) {
+	const (
+		latSegs = 6 // latitude rings for ellipsoid head
+		lonSegs = 8 // longitude segments for ellipsoid head
+	)
+
+	v, i := generateEllipsoid(layout.headCenter, layout.headRX, layout.headRY, layout.headRZ, latSegs, lonSegs)
+	ctx.appendPart(v, i, ctx.atlas.Head)
+
+	v, i = generateFaceMesh(layout.headCenter, layout.headRX, layout.headRY, layout.headRZ, opts.faceShape, opts.jaw, opts.brow)
+	ctx.appendPart(v, i, ctx.atlas.Face)
+
+	if opts.hasHairSlot {
+		v, i = generateSkullCap(layout.headCenter, layout.headRX, layout.headRY, layout.headRZ)
+		ctx.appendPart(v, i, ctx.atlas.SkullCap)
+	}
+}
+
+// buildTorso assembles the neck, chest, abdomen, and hips.
+func (ctx *meshBuildContext) buildTorso(layout bodyLayout) {
+	ctx.appendCyl(layout.neckBottom, layout.neckTop, layout.neckRadius, layout.neckRadius, false, false, ctx.atlas.Neck)
+	ctx.appendCyl(layout.chestBottom, layout.chestTop, layout.chestRX*0.82, layout.chestRX, false, false, ctx.atlas.Chest)
+	ctx.appendCyl(layout.abdomenBottom, layout.abdomenTop, layout.abdomenRX, layout.abdomenRX*0.88, false, false, ctx.atlas.Abdomen)
+	ctx.appendCyl(layout.hipsBottom, layout.hipsTop, layout.hipsRX, layout.hipsRX*0.95, true, false, ctx.atlas.Hips)
+}
+
+// buildArms assembles the upper arms and forearms.
+func (ctx *meshBuildContext) buildArms(layout bodyLayout) {
+	ctx.appendCyl(layout.upperArmTopL, layout.upperArmBottomL, layout.upperArmRadius, layout.upperArmRadius*0.85, false, false, ctx.atlas.UpperArmL)
+	ctx.appendCyl(layout.upperArmTopR, layout.upperArmBottomR, layout.upperArmRadius, layout.upperArmRadius*0.85, false, false, ctx.atlas.UpperArmR)
+	ctx.appendCyl(layout.forearmTopL, layout.forearmBottomL, layout.forearmRadius, layout.forearmRadius*0.80, false, false, ctx.atlas.ForearmL)
+	ctx.appendCyl(layout.forearmTopR, layout.forearmBottomR, layout.forearmRadius, layout.forearmRadius*0.80, false, false, ctx.atlas.ForearmR)
+}
+
+// buildHands assembles both hands with fingers.
+func (ctx *meshBuildContext) buildHands(layout bodyLayout) {
+	fingerDir := Vec3{0, -1, 0} // fingers point down in T-pose
+	v, i := generateHand(layout.handCenterL, layout.handHW, layout.handHH, layout.handHD, fingerDir, true,
+		layout.fingerRadius, layout.proximalLength, layout.middleLength, layout.distalLength,
+		layout.thumbProximalLength, layout.thumbDistalLength, layout.fingerSpacing, layout.fingerLengthMult)
+	ctx.appendPart(v, i, ctx.atlas.HandL)
+
+	v, i = generateHand(layout.handCenterR, layout.handHW, layout.handHH, layout.handHD, fingerDir, false,
+		layout.fingerRadius, layout.proximalLength, layout.middleLength, layout.distalLength,
+		layout.thumbProximalLength, layout.thumbDistalLength, layout.fingerSpacing, layout.fingerLengthMult)
+	ctx.appendPart(v, i, ctx.atlas.HandR)
+}
+
+// buildLegs assembles the upper and lower legs.
+func (ctx *meshBuildContext) buildLegs(layout bodyLayout) {
+	ctx.appendCyl(layout.upperLegTopL, layout.upperLegBottomL, layout.upperLegRadius, layout.upperLegRadius*0.85, false, false, ctx.atlas.UpperLegL)
+	ctx.appendCyl(layout.upperLegTopR, layout.upperLegBottomR, layout.upperLegRadius, layout.upperLegRadius*0.85, false, false, ctx.atlas.UpperLegR)
+	ctx.appendCyl(layout.lowerLegTopL, layout.lowerLegBottomL, layout.lowerLegRadius, layout.lowerLegRadius*0.75, false, true, ctx.atlas.LowerLegL)
+	ctx.appendCyl(layout.lowerLegTopR, layout.lowerLegBottomR, layout.lowerLegRadius, layout.lowerLegRadius*0.75, false, true, ctx.atlas.LowerLegR)
+}
+
+// buildFeet assembles both feet with toes.
+func (ctx *meshBuildContext) buildFeet(layout bodyLayout) {
+	toeDir := Vec3{0, 0, 1} // toes point forward in T-pose
+	v, i := generateFoot(layout.footCenterL, layout.footHW, layout.footHH, layout.footHD, toeDir, true,
+		layout.toeRadius, layout.toeProximalLength, layout.toeMiddleLength, layout.toeDistalLength,
+		layout.bigToeProximal, layout.bigToeDistal, layout.toeSpacing)
+	ctx.appendPart(v, i, ctx.atlas.FootL)
+
+	v, i = generateFoot(layout.footCenterR, layout.footHW, layout.footHH, layout.footHD, toeDir, false,
+		layout.toeRadius, layout.toeProximalLength, layout.toeMiddleLength, layout.toeDistalLength,
+		layout.bigToeProximal, layout.bigToeDistal, layout.toeSpacing)
+	ctx.appendPart(v, i, ctx.atlas.FootR)
+}
+
+// buildEars assembles both ears.
+func (ctx *meshBuildContext) buildEars(layout bodyLayout) {
+	v, i := generateEar(layout.earAttachL, layout.earScale, true)
+	ctx.appendPart(v, i, ctx.atlas.EarL)
+	v, i = generateEar(layout.earAttachR, layout.earScale, false)
+	ctx.appendPart(v, i, ctx.atlas.EarR)
+}
+
 // buildMesh assembles the full humanoid mesh from the given body layout.
 // The mesh key is used by the Kaiju engine's mesh cache.
 // opts controls optional features like skull cap and face mesh parameters.
 func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 	var builder meshBuilder
-	atlas := defaultUVAtlas()
-
-	const (
-		circSegs = 8 // radial resolution for cylinders
-		latSegs  = 6 // latitude rings for ellipsoid head
-		lonSegs  = 8 // longitude segments for ellipsoid head
-	)
-
-	// appendPart is a helper that generates geometry, remaps UVs, and appends to builder.
-	appendPart := func(verts []Vertex, idxs []uint32, uvRegion UVRegion) {
-		remapUVs(verts, uvRegion)
-		builder.append(verts, idxs)
+	ctx := &meshBuildContext{
+		builder:  &builder,
+		atlas:    defaultUVAtlas(),
+		circSegs: 8, // radial resolution for cylinders
 	}
 
-	// appendCyl generates a tapered cylinder and appends it to the mesh.
-	appendCyl := func(bottom, top Vec3, bottomR, topR float32, bottomCap, topCap bool, uv UVRegion) {
-		v, i := generateCylinder(bottom, top, bottomR, topR, circSegs, bottomCap, topCap)
-		appendPart(v, i, uv)
-	}
-
-	// Head
-	v, i := generateEllipsoid(layout.headCenter,
-		layout.headRX, layout.headRY, layout.headRZ, latSegs, lonSegs)
-	appendPart(v, i, atlas.Head)
-
-	// Face mesh (overlaid on head with distinct facial regions)
-	v, i = generateFaceMesh(layout.headCenter,
-		layout.headRX, layout.headRY, layout.headRZ,
-		opts.faceShape, opts.jaw, opts.brow)
-	appendPart(v, i, atlas.Face)
-
-	// Skull cap (hair slot placeholder)
-	if opts.hasHairSlot {
-		v, i = generateSkullCap(layout.headCenter, layout.headRX, layout.headRY, layout.headRZ)
-		appendPart(v, i, atlas.SkullCap)
-	}
-
-	// Torso segments
-	appendCyl(layout.neckBottom, layout.neckTop, layout.neckRadius, layout.neckRadius, false, false, atlas.Neck)
-	appendCyl(layout.chestBottom, layout.chestTop, layout.chestRX*0.82, layout.chestRX, false, false, atlas.Chest)
-	appendCyl(layout.abdomenBottom, layout.abdomenTop, layout.abdomenRX, layout.abdomenRX*0.88, false, false, atlas.Abdomen)
-	appendCyl(layout.hipsBottom, layout.hipsTop, layout.hipsRX, layout.hipsRX*0.95, true, false, atlas.Hips)
-
-	// Upper arms (tapered toward elbow)
-	appendCyl(layout.upperArmTopL, layout.upperArmBottomL, layout.upperArmRadius, layout.upperArmRadius*0.85, false, false, atlas.UpperArmL)
-	appendCyl(layout.upperArmTopR, layout.upperArmBottomR, layout.upperArmRadius, layout.upperArmRadius*0.85, false, false, atlas.UpperArmR)
-
-	// Forearms (tapered toward wrist)
-	appendCyl(layout.forearmTopL, layout.forearmBottomL, layout.forearmRadius, layout.forearmRadius*0.80, false, false, atlas.ForearmL)
-	appendCyl(layout.forearmTopR, layout.forearmBottomR, layout.forearmRadius, layout.forearmRadius*0.80, false, false, atlas.ForearmR)
-
-	// Hands with fingers
-	fingerDir := Vec3{0, -1, 0} // fingers point down in T-pose
-	v, i = generateHand(
-		layout.handCenterL, layout.handHW, layout.handHH, layout.handHD,
-		fingerDir, true, // isLeftHand
-		layout.fingerRadius, layout.proximalLength, layout.middleLength, layout.distalLength,
-		layout.thumbProximalLength, layout.thumbDistalLength,
-		layout.fingerSpacing, layout.fingerLengthMult,
-	)
-	appendPart(v, i, atlas.HandL)
-	v, i = generateHand(
-		layout.handCenterR, layout.handHW, layout.handHH, layout.handHD,
-		fingerDir, false, // isLeftHand
-		layout.fingerRadius, layout.proximalLength, layout.middleLength, layout.distalLength,
-		layout.thumbProximalLength, layout.thumbDistalLength,
-		layout.fingerSpacing, layout.fingerLengthMult,
-	)
-	appendPart(v, i, atlas.HandR)
-
-	// Upper legs (tapered toward knee)
-	appendCyl(layout.upperLegTopL, layout.upperLegBottomL, layout.upperLegRadius, layout.upperLegRadius*0.85, false, false, atlas.UpperLegL)
-	appendCyl(layout.upperLegTopR, layout.upperLegBottomR, layout.upperLegRadius, layout.upperLegRadius*0.85, false, false, atlas.UpperLegR)
-
-	// Lower legs (tapered toward ankle, closed at bottom)
-	appendCyl(layout.lowerLegTopL, layout.lowerLegBottomL, layout.lowerLegRadius, layout.lowerLegRadius*0.75, false, true, atlas.LowerLegL)
-	appendCyl(layout.lowerLegTopR, layout.lowerLegBottomR, layout.lowerLegRadius, layout.lowerLegRadius*0.75, false, true, atlas.LowerLegR)
-
-	// Feet with toes
-	toeDir := Vec3{0, 0, 1} // toes point forward in T-pose
-	v, i = generateFoot(
-		layout.footCenterL, layout.footHW, layout.footHH, layout.footHD,
-		toeDir, true, // isLeftFoot
-		layout.toeRadius, layout.toeProximalLength, layout.toeMiddleLength, layout.toeDistalLength,
-		layout.bigToeProximal, layout.bigToeDistal,
-		layout.toeSpacing,
-	)
-	appendPart(v, i, atlas.FootL)
-	v, i = generateFoot(
-		layout.footCenterR, layout.footHW, layout.footHH, layout.footHD,
-		toeDir, false, // isLeftFoot
-		layout.toeRadius, layout.toeProximalLength, layout.toeMiddleLength, layout.toeDistalLength,
-		layout.bigToeProximal, layout.bigToeDistal,
-		layout.toeSpacing,
-	)
-	appendPart(v, i, atlas.FootR)
-
-	// Ears
-	v, i = generateEar(layout.earAttachL, layout.earScale, true)
-	appendPart(v, i, atlas.EarL)
-	v, i = generateEar(layout.earAttachR, layout.earScale, false)
-	appendPart(v, i, atlas.EarR)
+	ctx.buildHeadParts(layout, opts)
+	ctx.buildTorso(layout)
+	ctx.buildArms(layout)
+	ctx.buildHands(layout)
+	ctx.buildLegs(layout)
+	ctx.buildFeet(layout)
+	ctx.buildEars(layout)
 
 	mesh := builder.build(key)
 
 	// Merge boundary vertices to eliminate visible seams at body part joints.
-	// The epsilon scales with total height to handle species size variations.
 	epsilon := scaledEpsilon(layout.totalHeight)
 	mesh.Vertices, mesh.Indices = mergeVertices(mesh.Vertices, mesh.Indices, epsilon)
 
-	// Apply skin color to all vertices
 	applySkinColor(mesh.Vertices, opts.skinColor)
-
 	return mesh
 }
 

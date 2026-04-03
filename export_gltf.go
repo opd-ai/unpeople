@@ -389,10 +389,9 @@ func appendVec4(buf []byte, v [4]float32) []byte {
 	return append(buf, data...)
 }
 
-func buildGLTF(mesh *Mesh, opts GLTFExportOptions) (*gltfRoot, error) {
-	br := buildGLTFBuffers(mesh, opts)
-
-	gltf := &gltfRoot{
+// buildGLTFBase creates the glTF root structure with asset, scene, and mesh data.
+func buildGLTFBase(br *gltfBuildResult, opts GLTFExportOptions) *gltfRoot {
+	return &gltfRoot{
 		Asset: gltfAsset{
 			Version:   "2.0",
 			Generator: "unpeople",
@@ -420,17 +419,27 @@ func buildGLTF(mesh *Mesh, opts GLTFExportOptions) (*gltfRoot, error) {
 			ByteLength: len(br.buffer),
 		}},
 	}
+}
 
-	// Add default material
-	materialIdx := 0
-	gltf.Materials = []gltfMaterial{{
+// buildDefaultSkinMaterial creates the default PBR skin material.
+func buildDefaultSkinMaterial() gltfMaterial {
+	return gltfMaterial{
 		Name: "skin",
 		PBRMetallicRough: &gltfPBRMetallicRough{
 			BaseColorFactor: []float64{0.8, 0.6, 0.5, 1.0},
 			MetallicFactor:  0.0,
 			RoughnessFactor: 0.8,
 		},
-	}}
+	}
+}
+
+func buildGLTF(mesh *Mesh, opts GLTFExportOptions) (*gltfRoot, error) {
+	br := buildGLTFBuffers(mesh, opts)
+	gltf := buildGLTFBase(br, opts)
+
+	// Add default material
+	materialIdx := 0
+	gltf.Materials = []gltfMaterial{buildDefaultSkinMaterial()}
 	gltf.Meshes[0].Primitives[0].Material = &materialIdx
 
 	if opts.EmbedBuffers {

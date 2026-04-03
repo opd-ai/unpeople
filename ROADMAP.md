@@ -100,9 +100,9 @@ and must be addressed before or during Phase 2 implementation:
 
 - [ ] **Kaiju engine plug-in** – A drop-in `Generator` that registers with
   Kaiju's asset pipeline and produces `rendering.Mesh` objects directly.
-- [ ] **glTF 2.0 export** – Standard interchange format for use outside Kaiju.
+- [x] **glTF 2.0 export** – Standard interchange format for use outside Kaiju.
 - [x] **OBJ export** – Simple text-format export for debugging in DCC tools.
 - [x] **CLI tool** – `unpeopled` command that accepts JSON parameters on stdin
-  and writes a mesh file (OBJ or UNPM binary) to stdout.
+  and writes a mesh file (OBJ, glTF, GLB, or UNPM binary) to stdout.
 - [ ] **REST API** – HTTP microservice wrapper around the generator for
   integration with non-Go game engines.

@@ -215,12 +215,9 @@ func generateEllipsoid(
 
 // ─── Box ─────────────────────────────────────────────────────────────────────
 
-// generateBox builds an axis-aligned box centred at center with half-extents
-// (hw, hh, hd). Each of the 6 faces is a flat quad with its own normal.
-func generateBox(center Vec3, hw, hh, hd float32) ([]Vertex, []uint32) {
-	cx, cy, cz := center[0], center[1], center[2]
-
-	corners := [8]Vec3{
+// boxCorners computes the 8 corner positions of an axis-aligned box.
+func boxCorners(cx, cy, cz, hw, hh, hd float32) [8]Vec3 {
+	return [8]Vec3{
 		{cx - hw, cy - hh, cz - hd}, // 0
 		{cx + hw, cy - hh, cz - hd}, // 1
 		{cx + hw, cy + hh, cz - hd}, // 2
@@ -230,42 +227,50 @@ func generateBox(center Vec3, hw, hh, hd float32) ([]Vertex, []uint32) {
 		{cx + hw, cy + hh, cz + hd}, // 6
 		{cx - hw, cy + hh, cz + hd}, // 7
 	}
+}
 
-	// Each face: CCW winding when viewed from the normal direction
-	faces := [6][4]int{
-		{0, 3, 2, 1}, // -Z (back)
-		{4, 5, 6, 7}, // +Z (front)
-		{0, 4, 7, 3}, // -X (left)
-		{1, 2, 6, 5}, // +X (right)
-		{0, 1, 5, 4}, // -Y (bottom)
-		{3, 7, 6, 2}, // +Y (top)
-	}
-	normals := [6]Vec3{
-		{0, 0, -1},
-		{0, 0, 1},
-		{-1, 0, 0},
-		{1, 0, 0},
-		{0, -1, 0},
-		{0, 1, 0},
-	}
-	uvCorners := [4]Vec2{{0, 0}, {1, 0}, {1, 1}, {0, 1}}
+// boxFaceIndices defines CCW winding for each of the 6 box faces.
+var boxFaceIndices = [6][4]int{
+	{0, 3, 2, 1}, // -Z (back)
+	{4, 5, 6, 7}, // +Z (front)
+	{0, 4, 7, 3}, // -X (left)
+	{1, 2, 6, 5}, // +X (right)
+	{0, 1, 5, 4}, // -Y (bottom)
+	{3, 7, 6, 2}, // +Y (top)
+}
 
-	// Pre-allocate: 6 faces * 4 vertices = 24 vertices, 6 faces * 6 indices = 36 indices
+// boxFaceNormals provides outward normals for each box face.
+var boxFaceNormals = [6]Vec3{
+	{0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0},
+}
+
+// boxUVCorners defines UV coordinates for quad corners.
+var boxUVCorners = [4]Vec2{{0, 0}, {1, 0}, {1, 1}, {0, 1}}
+
+// appendBoxFace adds a single face's vertices and indices to the buffers.
+func appendBoxFace(verts []Vertex, idxs []uint32, corners [8]Vec3, faceIdx int) ([]Vertex, []uint32) {
+	base := uint32(len(verts))
+	for v := 0; v < 4; v++ {
+		verts = append(verts, Vertex{
+			Position: corners[boxFaceIndices[faceIdx][v]],
+			Normal:   boxFaceNormals[faceIdx],
+			UV0:      boxUVCorners[v],
+			Color:    ColorGray,
+		})
+	}
+	idxs = append(idxs, base, base+1, base+2, base, base+2, base+3)
+	return verts, idxs
+}
+
+// generateBox builds an axis-aligned box centred at center with half-extents
+// (hw, hh, hd). Each of the 6 faces is a flat quad with its own normal.
+func generateBox(center Vec3, hw, hh, hd float32) ([]Vertex, []uint32) {
+	corners := boxCorners(center[0], center[1], center[2], hw, hh, hd)
 	verts := make([]Vertex, 0, 24)
 	idxs := make([]uint32, 0, 36)
 
 	for f := 0; f < 6; f++ {
-		base := uint32(len(verts))
-		for v := 0; v < 4; v++ {
-			verts = append(verts, Vertex{
-				Position: corners[faces[f][v]],
-				Normal:   normals[f],
-				UV0:      uvCorners[v],
-				Color:    ColorGray,
-			})
-		}
-		idxs = append(idxs, base, base+1, base+2)
-		idxs = append(idxs, base, base+2, base+3)
+		verts, idxs = appendBoxFace(verts, idxs, corners, f)
 	}
 	return verts, idxs
 }

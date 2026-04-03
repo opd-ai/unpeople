@@ -172,104 +172,101 @@ type muscleGroup struct {
 	intensity float32
 }
 
+// musclePatternTable maps body parts to their predefined muscle patterns.
+// Patterns define elliptical muscle groups with position, size, and normal direction.
+var musclePatternTable = map[MusculatureBodyPart]musclePattern{
+	MusculatureChest:    chestMusclePattern(),
+	MusculatureAbdomen:  abdomenMusclePattern(),
+	MusculatureUpperArm: upperArmMusclePattern(),
+	MusculatureForearm:  forearmMusclePattern(),
+	MusculatureUpperLeg: upperLegMusclePattern(),
+	MusculatureLowerLeg: lowerLegMusclePattern(),
+	MusculatureBack:     backMusclePattern(),
+	MusculatureShoulder: shoulderMusclePattern(),
+}
+
+func chestMusclePattern() musclePattern {
+	return musclePattern{groups: []muscleGroup{
+		{0.35, 0.55, 0.20, 0.18, -0.3, 0.2, 1.0},  // Pectoralis major (left)
+		{0.65, 0.55, 0.20, 0.18, 0.3, 0.2, 1.0},   // Pectoralis major (right)
+		{0.50, 0.55, 0.05, 0.30, 0.0, 0.0, -0.3},  // Sternum (depression)
+	}}
+}
+
+func abdomenMusclePattern() musclePattern {
+	return musclePattern{groups: []muscleGroup{
+		{0.42, 0.75, 0.08, 0.10, -0.15, 0.1, 0.9},  // Rectus abdominis upper left
+		{0.58, 0.75, 0.08, 0.10, 0.15, 0.1, 0.9},   // Rectus abdominis upper right
+		{0.42, 0.55, 0.08, 0.10, -0.15, 0.0, 0.85}, // Middle left
+		{0.58, 0.55, 0.08, 0.10, 0.15, 0.0, 0.85},  // Middle right
+		{0.42, 0.35, 0.08, 0.10, -0.15, -0.1, 0.8}, // Lower left
+		{0.58, 0.35, 0.08, 0.10, 0.15, -0.1, 0.8},  // Lower right
+		{0.25, 0.50, 0.10, 0.25, -0.4, 0.0, 0.6},   // Obliques left
+		{0.75, 0.50, 0.10, 0.25, 0.4, 0.0, 0.6},    // Obliques right
+		{0.50, 0.50, 0.03, 0.35, 0.0, 0.0, -0.2},   // Linea alba
+	}}
+}
+
+func upperArmMusclePattern() musclePattern {
+	return musclePattern{groups: []muscleGroup{
+		{0.50, 0.45, 0.25, 0.30, 0.0, 0.3, 1.0},  // Biceps brachii
+		{0.50, 0.75, 0.22, 0.25, 0.0, -0.2, 0.8}, // Triceps
+		{0.50, 0.15, 0.30, 0.12, 0.0, 0.4, 0.7},  // Deltoid transition
+	}}
+}
+
+func forearmMusclePattern() musclePattern {
+	return musclePattern{groups: []muscleGroup{
+		{0.40, 0.30, 0.15, 0.20, -0.2, 0.15, 0.8},  // Brachioradialis
+		{0.60, 0.40, 0.18, 0.25, 0.2, 0.1, 0.7},    // Extensor group
+		{0.40, 0.60, 0.18, 0.30, -0.15, -0.1, 0.75}, // Flexor group
+	}}
+}
+
+func upperLegMusclePattern() musclePattern {
+	return musclePattern{groups: []muscleGroup{
+		{0.50, 0.50, 0.20, 0.35, 0.0, 0.15, 1.0},   // Rectus femoris
+		{0.70, 0.45, 0.15, 0.30, 0.25, 0.1, 0.85},  // Vastus lateralis
+		{0.30, 0.45, 0.15, 0.30, -0.25, 0.1, 0.85}, // Vastus medialis
+		{0.50, 0.80, 0.22, 0.18, 0.0, -0.2, 0.7},   // Hamstrings
+	}}
+}
+
+func lowerLegMusclePattern() musclePattern {
+	return musclePattern{groups: []muscleGroup{
+		{0.40, 0.35, 0.18, 0.25, -0.15, 0.2, 1.0}, // Gastrocnemius medial
+		{0.60, 0.35, 0.18, 0.25, 0.15, 0.2, 1.0},  // Gastrocnemius lateral
+		{0.35, 0.60, 0.12, 0.25, -0.2, -0.1, 0.6}, // Tibialis anterior
+		{0.50, 0.55, 0.20, 0.20, 0.0, 0.1, 0.5},   // Soleus
+	}}
+}
+
+func backMusclePattern() musclePattern {
+	return musclePattern{groups: []muscleGroup{
+		{0.50, 0.85, 0.35, 0.12, 0.0, 0.3, 0.8},   // Trapezius
+		{0.30, 0.50, 0.18, 0.30, -0.3, -0.1, 0.9}, // Latissimus dorsi left
+		{0.70, 0.50, 0.18, 0.30, 0.3, -0.1, 0.9},  // Latissimus dorsi right
+		{0.45, 0.50, 0.06, 0.40, -0.1, 0.0, 0.6},  // Erector spinae left
+		{0.55, 0.50, 0.06, 0.40, 0.1, 0.0, 0.6},   // Erector spinae right
+		{0.35, 0.70, 0.10, 0.12, -0.2, 0.15, 0.5}, // Rhomboids left
+		{0.65, 0.70, 0.10, 0.12, 0.2, 0.15, 0.5},  // Rhomboids right
+	}}
+}
+
+func shoulderMusclePattern() musclePattern {
+	return musclePattern{groups: []muscleGroup{
+		{0.35, 0.50, 0.15, 0.20, -0.25, 0.2, 0.9}, // Deltoid anterior
+		{0.50, 0.45, 0.18, 0.22, 0.0, 0.35, 1.0},  // Deltoid lateral
+		{0.65, 0.50, 0.15, 0.20, 0.25, 0.2, 0.9},  // Deltoid posterior
+	}}
+}
+
 // getMusclePattern returns the predefined muscle pattern for a body part.
 func getMusclePattern(part MusculatureBodyPart) musclePattern {
-	switch part {
-	case MusculatureChest:
-		return musclePattern{groups: []muscleGroup{
-			// Pectoralis major (left)
-			{0.35, 0.55, 0.20, 0.18, -0.3, 0.2, 1.0},
-			// Pectoralis major (right)
-			{0.65, 0.55, 0.20, 0.18, 0.3, 0.2, 1.0},
-			// Sternum center line (subtle depression)
-			{0.50, 0.55, 0.05, 0.30, 0.0, 0.0, -0.3},
-		}}
-	case MusculatureAbdomen:
-		return musclePattern{groups: []muscleGroup{
-			// Rectus abdominis (6-pack) - upper pair
-			{0.42, 0.75, 0.08, 0.10, -0.15, 0.1, 0.9},
-			{0.58, 0.75, 0.08, 0.10, 0.15, 0.1, 0.9},
-			// Middle pair
-			{0.42, 0.55, 0.08, 0.10, -0.15, 0.0, 0.85},
-			{0.58, 0.55, 0.08, 0.10, 0.15, 0.0, 0.85},
-			// Lower pair
-			{0.42, 0.35, 0.08, 0.10, -0.15, -0.1, 0.8},
-			{0.58, 0.35, 0.08, 0.10, 0.15, -0.1, 0.8},
-			// Obliques (left)
-			{0.25, 0.50, 0.10, 0.25, -0.4, 0.0, 0.6},
-			// Obliques (right)
-			{0.75, 0.50, 0.10, 0.25, 0.4, 0.0, 0.6},
-			// Linea alba (center line)
-			{0.50, 0.50, 0.03, 0.35, 0.0, 0.0, -0.2},
-		}}
-	case MusculatureUpperArm:
-		return musclePattern{groups: []muscleGroup{
-			// Biceps brachii
-			{0.50, 0.45, 0.25, 0.30, 0.0, 0.3, 1.0},
-			// Triceps (back)
-			{0.50, 0.75, 0.22, 0.25, 0.0, -0.2, 0.8},
-			// Deltoid transition
-			{0.50, 0.15, 0.30, 0.12, 0.0, 0.4, 0.7},
-		}}
-	case MusculatureForearm:
-		return musclePattern{groups: []muscleGroup{
-			// Brachioradialis
-			{0.40, 0.30, 0.15, 0.20, -0.2, 0.15, 0.8},
-			// Extensor group
-			{0.60, 0.40, 0.18, 0.25, 0.2, 0.1, 0.7},
-			// Flexor group
-			{0.40, 0.60, 0.18, 0.30, -0.15, -0.1, 0.75},
-		}}
-	case MusculatureUpperLeg:
-		return musclePattern{groups: []muscleGroup{
-			// Quadriceps - rectus femoris
-			{0.50, 0.50, 0.20, 0.35, 0.0, 0.15, 1.0},
-			// Vastus lateralis (outer)
-			{0.70, 0.45, 0.15, 0.30, 0.25, 0.1, 0.85},
-			// Vastus medialis (inner)
-			{0.30, 0.45, 0.15, 0.30, -0.25, 0.1, 0.85},
-			// Hamstrings (back)
-			{0.50, 0.80, 0.22, 0.18, 0.0, -0.2, 0.7},
-		}}
-	case MusculatureLowerLeg:
-		return musclePattern{groups: []muscleGroup{
-			// Gastrocnemius (calf) - medial head
-			{0.40, 0.35, 0.18, 0.25, -0.15, 0.2, 1.0},
-			// Gastrocnemius - lateral head
-			{0.60, 0.35, 0.18, 0.25, 0.15, 0.2, 1.0},
-			// Tibialis anterior
-			{0.35, 0.60, 0.12, 0.25, -0.2, -0.1, 0.6},
-			// Soleus
-			{0.50, 0.55, 0.20, 0.20, 0.0, 0.1, 0.5},
-		}}
-	case MusculatureBack:
-		return musclePattern{groups: []muscleGroup{
-			// Trapezius (upper)
-			{0.50, 0.85, 0.35, 0.12, 0.0, 0.3, 0.8},
-			// Latissimus dorsi (left)
-			{0.30, 0.50, 0.18, 0.30, -0.3, -0.1, 0.9},
-			// Latissimus dorsi (right)
-			{0.70, 0.50, 0.18, 0.30, 0.3, -0.1, 0.9},
-			// Erector spinae (spine)
-			{0.45, 0.50, 0.06, 0.40, -0.1, 0.0, 0.6},
-			{0.55, 0.50, 0.06, 0.40, 0.1, 0.0, 0.6},
-			// Rhomboids
-			{0.35, 0.70, 0.10, 0.12, -0.2, 0.15, 0.5},
-			{0.65, 0.70, 0.10, 0.12, 0.2, 0.15, 0.5},
-		}}
-	case MusculatureShoulder:
-		return musclePattern{groups: []muscleGroup{
-			// Deltoid - anterior
-			{0.35, 0.50, 0.15, 0.20, -0.25, 0.2, 0.9},
-			// Deltoid - lateral
-			{0.50, 0.45, 0.18, 0.22, 0.0, 0.35, 1.0},
-			// Deltoid - posterior
-			{0.65, 0.50, 0.15, 0.20, 0.25, 0.2, 0.9},
-		}}
-	default:
-		// Flat normal map
-		return musclePattern{groups: nil}
+	if pattern, ok := musclePatternTable[part]; ok {
+		return pattern
 	}
+	return musclePattern{groups: nil}
 }
 
 // computeMuscleBump computes the normal displacement at UV coordinates.

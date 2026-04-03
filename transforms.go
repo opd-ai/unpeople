@@ -356,20 +356,26 @@ func applyHandSize(l *bodyLayout, hs HandSize, fl FingerLength) {
 		l.handHW *= 1.20
 		l.handHH *= 1.20
 		l.handHD *= 1.15
+		l.fingerRadius *= 1.15
 	case HandSizeMedium:
 		// default
 	case HandSizeSmall:
 		l.handHW *= 0.82
 		l.handHH *= 0.82
 		l.handHD *= 0.85
+		l.fingerRadius *= 0.85
 	}
+
+	// Set finger length multiplier based on FingerLength param
 	switch fl {
 	case FingerLengthLong:
 		l.handHH *= 1.15
+		l.fingerLengthMult = 1.20
 	case FingerLengthAverage:
-		// default
+		l.fingerLengthMult = 1.0
 	case FingerLengthShort:
 		l.handHH *= 0.85
+		l.fingerLengthMult = 0.80
 	}
 
 	// After any change to handHH, recompute the Y centre so that the top of

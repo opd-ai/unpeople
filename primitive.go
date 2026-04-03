@@ -339,3 +339,121 @@ func generateEar(attachPoint Vec3, scale float32, isLeftEar bool) ([]Vertex, []u
 
 	return verts, idxs
 }
+
+// ─── Finger ──────────────────────────────────────────────────────────────────
+
+// generateFinger creates a multi-segment finger using tapered cylinders.
+// base is the attachment point, direction is the finger pointing direction,
+// segments is a slice of segment lengths [proximal, middle, distal],
+// radius is the finger cylinder radius. Returns vertices and indices.
+func generateFinger(base, direction Vec3, segments []float32, radius float32) ([]Vertex, []uint32) {
+	if len(segments) == 0 {
+		return nil, nil
+	}
+
+	var builder meshBuilder
+	dir := vec3Normalize(direction)
+	segSegs := 4 // radial resolution for finger cylinders
+
+	pos := base
+	for i, length := range segments {
+		// Taper radius along finger: each segment slightly smaller
+		taperMult := 1.0 - float32(i)*0.12
+		bottomR := radius * taperMult
+		topR := radius * taperMult * 0.90
+
+		endPos := vec3Add(pos, vec3Scale(dir, length))
+		v, idx := generateCylinder(pos, endPos, bottomR, topR, segSegs, i == 0, i == len(segments)-1)
+		builder.append(v, idx)
+		pos = endPos
+	}
+
+	m := builder.build("")
+	return m.Vertices, m.Indices
+}
+
+// generateHand creates a complete hand with palm box and five fingers.
+// handCenter is the palm center, hw/hh/hd are palm half-extents, direction
+// is the finger pointing direction (typically down for T-pose), isLeftHand
+// determines finger placement mirroring, and remaining params define fingers.
+func generateHand(
+	handCenter Vec3,
+	hw, hh, hd float32,
+	direction Vec3,
+	isLeftHand bool,
+	fingerRadius, proximalLen, middleLen, distalLen float32,
+	thumbProximalLen, thumbDistalLen float32,
+	fingerSpacing float32,
+	fingerLengthMult float32,
+) ([]Vertex, []uint32) {
+	var builder meshBuilder
+
+	// Palm box
+	v, idx := generateBox(handCenter, hw, hh, hd)
+	builder.append(v, idx)
+
+	// Finger segments scaled by length multiplier
+	fingerSegs := []float32{
+		proximalLen * fingerLengthMult,
+		middleLen * fingerLengthMult,
+		distalLen * fingerLengthMult,
+	}
+	thumbSegs := []float32{
+		thumbProximalLen * fingerLengthMult,
+		thumbDistalLen * fingerLengthMult,
+	}
+
+	dir := vec3Normalize(direction)
+
+	// Compute palm edge where fingers attach (bottom of hand box)
+	palmEdgeY := handCenter[1] - hh
+
+	// Finger attachment positions (4 fingers + thumb)
+	// Fingers spread laterally across the palm width
+	fingerBaseZ := handCenter[2]
+
+	// Direction multiplier for left/right hand (X-axis)
+	xDir := float32(1.0)
+	if isLeftHand {
+		xDir = -1.0
+	}
+
+	// Four main fingers: index, middle, ring, pinky
+	fingerXOffsets := []float32{
+		hw * 0.55,  // Index (closer to center)
+		hw * 0.18,  // Middle (center)
+		-hw * 0.18, // Ring
+		-hw * 0.55, // Pinky (outer edge)
+	}
+
+	for i, xOff := range fingerXOffsets {
+		// Pinky is shorter
+		scale := float32(1.0)
+		if i == 3 {
+			scale = 0.75
+		}
+		scaledSegs := make([]float32, len(fingerSegs))
+		for j, s := range fingerSegs {
+			scaledSegs[j] = s * scale
+		}
+
+		fingerBase := Vec3{
+			handCenter[0] + xOff*xDir,
+			palmEdgeY,
+			fingerBaseZ,
+		}
+		v, idx := generateFinger(fingerBase, dir, scaledSegs, fingerRadius)
+		builder.append(v, idx)
+	}
+
+	// Thumb: attaches to side of palm, points more laterally
+	thumbBaseX := handCenter[0] + hw*0.95*xDir
+	thumbBaseY := handCenter[1] - hh*0.3
+	thumbDir := vec3Normalize(Vec3{xDir * 0.5, -0.85, 0.2})
+	thumbBase := Vec3{thumbBaseX, thumbBaseY, handCenter[2] + hd*0.3}
+	v, idx = generateFinger(thumbBase, thumbDir, thumbSegs, fingerRadius*1.15)
+	builder.append(v, idx)
+
+	m := builder.build("")
+	return m.Vertices, m.Indices
+}

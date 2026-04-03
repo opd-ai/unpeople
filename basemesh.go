@@ -99,6 +99,17 @@ const (
 	defaultFootHH      = 0.038 // Foot half-height
 	defaultFootHD      = 0.120 // Foot half-depth (toe to heel)
 
+	// Toe dimensions (cylinder segments)
+	// Each toe has proximal and distal phalanges (big toe has 2, others have 3).
+	// Dimensions are smaller than fingers.
+	defaultToeRadius         = 0.006  // Toe cylinder radius
+	defaultToeProximalLength = 0.015  // Proximal phalanx length
+	defaultToeMiddleLength   = 0.010  // Middle phalanx length
+	defaultToeDistalLength   = 0.008  // Distal phalanx length
+	defaultBigToeProximal    = 0.020  // Big toe proximal length (larger)
+	defaultBigToeDistal      = 0.015  // Big toe distal length
+	defaultToeSpacing        = 0.0065 // Spacing between toes
+
 	// Ear dimensions
 	// Ears attach to the lateral sides of the head at roughly eye level.
 	// Ear scale factor controls overall ear size relative to head radius.
@@ -191,6 +202,15 @@ type bodyLayout struct {
 	footHW      float32
 	footHH      float32
 	footHD      float32 // half-depth (toe-to-heel)
+
+	// ── Toes ────────────────────────────────────────────────────────────────
+	toeRadius         float32
+	toeProximalLength float32
+	toeMiddleLength   float32
+	toeDistalLength   float32
+	bigToeProximal    float32
+	bigToeDistal      float32
+	toeSpacing        float32
 
 	// ── Ears ────────────────────────────────────────────────────────────────
 	earAttachL Vec3    // Left ear attachment point (derived from head geometry)
@@ -339,10 +359,23 @@ func buildMesh(layout bodyLayout, key string) *Mesh {
 		layout.forearmRadius, layout.forearmRadius*0.80, circSegs, false, false)
 	builder.append(v, i)
 
-	// Hands
-	v, i = generateBox(layout.handCenterL, layout.handHW, layout.handHH, layout.handHD)
+	// Hands with fingers
+	fingerDir := Vec3{0, -1, 0} // fingers point down in T-pose
+	v, i = generateHand(
+		layout.handCenterL, layout.handHW, layout.handHH, layout.handHD,
+		fingerDir, true, // isLeftHand
+		layout.fingerRadius, layout.proximalLength, layout.middleLength, layout.distalLength,
+		layout.thumbProximalLength, layout.thumbDistalLength,
+		layout.fingerSpacing, layout.fingerLengthMult,
+	)
 	builder.append(v, i)
-	v, i = generateBox(layout.handCenterR, layout.handHW, layout.handHH, layout.handHD)
+	v, i = generateHand(
+		layout.handCenterR, layout.handHW, layout.handHH, layout.handHD,
+		fingerDir, false, // isLeftHand
+		layout.fingerRadius, layout.proximalLength, layout.middleLength, layout.distalLength,
+		layout.thumbProximalLength, layout.thumbDistalLength,
+		layout.fingerSpacing, layout.fingerLengthMult,
+	)
 	builder.append(v, i)
 
 	// Upper legs

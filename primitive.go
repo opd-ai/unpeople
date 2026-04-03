@@ -60,6 +60,42 @@ func appendCylinderCap(
 	return verts, idxs
 }
 
+// cylinderRingVertex creates a vertex for a cylinder ring at the given angle.
+func cylinderRingVertex(center, perp, biperp Vec3, radius, angle, vCoord float32, tangent Vec4, seg, segments int) Vertex {
+	c := float32(math.Cos(float64(angle)))
+	s := float32(math.Sin(float64(angle)))
+	offset := vec3Add(vec3Scale(perp, c), vec3Scale(biperp, s))
+	return Vertex{
+		Position: vec3Add(center, vec3Scale(offset, radius)),
+		Normal:   vec3Normalize(offset),
+		UV0:      Vec2{float32(seg) / float32(segments), vCoord},
+		Color:    ColorGray,
+		Tangent:  tangent,
+	}
+}
+
+// appendCylinderRing adds a ring of vertices around a center point.
+func appendCylinderRing(verts []Vertex, center, perp, biperp Vec3, radius, vCoord float32, tangent Vec4, segments int) []Vertex {
+	for i := 0; i < segments; i++ {
+		angle := float32(i) * float32(tau) / float32(segments)
+		verts = append(verts, cylinderRingVertex(center, perp, biperp, radius, angle, vCoord, tangent, i, segments))
+	}
+	return verts
+}
+
+// appendCylinderSideIndices adds the side quad indices for a cylinder.
+func appendCylinderSideIndices(idxs []uint32, bottomStart, topStart, segments int) []uint32 {
+	for i := 0; i < segments; i++ {
+		next := (i + 1) % segments
+		b0 := uint32(bottomStart + i)
+		b1 := uint32(bottomStart + next)
+		t0 := uint32(topStart + i)
+		t1 := uint32(topStart + next)
+		idxs = append(idxs, b0, t0, b1, b1, t0, t1)
+	}
+	return idxs
+}
+
 // generateCylinder builds a (possibly tapered) cylinder from bottomCenter to
 // topCenter. segments controls the radial resolution. addBottomCap /
 // addTopCap add flat disc endcaps.
@@ -78,50 +114,14 @@ func generateCylinder(
 	biperp := vec3Cross(axis, perp)
 	tangent := Vec4{perp[0], perp[1], perp[2], 1}
 
-	// Bottom ring
 	bottomStart := 0
-	for i := 0; i < segments; i++ {
-		angle := float32(i) * float32(tau) / float32(segments)
-		c := float32(math.Cos(float64(angle)))
-		s := float32(math.Sin(float64(angle)))
-		offset := vec3Add(vec3Scale(perp, c), vec3Scale(biperp, s))
-		verts = append(verts, Vertex{
-			Position: vec3Add(bottomCenter, vec3Scale(offset, bottomRadius)),
-			Normal:   vec3Normalize(offset),
-			UV0:      Vec2{float32(i) / float32(segments), 0},
-			Color:    ColorGray,
-			Tangent:  tangent,
-		})
-	}
+	verts = appendCylinderRing(verts, bottomCenter, perp, biperp, bottomRadius, 0, tangent, segments)
 
-	// Top ring
 	topStart := segments
-	for i := 0; i < segments; i++ {
-		angle := float32(i) * float32(tau) / float32(segments)
-		c := float32(math.Cos(float64(angle)))
-		s := float32(math.Sin(float64(angle)))
-		offset := vec3Add(vec3Scale(perp, c), vec3Scale(biperp, s))
-		verts = append(verts, Vertex{
-			Position: vec3Add(topCenter, vec3Scale(offset, topRadius)),
-			Normal:   vec3Normalize(offset),
-			UV0:      Vec2{float32(i) / float32(segments), 1},
-			Color:    ColorGray,
-			Tangent:  tangent,
-		})
-	}
+	verts = appendCylinderRing(verts, topCenter, perp, biperp, topRadius, 1, tangent, segments)
 
-	// Side quads
-	for i := 0; i < segments; i++ {
-		next := (i + 1) % segments
-		b0 := uint32(bottomStart + i)
-		b1 := uint32(bottomStart + next)
-		t0 := uint32(topStart + i)
-		t1 := uint32(topStart + next)
-		idxs = append(idxs, b0, t0, b1)
-		idxs = append(idxs, b1, t0, t1)
-	}
+	idxs = appendCylinderSideIndices(idxs, bottomStart, topStart, segments)
 
-	// Caps
 	if addBottomCap {
 		downNorm := vec3Scale(axis, -1)
 		verts, idxs = appendCylinderCap(verts, idxs, bottomCenter, downNorm, bottomStart, segments, true)
@@ -460,6 +460,35 @@ func generateHand(
 
 // ─── Foot with Toes ──────────────────────────────────────────────────────────
 
+// toeConfig holds the configuration for generating a single toe.
+type toeConfig struct {
+	segments []float32
+	radius   float32
+}
+
+// buildToeConfig computes the toe segments and radius based on toe index.
+func buildToeConfig(toeIdx int, toeRadius, toeProximal, toeMiddle, toeDistal, bigToeProximal, bigToeDistal float32) toeConfig {
+	if toeIdx == 0 {
+		// Big toe: 2 segments, larger radius
+		return toeConfig{
+			segments: []float32{bigToeProximal, bigToeDistal},
+			radius:   toeRadius * 1.3,
+		}
+	}
+
+	// Other toes: 3 segments, progressively smaller for outer toes
+	scale := float32(1.0)
+	if toeIdx == 4 {
+		scale = 0.70 // Pinky is smallest
+	} else if toeIdx == 3 {
+		scale = 0.85 // Ring is slightly smaller
+	}
+	return toeConfig{
+		segments: []float32{toeProximal * scale, toeMiddle * scale, toeDistal * scale},
+		radius:   toeRadius,
+	}
+}
+
 // generateFoot creates a complete foot with box base and five toes.
 // footCenter is the foot box center, hw/hh/hd are foot half-extents, direction
 // is the toe pointing direction (typically forward +Z), isLeftFoot determines
@@ -475,61 +504,24 @@ func generateFoot(
 ) ([]Vertex, []uint32) {
 	var builder meshBuilder
 
-	// Foot box (base)
 	v, idx := generateBox(footCenter, hw, hh, hd)
 	builder.append(v, idx)
 
 	dir := vec3Normalize(direction)
-
-	// Toe attachment: front edge of foot box
 	toeEdgeZ := footCenter[2] + hd
-	toeY := footCenter[1] - hh*0.3 // Slightly below foot center
+	toeY := footCenter[1] - hh*0.3
 
-	// Direction multiplier for left/right foot (X-axis)
 	xDir := float32(1.0)
 	if isLeftFoot {
 		xDir = -1.0
 	}
 
-	// Five toes: big toe, index, middle, ring, pinky
-	// Big toe is medial (inner), pinky is lateral (outer)
-	toeXOffsets := []float32{
-		hw * 0.60,  // Big toe (inner)
-		hw * 0.25,  // Index
-		-hw * 0.05, // Middle
-		-hw * 0.35, // Ring
-		-hw * 0.60, // Pinky (outer)
-	}
+	toeXOffsets := []float32{hw * 0.60, hw * 0.25, -hw * 0.05, -hw * 0.35, -hw * 0.60}
 
 	for i, xOff := range toeXOffsets {
-		var segs []float32
-		radius := toeRadius
-
-		if i == 0 {
-			// Big toe: 2 segments, larger radius
-			segs = []float32{bigToeProximal, bigToeDistal}
-			radius *= 1.3
-		} else {
-			// Other toes: 3 segments, progressively smaller for pinky
-			scale := float32(1.0)
-			if i == 4 {
-				scale = 0.70 // Pinky is smallest
-			} else if i == 3 {
-				scale = 0.85 // Ring is slightly smaller
-			}
-			segs = []float32{
-				toeProximal * scale,
-				toeMiddle * scale,
-				toeDistal * scale,
-			}
-		}
-
-		toeBase := Vec3{
-			footCenter[0] + xOff*xDir,
-			toeY,
-			toeEdgeZ,
-		}
-		v, idx := generateFinger(toeBase, dir, segs, radius)
+		cfg := buildToeConfig(i, toeRadius, toeProximal, toeMiddle, toeDistal, bigToeProximal, bigToeDistal)
+		toeBase := Vec3{footCenter[0] + xOff*xDir, toeY, toeEdgeZ}
+		v, idx := generateFinger(toeBase, dir, cfg.segments, cfg.radius)
 		builder.append(v, idx)
 	}
 

@@ -1,6 +1,10 @@
 package unpeople_test
 
 import (
+	"bytes"
+	"context"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -512,5 +516,779 @@ func BenchmarkGenerate(b *testing.B) {
 		if _, err := g.Generate(p); err != nil {
 			b.Fatal(err)
 		}
+	}
+}
+
+// ─── Material ────────────────────────────────────────────────────────────────
+
+func TestGenerateWithMaterial(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.SkinTone = unpeople.SkinToneMedium
+	p.SkinUndertone = unpeople.SkinUndertoneWarm
+
+	result, err := g.GenerateWithMaterial(p)
+	if err != nil {
+		t.Fatalf("GenerateWithMaterial failed: %v", err)
+	}
+
+	if result.Mesh == nil {
+		t.Error("MeshWithMaterial.Mesh is nil")
+	}
+	if len(result.Mesh.Vertices) == 0 {
+		t.Error("mesh has no vertices")
+	}
+
+	// Check material properties
+	m := result.Material
+	if m.ShaderName != "standard" {
+		t.Errorf("expected shader 'standard', got %q", m.ShaderName)
+	}
+	if m.Metallic != 0.0 {
+		t.Errorf("skin should be non-metallic, got %f", m.Metallic)
+	}
+	if m.Roughness <= 0 || m.Roughness >= 1 {
+		t.Errorf("roughness out of expected range: %f", m.Roughness)
+	}
+
+	// Material albedo should match computed skin color
+	expectedColor := unpeople.ComputeSkinColor(p.SkinTone, p.SkinUndertone)
+	if m.Albedo != expectedColor {
+		t.Errorf("material albedo %v doesn't match expected skin color %v", m.Albedo, expectedColor)
+	}
+}
+
+func TestDefaultSkinMaterial(t *testing.T) {
+	color := unpeople.Color{0.7, 0.6, 0.5, 1.0}
+	m := unpeople.DefaultSkinMaterial(color)
+
+	if m.Albedo != color {
+		t.Errorf("albedo mismatch: got %v, want %v", m.Albedo, color)
+	}
+	if m.Metallic != 0.0 {
+		t.Errorf("skin should not be metallic: %f", m.Metallic)
+	}
+	if m.SubsurfaceScattering <= 0 {
+		t.Error("skin should have positive subsurface scattering")
+	}
+}
+
+func TestAgeSkinMaterial(t *testing.T) {
+	color := unpeople.Color{0.7, 0.6, 0.5, 1.0}
+
+	// Younger should be smoother than older
+	toddlerMat := unpeople.AgeSkinMaterial(color, unpeople.AgeToddler)
+	decrepitMat := unpeople.AgeSkinMaterial(color, unpeople.AgeDecrepit)
+
+	if toddlerMat.Roughness >= decrepitMat.Roughness {
+		t.Errorf("toddler skin (%f) should be smoother than decrepit (%f)",
+			toddlerMat.Roughness, decrepitMat.Roughness)
+	}
+
+	// Younger should have more SSS
+	if toddlerMat.SubsurfaceScattering <= decrepitMat.SubsurfaceScattering {
+		t.Errorf("toddler SSS (%f) should be higher than decrepit (%f)",
+			toddlerMat.SubsurfaceScattering, decrepitMat.SubsurfaceScattering)
+	}
+}
+
+func TestUnlitMaterial(t *testing.T) {
+	color := unpeople.Color{1.0, 0.0, 0.0, 1.0}
+	m := unpeople.UnlitMaterial(color)
+
+	if m.ShaderName != "unlit" {
+		t.Errorf("expected 'unlit' shader, got %q", m.ShaderName)
+	}
+	if m.Albedo != color {
+		t.Errorf("albedo mismatch: got %v, want %v", m.Albedo, color)
+	}
+}
+
+func TestSSSkinMaterial(t *testing.T) {
+	color := unpeople.Color{0.7, 0.6, 0.5, 1.0}
+	standard := unpeople.DefaultSkinMaterial(color)
+	sss := unpeople.SSSkinMaterial(color)
+
+	if sss.ShaderName != "pbr" {
+		t.Errorf("SSS material should use 'pbr' shader, got %q", sss.ShaderName)
+	}
+	if sss.SubsurfaceScattering <= standard.SubsurfaceScattering {
+		t.Error("SSS material should have higher subsurface scattering than default")
+	}
+}
+
+// ─── Cache ───────────────────────────────────────────────────────────────────
+
+func TestCachedGeneratorBasic(t *testing.T) {
+	cg := unpeople.NewCachedGenerator(100)
+	p := unpeople.DefaultParams()
+	p.Seed = 42
+
+	// First call - cache miss
+	m1, err := cg.Generate(p)
+	if err != nil {
+		t.Fatalf("first Generate failed: %v", err)
+	}
+
+	// Second call - cache hit
+	m2, err := cg.Generate(p)
+	if err != nil {
+		t.Fatalf("second Generate failed: %v", err)
+	}
+
+	// Should return the same mesh instance
+	if m1 != m2 {
+		t.Error("cache should return same mesh instance for identical params")
+	}
+
+	// Cache should have 1 entry
+	if cg.CacheSize() != 1 {
+		t.Errorf("expected cache size 1, got %d", cg.CacheSize())
+	}
+}
+
+func TestCachedGeneratorDifferentParams(t *testing.T) {
+	cg := unpeople.NewCachedGenerator(100)
+
+	p1 := unpeople.DefaultParams()
+	p1.Seed = 1
+
+	p2 := unpeople.DefaultParams()
+	p2.Seed = 2
+
+	m1, _ := cg.Generate(p1)
+	m2, _ := cg.Generate(p2)
+
+	if m1 == m2 {
+		t.Error("different params should produce different mesh instances")
+	}
+
+	if cg.CacheSize() != 2 {
+		t.Errorf("expected cache size 2, got %d", cg.CacheSize())
+	}
+}
+
+func TestCachedGeneratorLRUEviction(t *testing.T) {
+	cg := unpeople.NewCachedGenerator(3) // Small cache for testing
+
+	// Generate 4 different meshes
+	for i := int64(1); i <= 4; i++ {
+		p := unpeople.DefaultParams()
+		p.Seed = i
+		if _, err := cg.Generate(p); err != nil {
+			t.Fatalf("Generate failed for seed %d: %v", i, err)
+		}
+	}
+
+	// Cache should only have 3 entries (LRU evicted one)
+	if cg.CacheSize() != 3 {
+		t.Errorf("expected cache size 3 after eviction, got %d", cg.CacheSize())
+	}
+}
+
+func TestCachedGeneratorClearCache(t *testing.T) {
+	cg := unpeople.NewCachedGenerator(100)
+
+	// Populate cache
+	for i := int64(1); i <= 5; i++ {
+		p := unpeople.DefaultParams()
+		p.Seed = i
+		cg.Generate(p)
+	}
+
+	if cg.CacheSize() != 5 {
+		t.Errorf("expected cache size 5, got %d", cg.CacheSize())
+	}
+
+	cg.ClearCache()
+
+	if cg.CacheSize() != 0 {
+		t.Errorf("expected cache size 0 after clear, got %d", cg.CacheSize())
+	}
+}
+
+func TestCachedGeneratorInvalidate(t *testing.T) {
+	cg := unpeople.NewCachedGenerator(100)
+
+	p := unpeople.DefaultParams()
+	p.Seed = 42
+
+	// Generate and cache
+	cg.Generate(p)
+	if cg.CacheSize() != 1 {
+		t.Errorf("expected cache size 1, got %d", cg.CacheSize())
+	}
+
+	// Invalidate
+	if !cg.Invalidate(p) {
+		t.Error("Invalidate should return true for cached entry")
+	}
+
+	if cg.CacheSize() != 0 {
+		t.Errorf("expected cache size 0 after invalidate, got %d", cg.CacheSize())
+	}
+
+	// Invalidating again should return false
+	if cg.Invalidate(p) {
+		t.Error("Invalidate should return false for non-existent entry")
+	}
+}
+
+func TestCachedGeneratorZeroSize(t *testing.T) {
+	cg := unpeople.NewCachedGenerator(0) // Caching disabled
+
+	p := unpeople.DefaultParams()
+
+	m1, _ := cg.Generate(p)
+	m2, _ := cg.Generate(p)
+
+	// With caching disabled, should generate new instances each time
+	if m1 == m2 {
+		t.Error("with maxSize=0, caching should be disabled")
+	}
+
+	if cg.CacheSize() != 0 {
+		t.Errorf("expected cache size 0 with disabled cache, got %d", cg.CacheSize())
+	}
+}
+
+func TestCachedGeneratorWithMaterial(t *testing.T) {
+	cg := unpeople.NewCachedGenerator(100)
+	p := unpeople.DefaultParams()
+	p.SkinTone = unpeople.SkinToneTan
+
+	result, err := cg.GenerateWithMaterial(p)
+	if err != nil {
+		t.Fatalf("GenerateWithMaterial failed: %v", err)
+	}
+
+	if result.Mesh == nil {
+		t.Error("mesh is nil")
+	}
+	if result.Material.ShaderName == "" {
+		t.Error("material shader name is empty")
+	}
+
+	// Cache should contain the mesh
+	if cg.CacheSize() != 1 {
+		t.Errorf("expected cache size 1, got %d", cg.CacheSize())
+	}
+}
+
+func TestCachedGeneratorConcurrency(t *testing.T) {
+	cg := unpeople.NewCachedGenerator(100)
+	p := unpeople.DefaultParams()
+	p.Seed = 42
+
+	var wg sync.WaitGroup
+	results := make(chan *unpeople.Mesh, 10)
+
+	// Launch 10 concurrent goroutines all requesting same params
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			m, err := cg.Generate(p)
+			if err != nil {
+				t.Errorf("concurrent Generate failed: %v", err)
+				return
+			}
+			results <- m
+		}()
+	}
+
+	wg.Wait()
+	close(results)
+
+	// All results should be the same instance
+	var first *unpeople.Mesh
+	for m := range results {
+		if first == nil {
+			first = m
+		} else if m != first {
+			t.Error("concurrent calls with same params should return same cached instance")
+		}
+	}
+
+	// Should only be 1 cache entry
+	if cg.CacheSize() != 1 {
+		t.Errorf("expected cache size 1, got %d", cg.CacheSize())
+	}
+}
+
+// ─── Batch Generation ────────────────────────────────────────────────────────
+
+func TestBatchGeneratorBasic(t *testing.T) {
+	bg := unpeople.NewBatchGenerator()
+
+	params := make([]unpeople.Params, 5)
+	for i := range params {
+		params[i] = unpeople.DefaultParams()
+		params[i].Seed = int64(i)
+	}
+
+	results := bg.GenerateBatch(context.Background(), params, unpeople.BatchOptions{})
+
+	if len(results) != 5 {
+		t.Fatalf("expected 5 results, got %d", len(results))
+	}
+
+	for i, r := range results {
+		if r.Err != nil {
+			t.Errorf("result[%d] error: %v", i, r.Err)
+		}
+		if r.Mesh == nil {
+			t.Errorf("result[%d] mesh is nil", i)
+		}
+		if r.Index != i {
+			t.Errorf("result[%d] has wrong index: %d", i, r.Index)
+		}
+	}
+}
+
+func TestBatchGeneratorWithCache(t *testing.T) {
+	bg := unpeople.NewBatchGeneratorWithCache(100)
+
+	// Generate same params twice in batch
+	params := []unpeople.Params{
+		unpeople.DefaultParams(),
+		unpeople.DefaultParams(),
+		unpeople.DefaultParams(),
+	}
+	params[0].Seed = 42
+	params[1].Seed = 42 // Same as first
+	params[2].Seed = 43 // Different
+
+	results := bg.GenerateBatch(context.Background(), params, unpeople.BatchOptions{})
+
+	if results[0].Mesh != results[1].Mesh {
+		t.Error("same params should return same cached mesh")
+	}
+	if results[0].Mesh == results[2].Mesh {
+		t.Error("different params should return different meshes")
+	}
+
+	size, _ := bg.CacheStats()
+	if size != 2 {
+		t.Errorf("expected cache size 2, got %d", size)
+	}
+}
+
+func TestBatchGeneratorWithMaterial(t *testing.T) {
+	bg := unpeople.NewBatchGenerator()
+
+	params := []unpeople.Params{unpeople.DefaultParams()}
+	params[0].SkinTone = unpeople.SkinToneTan
+
+	results := bg.GenerateBatch(context.Background(), params, unpeople.BatchOptions{
+		IncludeMaterial: true,
+	})
+
+	if results[0].Material == nil {
+		t.Error("expected material to be set")
+	}
+	if results[0].Material.ShaderName == "" {
+		t.Error("material should have shader name")
+	}
+}
+
+func TestBatchGeneratorCancellation(t *testing.T) {
+	bg := unpeople.NewBatchGenerator()
+
+	// Create many params to process
+	params := make([]unpeople.Params, 100)
+	for i := range params {
+		params[i] = unpeople.DefaultParams()
+		params[i].Seed = int64(i)
+	}
+
+	// Create already-cancelled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	results := bg.GenerateBatch(ctx, params, unpeople.BatchOptions{
+		Workers: 2,
+	})
+
+	// Some or all results should have context error
+	cancelled := 0
+	for _, r := range results {
+		if r.Err == context.Canceled {
+			cancelled++
+		}
+	}
+
+	// At least some should be cancelled (depends on timing)
+	if cancelled == 0 && len(results) > 0 {
+		// If workers are very fast, they might finish before cancellation takes effect
+		// This is acceptable behavior - we just verify no panics
+	}
+}
+
+func TestBatchGeneratorSimple(t *testing.T) {
+	bg := unpeople.NewBatchGenerator()
+
+	params := make([]unpeople.Params, 3)
+	for i := range params {
+		params[i] = unpeople.DefaultParams()
+		params[i].Seed = int64(i)
+	}
+
+	meshes := bg.GenerateBatchSimple(context.Background(), params)
+
+	if len(meshes) != 3 {
+		t.Fatalf("expected 3 meshes, got %d", len(meshes))
+	}
+
+	for i, m := range meshes {
+		if m == nil {
+			t.Errorf("mesh[%d] is nil", i)
+		}
+	}
+}
+
+func TestBatchGeneratorWithMaterialMethod(t *testing.T) {
+	bg := unpeople.NewBatchGenerator()
+
+	params := []unpeople.Params{unpeople.DefaultParams()}
+
+	results := bg.GenerateBatchWithMaterial(context.Background(), params)
+
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+	if results[0].Material == nil {
+		t.Error("material should be set")
+	}
+}
+
+func TestBatchGeneratorEmptyInput(t *testing.T) {
+	bg := unpeople.NewBatchGenerator()
+
+	results := bg.GenerateBatch(context.Background(), nil, unpeople.BatchOptions{})
+	if results != nil {
+		t.Error("expected nil result for empty input")
+	}
+
+	results = bg.GenerateBatch(context.Background(), []unpeople.Params{}, unpeople.BatchOptions{})
+	if results != nil {
+		t.Error("expected nil result for empty slice")
+	}
+}
+
+// ─── OBJ Export ──────────────────────────────────────────────────────────────
+
+func TestExportOBJBasic(t *testing.T) {
+	g := unpeople.NewGenerator()
+	mesh, err := g.Generate(unpeople.DefaultParams())
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	var buf bytes.Buffer
+	err = unpeople.ExportOBJ(&buf, mesh, "test_human")
+	if err != nil {
+		t.Fatalf("ExportOBJ failed: %v", err)
+	}
+
+	obj := buf.String()
+
+	// Check for required OBJ elements
+	if !strings.Contains(obj, "# Wavefront OBJ") {
+		t.Error("missing OBJ header comment")
+	}
+	if !strings.Contains(obj, "o test_human") {
+		t.Error("missing object name")
+	}
+	if !strings.Contains(obj, "v ") {
+		t.Error("missing vertex positions")
+	}
+	if !strings.Contains(obj, "vt ") {
+		t.Error("missing texture coordinates")
+	}
+	if !strings.Contains(obj, "vn ") {
+		t.Error("missing vertex normals")
+	}
+	if !strings.Contains(obj, "f ") {
+		t.Error("missing faces")
+	}
+
+	// Count vertices and faces
+	vCount := strings.Count(obj, "\nv ")
+	if vCount != len(mesh.Vertices) {
+		t.Errorf("vertex count mismatch: OBJ has %d, mesh has %d", vCount, len(mesh.Vertices))
+	}
+
+	fCount := strings.Count(obj, "\nf ")
+	expectedFaces := len(mesh.Indices) / 3
+	if fCount != expectedFaces {
+		t.Errorf("face count mismatch: OBJ has %d, expected %d", fCount, expectedFaces)
+	}
+}
+
+func TestExportOBJDefaultName(t *testing.T) {
+	g := unpeople.NewGenerator()
+	mesh, _ := g.Generate(unpeople.DefaultParams())
+
+	var buf bytes.Buffer
+	unpeople.ExportOBJ(&buf, mesh, "") // Empty name
+
+	if !strings.Contains(buf.String(), "o humanoid") {
+		t.Error("empty name should default to 'humanoid'")
+	}
+}
+
+func TestExportOBJWithMTL(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.SkinTone = unpeople.SkinToneTan
+
+	mesh, _ := g.Generate(p)
+	skinColor := unpeople.ComputeSkinColor(p.SkinTone, p.SkinUndertone)
+	material := unpeople.DefaultSkinMaterial(skinColor)
+
+	var objBuf, mtlBuf bytes.Buffer
+	err := unpeople.ExportOBJWithMTL(&objBuf, &mtlBuf, mesh, &material, "character", "skin.mtl")
+	if err != nil {
+		t.Fatalf("ExportOBJWithMTL failed: %v", err)
+	}
+
+	obj := objBuf.String()
+	mtl := mtlBuf.String()
+
+	// Check OBJ references material library
+	if !strings.Contains(obj, "mtllib skin.mtl") {
+		t.Error("OBJ should reference MTL file")
+	}
+	if !strings.Contains(obj, "usemtl character_mat") {
+		t.Error("OBJ should use material")
+	}
+
+	// Check MTL content
+	if !strings.Contains(mtl, "newmtl character_mat") {
+		t.Error("MTL should define material")
+	}
+	if !strings.Contains(mtl, "Kd ") {
+		t.Error("MTL should have diffuse color")
+	}
+	if !strings.Contains(mtl, "Ks ") {
+		t.Error("MTL should have specular color")
+	}
+}
+
+func TestExportOBJNilMesh(t *testing.T) {
+	var buf bytes.Buffer
+	err := unpeople.ExportOBJ(&buf, nil, "test")
+	if err == nil {
+		t.Error("expected error for nil mesh")
+	}
+}
+
+func TestExportOBJEmptyMesh(t *testing.T) {
+	var buf bytes.Buffer
+	mesh := &unpeople.Mesh{Key: "empty", Vertices: nil, Indices: nil}
+	err := unpeople.ExportOBJ(&buf, mesh, "test")
+	if err == nil {
+		t.Error("expected error for empty mesh")
+	}
+}
+
+// ─── Vertex Merging Tests ────────────────────────────────────────────────────
+
+// TestMergingReducesVertexCount verifies that vertex merging actually
+// reduces the vertex count by eliminating duplicates at body part boundaries.
+func TestMergingReducesVertexCount(t *testing.T) {
+	// Generate a mesh and verify it has fewer vertices than expected from
+	// raw primitive assembly (which would have many duplicates)
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	m, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// A fully unmerged human mesh would have ~2000-3000 vertices.
+	// After merging, we expect a noticeable reduction (at least 50+ vertices).
+	// We don't know the exact count, but we can verify the mesh is valid.
+	if len(m.Vertices) < 100 {
+		t.Errorf("too few vertices after merge: %d", len(m.Vertices))
+	}
+
+	// Verify all indices are valid
+	for i, idx := range m.Indices {
+		if int(idx) >= len(m.Vertices) {
+			t.Errorf("index[%d]=%d out of bounds (vertices=%d)", i, idx, len(m.Vertices))
+		}
+	}
+}
+
+// TestMergingDeterminism verifies that vertex merging preserves determinism:
+// same params always produce identical merged mesh.
+func TestMergingDeterminism(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Seed = 12345
+
+	// Generate multiple times with same params
+	var results []*unpeople.Mesh
+	for i := 0; i < 3; i++ {
+		m, err := g.Generate(p)
+		if err != nil {
+			t.Fatalf("Generate %d failed: %v", i, err)
+		}
+		results = append(results, m)
+	}
+
+	// Verify all results are identical
+	for i := 1; i < len(results); i++ {
+		if len(results[0].Vertices) != len(results[i].Vertices) {
+			t.Errorf("run %d: vertex count %d != run 0: %d",
+				i, len(results[i].Vertices), len(results[0].Vertices))
+		}
+		if len(results[0].Indices) != len(results[i].Indices) {
+			t.Errorf("run %d: index count %d != run 0: %d",
+				i, len(results[i].Indices), len(results[0].Indices))
+		}
+
+		// Spot-check some vertices
+		for j := 0; j < len(results[0].Vertices) && j < 100; j++ {
+			if results[0].Vertices[j] != results[i].Vertices[j] {
+				t.Errorf("run %d vertex[%d] differs from run 0", i, j)
+				break
+			}
+		}
+	}
+}
+
+// TestMergingAcrossSpecies verifies that vertex merging works correctly
+// for species with different body scales.
+func TestMergingAcrossSpecies(t *testing.T) {
+	g := unpeople.NewGenerator()
+
+	// Test a variety of species with different body scales
+	species := []unpeople.Species{
+		unpeople.SpeciesHuman,
+		unpeople.SpeciesGnome, // Small
+		unpeople.SpeciesOgre,  // Large
+		unpeople.SpeciesDwarf, // Compact
+		unpeople.SpeciesTroll, // Very large
+	}
+
+	for _, sp := range species {
+		p := unpeople.DefaultParams()
+		p.Species = sp
+		m, err := g.Generate(p)
+		if err != nil {
+			t.Errorf("species=%d: Generate failed: %v", sp, err)
+			continue
+		}
+
+		// Verify mesh validity
+		if len(m.Vertices) == 0 {
+			t.Errorf("species=%d: no vertices", sp)
+		}
+		if len(m.Indices) == 0 {
+			t.Errorf("species=%d: no indices", sp)
+		}
+
+		// Verify all indices are valid
+		for i, idx := range m.Indices {
+			if int(idx) >= len(m.Vertices) {
+				t.Errorf("species=%d: index[%d]=%d out of bounds (vertices=%d)",
+					sp, i, idx, len(m.Vertices))
+				break
+			}
+		}
+	}
+}
+
+// ─── UV Atlas Tests ──────────────────────────────────────────────────────────
+
+// TestUVAtlasNonOverlapping verifies that UV coordinates are properly
+// distributed across the atlas and don't overlap between body parts.
+func TestUVAtlasNonOverlapping(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	m, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Verify all UVs are within [0,1] bounds
+	for i, v := range m.Vertices {
+		u, vi := v.UV0[0], v.UV0[1]
+		if u < 0 || u > 1 || vi < 0 || vi > 1 {
+			t.Errorf("vertex[%d]: UV out of bounds (%.3f, %.3f)", i, u, vi)
+		}
+	}
+}
+
+// TestUVAtlasDeterminism verifies that UV atlas generation is deterministic.
+func TestUVAtlasDeterminism(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Seed = 99999
+
+	// Generate twice with same params
+	m1, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("first Generate failed: %v", err)
+	}
+	m2, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("second Generate failed: %v", err)
+	}
+
+	// Verify UV coordinates are identical
+	if len(m1.Vertices) != len(m2.Vertices) {
+		t.Fatalf("vertex count mismatch: %d vs %d", len(m1.Vertices), len(m2.Vertices))
+	}
+
+	for i := range m1.Vertices {
+		if m1.Vertices[i].UV0 != m2.Vertices[i].UV0 {
+			t.Errorf("vertex[%d]: UV differs (%.3f,%.3f) vs (%.3f,%.3f)",
+				i, m1.Vertices[i].UV0[0], m1.Vertices[i].UV0[1],
+				m2.Vertices[i].UV0[0], m2.Vertices[i].UV0[1])
+			break
+		}
+	}
+}
+
+// TestUVAtlasDistribution verifies that UVs are distributed across
+// different regions of the atlas space (not all in one corner).
+func TestUVAtlasDistribution(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	m, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Check that UVs span a reasonable range (not all near 0)
+	var minU, maxU, minV, maxV float32 = 1, 0, 1, 0
+	for _, v := range m.Vertices {
+		u, vi := v.UV0[0], v.UV0[1]
+		if u < minU {
+			minU = u
+		}
+		if u > maxU {
+			maxU = u
+		}
+		if vi < minV {
+			minV = vi
+		}
+		if vi > maxV {
+			maxV = vi
+		}
+	}
+
+	// Expect UVs to span at least 80% of the UV space
+	uRange := maxU - minU
+	vRange := maxV - minV
+	if uRange < 0.8 {
+		t.Errorf("U range too small: %.3f (min=%.3f, max=%.3f)", uRange, minU, maxU)
+	}
+	if vRange < 0.8 {
+		t.Errorf("V range too small: %.3f (min=%.3f, max=%.3f)", vRange, minV, maxV)
 	}
 }

@@ -326,21 +326,9 @@ func applyShoulderWidth(l *bodyLayout, sw ShoulderWidth) {
 		l.chestRX *= 0.88
 		xDelta = -0.025
 	}
-	if xDelta == 0 {
-		return
+	if xDelta != 0 {
+		shiftArmPositionsX(l, xDelta)
 	}
-	// Shift all arm / hand X positions
-	l.upperArmTopL[0] += xDelta
-	l.upperArmBottomL[0] += xDelta
-	l.forearmTopL[0] += xDelta
-	l.forearmBottomL[0] += xDelta
-	l.handCenterL[0] += xDelta
-
-	l.upperArmTopR[0] -= xDelta
-	l.upperArmBottomR[0] -= xDelta
-	l.forearmTopR[0] -= xDelta
-	l.forearmBottomR[0] -= xDelta
-	l.handCenterR[0] -= xDelta
 }
 
 // ─── Hip Width ───────────────────────────────────────────────────────────────
@@ -357,20 +345,9 @@ func applyHipWidth(l *bodyLayout, hw HipWidth) {
 		l.hipsRX *= 0.85
 		xDelta = -0.015
 	}
-	if xDelta == 0 {
-		return
+	if xDelta != 0 {
+		shiftLegPositionsX(l, xDelta)
 	}
-	l.upperLegTopL[0] += xDelta
-	l.upperLegBottomL[0] += xDelta
-	l.lowerLegTopL[0] += xDelta
-	l.lowerLegBottomL[0] += xDelta
-	l.footCenterL[0] += xDelta
-
-	l.upperLegTopR[0] -= xDelta
-	l.upperLegBottomR[0] -= xDelta
-	l.lowerLegTopR[0] -= xDelta
-	l.lowerLegBottomR[0] -= xDelta
-	l.footCenterR[0] -= xDelta
 }
 
 // ─── Limb Length ─────────────────────────────────────────────────────────────
@@ -637,59 +614,75 @@ func scaleHeight(l *bodyLayout, s float32) {
 // scaleLimbs rescales limb segment lengths proportionally (arms and legs)
 // while keeping attachment points (shoulders, hip sockets) fixed.
 func scaleLimbs(l *bodyLayout, s float32) {
-	// ── Arms ──────────────────────────────────────────────────────────────
-	upperArmVecL := vec3Sub(l.upperArmBottomL, l.upperArmTopL)
-	upperArmVecR := vec3Sub(l.upperArmBottomR, l.upperArmTopR)
-	foreArmVecL := vec3Sub(l.forearmBottomL, l.forearmTopL)
-	foreArmVecR := vec3Sub(l.forearmBottomR, l.forearmTopR)
+	// Scale arms: shoulder → elbow → wrist → hand
+	scaleArmChain(
+		&l.upperArmTopL, &l.upperArmBottomL, &l.forearmTopL, &l.forearmBottomL, &l.handCenterL,
+		&l.upperArmTopR, &l.upperArmBottomR, &l.forearmTopR, &l.forearmBottomR, &l.handCenterR,
+		s, l.handHH, true,
+	)
 
-	l.upperArmBottomL = vec3Add(l.upperArmTopL, vec3Scale(upperArmVecL, s))
-	l.upperArmBottomR = vec3Add(l.upperArmTopR, vec3Scale(upperArmVecR, s))
+	// Scale legs: hip → knee → ankle → foot
+	scaleLegChain(
+		&l.upperLegTopL, &l.upperLegBottomL, &l.lowerLegTopL, &l.lowerLegBottomL, &l.footCenterL,
+		&l.upperLegTopR, &l.upperLegBottomR, &l.lowerLegTopR, &l.lowerLegBottomR, &l.footCenterR,
+		s, l.footHH,
+	)
+}
 
-	// Elbow = new upper arm bottom
-	l.forearmTopL = l.upperArmBottomL
-	l.forearmTopR = l.upperArmBottomR
-	l.forearmBottomL = vec3Add(l.forearmTopL, vec3Scale(foreArmVecL, s))
-	l.forearmBottomR = vec3Add(l.forearmTopR, vec3Scale(foreArmVecR, s))
-
-	// Wrist / hand
-	l.handCenterL = Vec3{
-		l.forearmBottomL[0],
-		l.forearmBottomL[1] - l.handHH,
-		l.forearmBottomL[2],
+// scaleArmChain scales a two-segment arm chain (upper arm + forearm) while
+// keeping shoulder positions fixed. Hands are repositioned below the wrist.
+func scaleArmChain(
+	upperTopL, upperBottomL, lowerTopL, lowerBottomL, endCenterL *Vec3,
+	upperTopR, upperBottomR, lowerTopR, lowerBottomR, endCenterR *Vec3,
+	s, endOffset float32, endBelow bool,
+) {
+	// Left arm
+	upperVecL := vec3Sub(*upperBottomL, *upperTopL)
+	lowerVecL := vec3Sub(*lowerBottomL, *lowerTopL)
+	*upperBottomL = vec3Add(*upperTopL, vec3Scale(upperVecL, s))
+	*lowerTopL = *upperBottomL
+	*lowerBottomL = vec3Add(*lowerTopL, vec3Scale(lowerVecL, s))
+	if endBelow {
+		*endCenterL = Vec3{(*lowerBottomL)[0], (*lowerBottomL)[1] - endOffset, (*lowerBottomL)[2]}
+	} else {
+		*endCenterL = Vec3{(*lowerBottomL)[0], (*lowerBottomL)[1] + endOffset, (*lowerBottomL)[2]}
 	}
-	l.handCenterR = Vec3{
-		l.forearmBottomR[0],
-		l.forearmBottomR[1] - l.handHH,
-		l.forearmBottomR[2],
+
+	// Right arm
+	upperVecR := vec3Sub(*upperBottomR, *upperTopR)
+	lowerVecR := vec3Sub(*lowerBottomR, *lowerTopR)
+	*upperBottomR = vec3Add(*upperTopR, vec3Scale(upperVecR, s))
+	*lowerTopR = *upperBottomR
+	*lowerBottomR = vec3Add(*lowerTopR, vec3Scale(lowerVecR, s))
+	if endBelow {
+		*endCenterR = Vec3{(*lowerBottomR)[0], (*lowerBottomR)[1] - endOffset, (*lowerBottomR)[2]}
+	} else {
+		*endCenterR = Vec3{(*lowerBottomR)[0], (*lowerBottomR)[1] + endOffset, (*lowerBottomR)[2]}
 	}
+}
 
-	// ── Legs ──────────────────────────────────────────────────────────────
-	upperLegVecL := vec3Sub(l.upperLegBottomL, l.upperLegTopL)
-	upperLegVecR := vec3Sub(l.upperLegBottomR, l.upperLegTopR)
-	lowerLegVecL := vec3Sub(l.lowerLegBottomL, l.lowerLegTopL)
-	lowerLegVecR := vec3Sub(l.lowerLegBottomR, l.lowerLegTopR)
+// scaleLegChain scales a two-segment leg chain (upper leg + lower leg) while
+// keeping hip positions fixed. Feet are repositioned above the ankle.
+func scaleLegChain(
+	upperTopL, upperBottomL, lowerTopL, lowerBottomL, footCenterL *Vec3,
+	upperTopR, upperBottomR, lowerTopR, lowerBottomR, footCenterR *Vec3,
+	s, footHH float32,
+) {
+	// Left leg
+	upperVecL := vec3Sub(*upperBottomL, *upperTopL)
+	lowerVecL := vec3Sub(*lowerBottomL, *lowerTopL)
+	*upperBottomL = vec3Add(*upperTopL, vec3Scale(upperVecL, s))
+	*lowerTopL = *upperBottomL
+	*lowerBottomL = vec3Add(*lowerTopL, vec3Scale(lowerVecL, s))
+	*footCenterL = Vec3{(*lowerBottomL)[0], (*lowerBottomL)[1] + footHH, (*footCenterL)[2]}
 
-	l.upperLegBottomL = vec3Add(l.upperLegTopL, vec3Scale(upperLegVecL, s))
-	l.upperLegBottomR = vec3Add(l.upperLegTopR, vec3Scale(upperLegVecR, s))
-
-	// Knee = new upper leg bottom
-	l.lowerLegTopL = l.upperLegBottomL
-	l.lowerLegTopR = l.upperLegBottomR
-	l.lowerLegBottomL = vec3Add(l.lowerLegTopL, vec3Scale(lowerLegVecL, s))
-	l.lowerLegBottomR = vec3Add(l.lowerLegTopR, vec3Scale(lowerLegVecR, s))
-
-	// Ankle / foot
-	l.footCenterL = Vec3{
-		l.lowerLegBottomL[0],
-		l.lowerLegBottomL[1] + l.footHH,
-		l.footCenterL[2],
-	}
-	l.footCenterR = Vec3{
-		l.lowerLegBottomR[0],
-		l.lowerLegBottomR[1] + l.footHH,
-		l.footCenterR[2],
-	}
+	// Right leg
+	upperVecR := vec3Sub(*upperBottomR, *upperTopR)
+	lowerVecR := vec3Sub(*lowerBottomR, *lowerTopR)
+	*upperBottomR = vec3Add(*upperTopR, vec3Scale(upperVecR, s))
+	*lowerTopR = *upperBottomR
+	*lowerBottomR = vec3Add(*lowerTopR, vec3Scale(lowerVecR, s))
+	*footCenterR = Vec3{(*lowerBottomR)[0], (*lowerBottomR)[1] + footHH, (*footCenterR)[2]}
 }
 
 // ─── Vec3 helpers ─────────────────────────────────────────────────────────────
@@ -702,4 +695,38 @@ func scaleV3(v *Vec3, s float32) {
 
 func scaleV3Y(v *Vec3, s float32) {
 	v[1] *= s
+}
+
+// ─── Limb Position Shift Helpers ──────────────────────────────────────────────
+
+// shiftArmPositionsX laterally shifts all arm joint positions by the given delta.
+// Left arm positions move by +delta, right arm positions move by -delta.
+func shiftArmPositionsX(l *bodyLayout, delta float32) {
+	l.upperArmTopL[0] += delta
+	l.upperArmBottomL[0] += delta
+	l.forearmTopL[0] += delta
+	l.forearmBottomL[0] += delta
+	l.handCenterL[0] += delta
+
+	l.upperArmTopR[0] -= delta
+	l.upperArmBottomR[0] -= delta
+	l.forearmTopR[0] -= delta
+	l.forearmBottomR[0] -= delta
+	l.handCenterR[0] -= delta
+}
+
+// shiftLegPositionsX laterally shifts all leg joint positions by the given delta.
+// Left leg positions move by +delta, right leg positions move by -delta.
+func shiftLegPositionsX(l *bodyLayout, delta float32) {
+	l.upperLegTopL[0] += delta
+	l.upperLegBottomL[0] += delta
+	l.lowerLegTopL[0] += delta
+	l.lowerLegBottomL[0] += delta
+	l.footCenterL[0] += delta
+
+	l.upperLegTopR[0] -= delta
+	l.upperLegBottomR[0] -= delta
+	l.lowerLegTopR[0] -= delta
+	l.lowerLegBottomR[0] -= delta
+	l.footCenterR[0] -= delta
 }

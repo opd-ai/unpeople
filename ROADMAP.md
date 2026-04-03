@@ -48,7 +48,7 @@ and must be addressed before or during Phase 2 implementation:
 
 ### Feature Items
 
-- [ ] **Topology upgrade** – Replace cylindrical/box primitives with true
+- [x] **Topology upgrade** – Replace cylindrical/box primitives with true
   subdivision-surface body parts that share vertices across part boundaries,
   eliminating visible seams at shoulders, hips, and ankles.
 - [x] **Advanced facial morphing** – Dedicated face mesh with blend-shape
@@ -65,11 +65,11 @@ and must be addressed before or during Phase 2 implementation:
 
 ## Phase 3: Texture & Material System
 
-- [ ] **UV atlas generation** – Automatic UV unwrap of the assembled humanoid
+- [x] **UV atlas generation** – Automatic UV unwrap of the assembled humanoid
   mesh so that textures can be applied.
-- [ ] **Procedural skin-tone colour** – Per-vertex colour variation driven by a
+- [x] **Procedural skin-tone colour** – Per-vertex colour variation driven by a
   `SkinTone` parameter (Pale → Dark, warm/cool undertone).
-- [ ] **Material export** – Output a Kaiju-compatible `rendering.ShaderDef` or
+- [x] **Material export** – Output a Kaiju-compatible `rendering.ShaderDef` or
   material descriptor alongside the mesh.
 - [ ] **Texture generation** – Noise-driven procedural skin texture baked to an
   atlas (freckles, blemishes, age spots for elderly characters).
@@ -87,11 +87,11 @@ and must be addressed before or during Phase 2 implementation:
 
 ## Phase 5: Performance & Scalability
 
-- [ ] **Mesh caching layer** – In-process LRU cache keyed on the full Params
+- [x] **Mesh caching layer** – In-process LRU cache keyed on the full Params
   struct so repeated calls with identical inputs skip geometry rebuild.
 - [ ] **Level-of-detail (LOD) generation** – Automatically produce 3 LOD
   variants (100 %, 50 %, 25 % triangle budget) from a single Generate call.
-- [ ] **Parallel generation** – Worker-pool API for generating large batches of
+- [x] **Parallel generation** – Worker-pool API for generating large batches of
   characters concurrently.
 - [ ] **Streaming output** – io.Writer / channel-based API for very large
   scenes where holding all meshes in memory is impractical.
@@ -101,7 +101,7 @@ and must be addressed before or during Phase 2 implementation:
 - [ ] **Kaiju engine plug-in** – A drop-in `Generator` that registers with
   Kaiju's asset pipeline and produces `rendering.Mesh` objects directly.
 - [ ] **glTF 2.0 export** – Standard interchange format for use outside Kaiju.
-- [ ] **OBJ export** – Simple text-format export for debugging in DCC tools.
+- [x] **OBJ export** – Simple text-format export for debugging in DCC tools.
 - [ ] **CLI tool** – `unpeopled` command that accepts JSON parameters on stdin
   and writes a mesh file (glTF or OBJ) to stdout.
 - [ ] **REST API** – HTTP microservice wrapper around the generator for

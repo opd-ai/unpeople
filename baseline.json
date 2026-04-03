@@ -1,0 +1,787 @@
+{
+  "metadata": {
+    "repository": "/home/user/go/src/github.com/opd-ai/unpeople",
+    "generated_at": "2026-04-03T02:22:10.564264543-04:00",
+    "analysis_time": 1088611238,
+    "files_processed": 14,
+    "tool_version": "1.0.0",
+    "go_version": ""
+  },
+  "overview": {
+    "total_lines_of_code": 2038,
+    "total_functions": 93,
+    "total_methods": 29,
+    "total_structs": 21,
+    "total_interfaces": 0,
+    "total_packages": 2,
+    "total_files": 14
+  },
+  "functions": null,
+  "structs": null,
+  "interfaces": null,
+  "packages": null,
+  "circular_dependencies": null,
+  "patterns": {
+    "design_patterns": {
+      "singleton": null,
+      "factory": null,
+      "builder": null,
+      "observer": null,
+      "strategy": null
+    },
+    "concurrency_patterns": {
+      "worker_pools": null,
+      "pipelines": null,
+      "fan_out": null,
+      "fan_in": null,
+      "semaphores": null,
+      "goroutines": {
+        "total_count": 0,
+        "anonymous_count": 0,
+        "named_count": 0,
+        "potential_leaks": null,
+        "instances": null
+      },
+      "channels": {
+        "total_count": 0,
+        "buffered_count": 0,
+        "unbuffered_count": 0,
+        "directional_count": 0,
+        "instances": null
+      },
+      "sync_primitives": {
+        "mutexes": null,
+        "rw_mutexes": null,
+        "wait_groups": null,
+        "once": null,
+        "cond": null,
+        "atomic": null
+      }
+    },
+    "anti_patterns": {
+      "god_objects": null,
+      "long_methods": null,
+      "deep_nesting": null,
+      "magic_numbers": null,
+      "performance_antipatterns": null
+    }
+  },
+  "complexity": {
+    "average_function_complexity": 0,
+    "average_struct_complexity": 0,
+    "highest_complexity": null,
+    "complexity_distribution": null
+  },
+  "documentation": {
+    "coverage": {
+      "packages": 0,
+      "functions": 0,
+      "types": 0,
+      "methods": 0,
+      "overall": 0
+    },
+    "quality": {
+      "average_length": 0,
+      "code_examples": 0,
+      "inline_comments": 0,
+      "block_comments": 0,
+      "quality_score": 0
+    },
+    "todo_comments": null,
+    "fixme_comments": null,
+    "hack_comments": null,
+    "bug_comments": null,
+    "xxx_comments": null,
+    "deprecated_comments": null,
+    "note_comments": null,
+    "stale_annotations": 0,
+    "annotations_by_category": null
+  },
+  "generics": {
+    "type_parameters": {
+      "count": 0,
+      "constraints": null,
+      "complexity": null
+    },
+    "instantiations": {
+      "functions": null,
+      "types": null,
+      "methods": null
+    },
+    "constraint_usage": null,
+    "complexity_score": 0
+  },
+  "duplication": {
+    "clone_pairs": 24,
+    "duplicated_lines": 519,
+    "duplication_ratio": 0.13001002004008017,
+    "largest_clone_size": 24,
+    "clones": [
+      {
+        "hash": "0d187ef7f8789f3b",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "transforms.go",
+            "start_line": 33,
+            "end_line": 38,
+            "node_count": 30
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 40,
+            "end_line": 45,
+            "node_count": 30
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 79,
+            "end_line": 84,
+            "node_count": 30
+          }
+        ],
+        "line_count": 6,
+        "severity": "warning",
+        "suggestion": "Extract 6-line duplicate code block into a shared function. Found in 3 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "8e21a937b718b605",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "transforms.go",
+            "start_line": 66,
+            "end_line": 71,
+            "node_count": 30
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 80,
+            "end_line": 85,
+            "node_count": 30
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 225,
+            "end_line": 231,
+            "node_count": 30
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 252,
+            "end_line": 257,
+            "node_count": 30
+          }
+        ],
+        "line_count": 6,
+        "severity": "violation",
+        "suggestion": "Extract 6-line duplicate code block into a shared function. Found in 4 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "f069a6f1a960575d",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "transforms.go",
+            "start_line": 169,
+            "end_line": 174,
+            "node_count": 42
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 184,
+            "end_line": 189,
+            "node_count": 42
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 197,
+            "end_line": 202,
+            "node_count": 42
+          }
+        ],
+        "line_count": 6,
+        "severity": "warning",
+        "suggestion": "Extract 6-line duplicate code block into a shared function. Found in 3 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "2ad3f56f4e862edd",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "transforms.go",
+            "start_line": 80,
+            "end_line": 86,
+            "node_count": 35
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 225,
+            "end_line": 232,
+            "node_count": 35
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 252,
+            "end_line": 258,
+            "node_count": 35
+          }
+        ],
+        "line_count": 7,
+        "severity": "warning",
+        "suggestion": "Extract 7-line duplicate code block into a shared function. Found in 3 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "cff2b8a89e93159a",
+        "type": "exact",
+        "instances": [
+          {
+            "file": "primitive.go",
+            "start_line": 158,
+            "end_line": 165,
+            "node_count": 48
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 569,
+            "end_line": 576,
+            "node_count": 48
+          }
+        ],
+        "line_count": 8,
+        "severity": "warning",
+        "suggestion": "Extract 8-line duplicate code block into a shared function. Found in 2 locations"
+      },
+      {
+        "hash": "fb26fe42e4f29845",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "transforms.go",
+            "start_line": 169,
+            "end_line": 176,
+            "node_count": 56
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 197,
+            "end_line": 204,
+            "node_count": 56
+          }
+        ],
+        "line_count": 8,
+        "severity": "warning",
+        "suggestion": "Extract 8-line duplicate code block into a shared function. Found in 2 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "3171379ca3d90b0f",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "basemesh.go",
+            "start_line": 365,
+            "end_line": 374,
+            "node_count": 72
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 377,
+            "end_line": 384,
+            "node_count": 72
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 387,
+            "end_line": 394,
+            "node_count": 72
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 418,
+            "end_line": 425,
+            "node_count": 72
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 428,
+            "end_line": 435,
+            "node_count": 72
+          }
+        ],
+        "line_count": 10,
+        "severity": "violation",
+        "suggestion": "Extract 10-line duplicate code block into a shared function. Found in 5 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "d9f57918f931c23d",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "primitive.go",
+            "start_line": 762,
+            "end_line": 771,
+            "node_count": 48
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 772,
+            "end_line": 783,
+            "node_count": 48
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 784,
+            "end_line": 793,
+            "node_count": 48
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 794,
+            "end_line": 801,
+            "node_count": 48
+          }
+        ],
+        "line_count": 10,
+        "severity": "violation",
+        "suggestion": "Extract 10-line duplicate code block into a shared function. Found in 4 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "608659497bb8f692",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "primitive.go",
+            "start_line": 762,
+            "end_line": 772,
+            "node_count": 54
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 773,
+            "end_line": 785,
+            "node_count": 54
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 786,
+            "end_line": 796,
+            "node_count": 54
+          }
+        ],
+        "line_count": 11,
+        "severity": "warning",
+        "suggestion": "Extract 11-line duplicate code block into a shared function. Found in 3 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "258fdd7cc10d013f",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "basemesh.go",
+            "start_line": 362,
+            "end_line": 373,
+            "node_count": 72
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 374,
+            "end_line": 383,
+            "node_count": 72
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 384,
+            "end_line": 393,
+            "node_count": 72
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 415,
+            "end_line": 424,
+            "node_count": 72
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 425,
+            "end_line": 434,
+            "node_count": 72
+          }
+        ],
+        "line_count": 12,
+        "severity": "violation",
+        "suggestion": "Extract 12-line duplicate code block into a shared function. Found in 5 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "34c8d28b022e79cf",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "primitive.go",
+            "start_line": 762,
+            "end_line": 773,
+            "node_count": 60
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 776,
+            "end_line": 787,
+            "node_count": 60
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 790,
+            "end_line": 799,
+            "node_count": 60
+          }
+        ],
+        "line_count": 12,
+        "severity": "warning",
+        "suggestion": "Extract 12-line duplicate code block into a shared function. Found in 3 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "ec27304c45f671b1",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "transforms.go",
+            "start_line": 641,
+            "end_line": 653,
+            "node_count": 106
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 668,
+            "end_line": 680,
+            "node_count": 106
+          }
+        ],
+        "line_count": 13,
+        "severity": "warning",
+        "suggestion": "Extract 13-line duplicate code block into a shared function. Found in 2 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "6870ab28f3791efa",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "transforms.go",
+            "start_line": 329,
+            "end_line": 343,
+            "node_count": 76
+          },
+          {
+            "file": "transforms.go",
+            "start_line": 360,
+            "end_line": 373,
+            "node_count": 76
+          }
+        ],
+        "line_count": 15,
+        "severity": "warning",
+        "suggestion": "Extract 15-line duplicate code block into a shared function. Found in 2 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "bbd893243a574fb4",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "primitive.go",
+            "start_line": 762,
+            "end_line": 776,
+            "node_count": 66
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 777,
+            "end_line": 791,
+            "node_count": 66
+          }
+        ],
+        "line_count": 15,
+        "severity": "warning",
+        "suggestion": "Extract 15-line duplicate code block into a shared function. Found in 2 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "02a8cbeb6674bc81",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "primitive.go",
+            "start_line": 762,
+            "end_line": 777,
+            "node_count": 72
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 778,
+            "end_line": 793,
+            "node_count": 72
+          }
+        ],
+        "line_count": 16,
+        "severity": "warning",
+        "suggestion": "Extract 16-line duplicate code block into a shared function. Found in 2 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "0503f17ea093f0c0",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "basemesh.go",
+            "start_line": 365,
+            "end_line": 380,
+            "node_count": 108
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 381,
+            "end_line": 394,
+            "node_count": 108
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 418,
+            "end_line": 431,
+            "node_count": 108
+          }
+        ],
+        "line_count": 16,
+        "severity": "warning",
+        "suggestion": "Extract 16-line duplicate code block into a shared function. Found in 3 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "9d18bb60f58b343e",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "primitive.go",
+            "start_line": 762,
+            "end_line": 778,
+            "node_count": 78
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 779,
+            "end_line": 795,
+            "node_count": 78
+          }
+        ],
+        "line_count": 17,
+        "severity": "warning",
+        "suggestion": "Extract 17-line duplicate code block into a shared function. Found in 2 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "1f272c49e2a49207",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "basemesh.go",
+            "start_line": 365,
+            "end_line": 382,
+            "node_count": 130
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 418,
+            "end_line": 433,
+            "node_count": 130
+          }
+        ],
+        "line_count": 18,
+        "severity": "warning",
+        "suggestion": "Extract 18-line duplicate code block into a shared function. Found in 2 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "2ef95e2024d03423",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "primitive.go",
+            "start_line": 762,
+            "end_line": 779,
+            "node_count": 84
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 782,
+            "end_line": 797,
+            "node_count": 84
+          }
+        ],
+        "line_count": 18,
+        "severity": "warning",
+        "suggestion": "Extract 18-line duplicate code block into a shared function. Found in 2 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "51f8dfea56abe454",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "basemesh.go",
+            "start_line": 361,
+            "end_line": 378,
+            "node_count": 108
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 379,
+            "end_line": 392,
+            "node_count": 108
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 414,
+            "end_line": 429,
+            "node_count": 108
+          }
+        ],
+        "line_count": 18,
+        "severity": "warning",
+        "suggestion": "Extract 18-line duplicate code block into a shared function. Found in 3 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "8ea191be7ae1d706",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "basemesh.go",
+            "start_line": 362,
+            "end_line": 379,
+            "node_count": 108
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 380,
+            "end_line": 393,
+            "node_count": 108
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 415,
+            "end_line": 430,
+            "node_count": 108
+          }
+        ],
+        "line_count": 18,
+        "severity": "warning",
+        "suggestion": "Extract 18-line duplicate code block into a shared function. Found in 3 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "aa9ca5603d986690",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "primitive.go",
+            "start_line": 762,
+            "end_line": 782,
+            "node_count": 90
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 783,
+            "end_line": 799,
+            "node_count": 90
+          }
+        ],
+        "line_count": 21,
+        "severity": "violation",
+        "suggestion": "Extract 21-line duplicate code block into a shared function. Found in 2 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "cd18c98ef18afed5",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "primitive.go",
+            "start_line": 762,
+            "end_line": 783,
+            "node_count": 96
+          },
+          {
+            "file": "primitive.go",
+            "start_line": 784,
+            "end_line": 801,
+            "node_count": 96
+          }
+        ],
+        "line_count": 22,
+        "severity": "violation",
+        "suggestion": "Extract 22-line duplicate code block into a shared function. Found in 2 locations. Consider using generics or interface-based abstraction"
+      },
+      {
+        "hash": "2dd900b027457c5b",
+        "type": "renamed",
+        "instances": [
+          {
+            "file": "basemesh.go",
+            "start_line": 361,
+            "end_line": 384,
+            "node_count": 158
+          },
+          {
+            "file": "basemesh.go",
+            "start_line": 414,
+            "end_line": 435,
+            "node_count": 158
+          }
+        ],
+        "line_count": 24,
+        "severity": "violation",
+        "suggestion": "Extract 24-line duplicate code block into a shared function. Found in 2 locations. Consider using generics or interface-based abstraction"
+      }
+    ]
+  },
+  "naming": {
+    "file_name_violations": 0,
+    "identifier_violations": 0,
+    "package_name_violations": 0,
+    "overall_naming_score": 0,
+    "file_name_issues": null,
+    "identifier_issues": null,
+    "package_name_issues": null
+  },
+  "placement": {
+    "misplaced_functions": 0,
+    "misplaced_methods": 0,
+    "low_cohesion_files": 0,
+    "avg_file_cohesion": 0,
+    "function_issues": null,
+    "method_issues": null,
+    "cohesion_issues": null
+  },
+  "organization": {
+    "oversized_files": null,
+    "oversized_packages": null,
+    "deep_directories": null,
+    "high_fan_in_packages": null,
+    "high_fan_out_packages": null,
+    "avg_package_instability": 0
+  },
+  "burden": {
+    "magic_numbers": null,
+    "dead_code": {
+      "unreferenced_functions": null,
+      "unreachable_code": null,
+      "total_dead_lines": 0,
+      "dead_code_percent": 0
+    },
+    "complex_signatures": null,
+    "deeply_nested_functions": null,
+    "feature_envy_methods": null
+  },
+  "scores": {
+    "file_scores": null,
+    "package_scores": null
+  },
+  "test_coverage": {
+    "function_coverage_rate": 0,
+    "complexity_coverage_rate": 0,
+    "high_risk_functions": null,
+    "coverage_gaps": null
+  },
+  "test_quality": {
+    "total_tests": 0,
+    "avg_assertions_per_test": 0,
+    "test_files": null
+  }
+}

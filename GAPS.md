@@ -30,16 +30,10 @@
 
 ## Mesh Discontinuity (Visible Seams)
 
+**Status: ✅ RESOLVED**
+
 - **Stated Goal**: Generate humanoid meshes suitable for rendering in the Kaiju engine.
-- **Current State**: `basemesh.go:159-240` assembles the body from disconnected geometric primitives (ellipsoid head, cylindrical limbs, box hands/feet). Vertices at part boundaries are not shared, resulting in:
-  - Visible gaps at shoulders, hips, elbows, knees, ankles, and neck
-  - Potential lighting artifacts at seams under certain shading models
-  - Winding order inconsistencies between primitive types
-- **Impact**: Generated meshes have a "mannequin" appearance with visible part boundaries. This is acceptable for prototyping but not for production-quality character rendering.
-- **Closing the Gap**: Phase 2 "Topology upgrade" per ROADMAP:
-  1. Replace cylindrical/box primitives with subdivision-surface body parts
-  2. Share vertices across part boundaries
-  3. Ensure consistent winding order across all primitives
+- **Resolution**: Implemented vertex merging algorithm in `merge.go` that eliminates duplicate vertices at body part boundaries within an epsilon threshold. The epsilon scales proportionally with character height to handle species variations. Normals are averaged at merge points for smooth shading.
 
 ## Missing Enum Test Coverage
 
@@ -79,13 +73,10 @@
 
 ## No UV Atlas for Texturing
 
+**Status: ✅ RESOLVED**
+
 - **Stated Goal**: UV coordinates present in vertices for texturing capability.
-- **Current State**: Each primitive generates its own UV coordinates (`primitive.go:47`, `primitive.go:151`, `primitive.go:211-212`), but these are per-primitive and not unified into a shared atlas. Textures cannot be applied without a subsequent UV-unwrap step.
-- **Impact**: Users cannot texture the generated meshes directly; they must export and process in external tools like Blender to create a unified UV layout.
-- **Closing the Gap**: Phase 3 "UV atlas generation" per ROADMAP:
-  1. Calculate a shared UV space for all body parts
-  2. Pack primitive UVs into non-overlapping atlas regions
-  3. Generate texture coordinate mapping for skin tone and detail textures
+- **Resolution**: Implemented UV atlas generation in `atlas.go`. Each body part now has a dedicated non-overlapping region in UV space. The `remapUVs()` function transforms per-primitive UVs into atlas coordinates during mesh assembly. The atlas layout partitions the [0,1]² space into regions for head, torso, arms, legs, hands, feet, and ears.
 
 ## Individual Finger and Toe Geometry Missing
 

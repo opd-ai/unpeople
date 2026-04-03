@@ -321,6 +321,7 @@ func defaultBodyLayout() bodyLayout {
 // opts controls optional features like skull cap and face mesh parameters.
 func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 	var builder meshBuilder
+	atlas := defaultUVAtlas()
 
 	const (
 		circSegs = 8 // radial resolution for cylinders
@@ -331,54 +332,65 @@ func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 	// Head
 	v, i := generateEllipsoid(layout.headCenter,
 		layout.headRX, layout.headRY, layout.headRZ, latSegs, lonSegs)
+	remapUVs(v, atlas.Head)
 	builder.append(v, i)
 
 	// Face mesh (overlaid on head with distinct facial regions)
 	v, i = generateFaceMesh(layout.headCenter,
 		layout.headRX, layout.headRY, layout.headRZ,
 		opts.faceShape, opts.jaw, opts.brow)
+	remapUVs(v, atlas.Face)
 	builder.append(v, i)
 
 	// Skull cap (hair slot placeholder)
 	if opts.hasHairSlot {
 		v, i = generateSkullCap(layout.headCenter, layout.headRX, layout.headRY, layout.headRZ)
+		remapUVs(v, atlas.SkullCap)
 		builder.append(v, i)
 	}
 
 	// Neck
 	v, i = generateCylinder(layout.neckBottom, layout.neckTop,
 		layout.neckRadius, layout.neckRadius, circSegs, false, false)
+	remapUVs(v, atlas.Neck)
 	builder.append(v, i)
 
 	// Chest (tapered: slightly narrower at bottom)
 	v, i = generateCylinder(layout.chestBottom, layout.chestTop,
 		layout.chestRX*0.82, layout.chestRX, circSegs, false, false)
+	remapUVs(v, atlas.Chest)
 	builder.append(v, i)
 
 	// Abdomen
 	v, i = generateCylinder(layout.abdomenBottom, layout.abdomenTop,
 		layout.abdomenRX, layout.abdomenRX*0.88, circSegs, false, false)
+	remapUVs(v, atlas.Abdomen)
 	builder.append(v, i)
 
 	// Hips / pelvis (closed at bottom)
 	v, i = generateCylinder(layout.hipsBottom, layout.hipsTop,
 		layout.hipsRX, layout.hipsRX*0.95, circSegs, true, false)
+	remapUVs(v, atlas.Hips)
 	builder.append(v, i)
 
 	// Upper arms
 	v, i = generateCylinder(layout.upperArmTopL, layout.upperArmBottomL,
 		layout.upperArmRadius, layout.upperArmRadius*0.85, circSegs, false, false)
+	remapUVs(v, atlas.UpperArmL)
 	builder.append(v, i)
 	v, i = generateCylinder(layout.upperArmTopR, layout.upperArmBottomR,
 		layout.upperArmRadius, layout.upperArmRadius*0.85, circSegs, false, false)
+	remapUVs(v, atlas.UpperArmR)
 	builder.append(v, i)
 
 	// Forearms
 	v, i = generateCylinder(layout.forearmTopL, layout.forearmBottomL,
 		layout.forearmRadius, layout.forearmRadius*0.80, circSegs, false, false)
+	remapUVs(v, atlas.ForearmL)
 	builder.append(v, i)
 	v, i = generateCylinder(layout.forearmTopR, layout.forearmBottomR,
 		layout.forearmRadius, layout.forearmRadius*0.80, circSegs, false, false)
+	remapUVs(v, atlas.ForearmR)
 	builder.append(v, i)
 
 	// Hands with fingers
@@ -390,6 +402,7 @@ func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 		layout.thumbProximalLength, layout.thumbDistalLength,
 		layout.fingerSpacing, layout.fingerLengthMult,
 	)
+	remapUVs(v, atlas.HandL)
 	builder.append(v, i)
 	v, i = generateHand(
 		layout.handCenterR, layout.handHW, layout.handHH, layout.handHD,
@@ -398,22 +411,27 @@ func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 		layout.thumbProximalLength, layout.thumbDistalLength,
 		layout.fingerSpacing, layout.fingerLengthMult,
 	)
+	remapUVs(v, atlas.HandR)
 	builder.append(v, i)
 
 	// Upper legs
 	v, i = generateCylinder(layout.upperLegTopL, layout.upperLegBottomL,
 		layout.upperLegRadius, layout.upperLegRadius*0.85, circSegs, false, false)
+	remapUVs(v, atlas.UpperLegL)
 	builder.append(v, i)
 	v, i = generateCylinder(layout.upperLegTopR, layout.upperLegBottomR,
 		layout.upperLegRadius, layout.upperLegRadius*0.85, circSegs, false, false)
+	remapUVs(v, atlas.UpperLegR)
 	builder.append(v, i)
 
 	// Lower legs (closed at ankle)
 	v, i = generateCylinder(layout.lowerLegTopL, layout.lowerLegBottomL,
 		layout.lowerLegRadius, layout.lowerLegRadius*0.75, circSegs, false, true)
+	remapUVs(v, atlas.LowerLegL)
 	builder.append(v, i)
 	v, i = generateCylinder(layout.lowerLegTopR, layout.lowerLegBottomR,
 		layout.lowerLegRadius, layout.lowerLegRadius*0.75, circSegs, false, true)
+	remapUVs(v, atlas.LowerLegR)
 	builder.append(v, i)
 
 	// Feet with toes
@@ -425,6 +443,7 @@ func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 		layout.bigToeProximal, layout.bigToeDistal,
 		layout.toeSpacing,
 	)
+	remapUVs(v, atlas.FootL)
 	builder.append(v, i)
 	v, i = generateFoot(
 		layout.footCenterR, layout.footHW, layout.footHH, layout.footHD,
@@ -433,15 +452,23 @@ func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 		layout.bigToeProximal, layout.bigToeDistal,
 		layout.toeSpacing,
 	)
+	remapUVs(v, atlas.FootR)
 	builder.append(v, i)
 
 	// Ears
 	v, i = generateEar(layout.earAttachL, layout.earScale, true)
+	remapUVs(v, atlas.EarL)
 	builder.append(v, i)
 	v, i = generateEar(layout.earAttachR, layout.earScale, false)
+	remapUVs(v, atlas.EarR)
 	builder.append(v, i)
 
 	mesh := builder.build(key)
+
+	// Merge boundary vertices to eliminate visible seams at body part joints.
+	// The epsilon scales with total height to handle species size variations.
+	epsilon := scaledEpsilon(layout.totalHeight)
+	mesh.Vertices, mesh.Indices = mergeVertices(mesh.Vertices, mesh.Indices, epsilon)
 
 	// Apply skin color to all vertices
 	applySkinColor(mesh.Vertices, opts.skinColor)

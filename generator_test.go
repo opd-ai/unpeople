@@ -203,6 +203,160 @@ func TestAllAges(t *testing.T) {
 	}
 }
 
+func TestAllProportions(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for pr := unpeople.ProportionsHeroic; pr <= unpeople.ProportionsCaricature; pr++ {
+		p := unpeople.DefaultParams()
+		p.Proportions = pr
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("proportions=%d: %v", pr, err)
+		}
+	}
+}
+
+func TestAllPhenotypes(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for ph := unpeople.PhenotypeMasculine; ph <= unpeople.PhenotypeFeminine; ph++ {
+		p := unpeople.DefaultParams()
+		p.Phenotype = ph
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("phenotype=%d: %v", ph, err)
+		}
+	}
+}
+
+func TestAllPostures(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for po := unpeople.PostureUpright; po <= unpeople.PostureRigid; po++ {
+		p := unpeople.DefaultParams()
+		p.Posture = po
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("posture=%d: %v", po, err)
+		}
+	}
+}
+
+func TestAllFaceShapes(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for fs := unpeople.FaceShapeOval; fs <= unpeople.FaceShapeOblong; fs++ {
+		p := unpeople.DefaultParams()
+		p.FaceShape = fs
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("faceshape=%d: %v", fs, err)
+		}
+	}
+}
+
+func TestAllJaws(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for j := unpeople.JawProminent; j <= unpeople.JawRounded; j++ {
+		p := unpeople.DefaultParams()
+		p.Jaw = j
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("jaw=%d: %v", j, err)
+		}
+	}
+}
+
+func TestAllBrows(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for br := unpeople.BrowHeavy; br <= unpeople.BrowArched; br++ {
+		p := unpeople.DefaultParams()
+		p.Brow = br
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("brow=%d: %v", br, err)
+		}
+	}
+}
+
+func TestAllEars(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for e := unpeople.EarsSmall; e <= unpeople.EarsRounded; e++ {
+		p := unpeople.DefaultParams()
+		p.Ears = e
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("ears=%d: %v", e, err)
+		}
+	}
+}
+
+func TestAllShoulderWidths(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for sw := unpeople.ShoulderWidthBroad; sw <= unpeople.ShoulderWidthNarrow; sw++ {
+		p := unpeople.DefaultParams()
+		p.ShoulderWidth = sw
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("shoulderwidth=%d: %v", sw, err)
+		}
+	}
+}
+
+func TestAllHipWidths(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for hw := unpeople.HipWidthWide; hw <= unpeople.HipWidthNarrow; hw++ {
+		p := unpeople.DefaultParams()
+		p.HipWidth = hw
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("hipwidth=%d: %v", hw, err)
+		}
+	}
+}
+
+func TestAllLimbLengths(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for ll := unpeople.LimbLengthLong; ll <= unpeople.LimbLengthShort; ll++ {
+		p := unpeople.DefaultParams()
+		p.LimbLength = ll
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("limblength=%d: %v", ll, err)
+		}
+	}
+}
+
+func TestAllNeckLengths(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for nl := unpeople.NeckLengthLong; nl <= unpeople.NeckLengthThick; nl++ {
+		p := unpeople.DefaultParams()
+		p.NeckLength = nl
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("necklength=%d: %v", nl, err)
+		}
+	}
+}
+
+func TestAllHandSizes(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for hs := unpeople.HandSizeLarge; hs <= unpeople.HandSizeSmall; hs++ {
+		p := unpeople.DefaultParams()
+		p.HandSize = hs
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("handsize=%d: %v", hs, err)
+		}
+	}
+}
+
+func TestAllFingerLengths(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for fl := unpeople.FingerLengthLong; fl <= unpeople.FingerLengthShort; fl++ {
+		p := unpeople.DefaultParams()
+		p.FingerLength = fl
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("fingerlength=%d: %v", fl, err)
+		}
+	}
+}
+
+func TestAllFootSizes(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for fs := unpeople.FootSizeLarge; fs <= unpeople.FootSizeSmall; fs++ {
+		p := unpeople.DefaultParams()
+		p.FootSize = fs
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("footsize=%d: %v", fs, err)
+		}
+	}
+}
+
 // ─── Validation ──────────────────────────────────────────────────────────────
 
 func TestValidateRejectsOutOfRange(t *testing.T) {

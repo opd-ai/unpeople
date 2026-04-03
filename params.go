@@ -301,59 +301,36 @@ func DefaultParams() Params {
 
 // Validate returns an error if any parameter is outside its defined range.
 func (p *Params) Validate() error {
-	if p.Species < SpeciesHuman || p.Species > SpeciesOgre {
-		return errors.New("invalid Species value")
+	// Table-driven validation to reduce cyclomatic complexity
+	checks := []struct {
+		val  int
+		min  int
+		max  int
+		name string
+	}{
+		{int(p.Species), int(SpeciesHuman), int(SpeciesOgre), "Species"},
+		{int(p.Height), int(HeightGiant), int(HeightTiny), "Height"},
+		{int(p.Build), int(BuildMuscular), int(BuildFragile), "Build"},
+		{int(p.Proportions), int(ProportionsHeroic), int(ProportionsCaricature), "Proportions"},
+		{int(p.Phenotype), int(PhenotypeMasculine), int(PhenotypeFeminine), "Phenotype"},
+		{int(p.Age), int(AgeDecrepit), int(AgeToddler), "Age"},
+		{int(p.Posture), int(PostureUpright), int(PostureRigid), "Posture"},
+		{int(p.FaceShape), int(FaceShapeOval), int(FaceShapeOblong), "FaceShape"},
+		{int(p.Jaw), int(JawProminent), int(JawRounded), "Jaw"},
+		{int(p.Brow), int(BrowHeavy), int(BrowArched), "Brow"},
+		{int(p.Ears), int(EarsSmall), int(EarsRounded), "Ears"},
+		{int(p.ShoulderWidth), int(ShoulderWidthBroad), int(ShoulderWidthNarrow), "ShoulderWidth"},
+		{int(p.HipWidth), int(HipWidthWide), int(HipWidthNarrow), "HipWidth"},
+		{int(p.LimbLength), int(LimbLengthLong), int(LimbLengthShort), "LimbLength"},
+		{int(p.NeckLength), int(NeckLengthLong), int(NeckLengthThick), "NeckLength"},
+		{int(p.HandSize), int(HandSizeLarge), int(HandSizeSmall), "HandSize"},
+		{int(p.FingerLength), int(FingerLengthLong), int(FingerLengthShort), "FingerLength"},
+		{int(p.FootSize), int(FootSizeLarge), int(FootSizeSmall), "FootSize"},
 	}
-	if p.Height < HeightGiant || p.Height > HeightTiny {
-		return errors.New("invalid Height value")
-	}
-	if p.Build < BuildMuscular || p.Build > BuildFragile {
-		return errors.New("invalid Build value")
-	}
-	if p.Proportions < ProportionsHeroic || p.Proportions > ProportionsCaricature {
-		return errors.New("invalid Proportions value")
-	}
-	if p.Phenotype < PhenotypeMasculine || p.Phenotype > PhenotypeFeminine {
-		return errors.New("invalid Phenotype value")
-	}
-	if p.Age < AgeDecrepit || p.Age > AgeToddler {
-		return errors.New("invalid Age value")
-	}
-	if p.Posture < PostureUpright || p.Posture > PostureRigid {
-		return errors.New("invalid Posture value")
-	}
-	if p.FaceShape < FaceShapeOval || p.FaceShape > FaceShapeOblong {
-		return errors.New("invalid FaceShape value")
-	}
-	if p.Jaw < JawProminent || p.Jaw > JawRounded {
-		return errors.New("invalid Jaw value")
-	}
-	if p.Brow < BrowHeavy || p.Brow > BrowArched {
-		return errors.New("invalid Brow value")
-	}
-	if p.Ears < EarsSmall || p.Ears > EarsRounded {
-		return errors.New("invalid Ears value")
-	}
-	if p.ShoulderWidth < ShoulderWidthBroad || p.ShoulderWidth > ShoulderWidthNarrow {
-		return errors.New("invalid ShoulderWidth value")
-	}
-	if p.HipWidth < HipWidthWide || p.HipWidth > HipWidthNarrow {
-		return errors.New("invalid HipWidth value")
-	}
-	if p.LimbLength < LimbLengthLong || p.LimbLength > LimbLengthShort {
-		return errors.New("invalid LimbLength value")
-	}
-	if p.NeckLength < NeckLengthLong || p.NeckLength > NeckLengthThick {
-		return errors.New("invalid NeckLength value")
-	}
-	if p.HandSize < HandSizeLarge || p.HandSize > HandSizeSmall {
-		return errors.New("invalid HandSize value")
-	}
-	if p.FingerLength < FingerLengthLong || p.FingerLength > FingerLengthShort {
-		return errors.New("invalid FingerLength value")
-	}
-	if p.FootSize < FootSizeLarge || p.FootSize > FootSizeSmall {
-		return errors.New("invalid FootSize value")
+	for _, c := range checks {
+		if c.val < c.min || c.val > c.max {
+			return errors.New("invalid " + c.name + " value")
+		}
 	}
 	return nil
 }

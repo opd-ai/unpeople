@@ -157,6 +157,7 @@ func applyProportions(l *bodyLayout, p Proportions) {
 		// Wide shoulders, long legs, narrow hips
 		l.chestRX *= 1.15
 		l.hipsRX *= 0.92
+		scaleLimbs(l, 1.08) // Elongate legs for heroic proportions
 	case ProportionsRealistic:
 		// default
 	case ProportionsStylized:
@@ -169,6 +170,12 @@ func applyProportions(l *bodyLayout, p Proportions) {
 		l.headRZ *= 1.25
 		l.chestRX *= 0.88
 		l.upperArmRadius *= 0.88
+		// Reduce hand/foot size for caricature effect
+		l.handHW *= 0.85
+		l.handHH *= 0.85
+		l.handHD *= 0.85
+		l.footHW *= 0.85
+		l.footHD *= 0.85
 	}
 }
 

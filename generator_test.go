@@ -357,6 +357,100 @@ func TestAllFootSizes(t *testing.T) {
 	}
 }
 
+func TestAllSkinTones(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for st := unpeople.SkinTonePale; st <= unpeople.SkinToneDark; st++ {
+		p := unpeople.DefaultParams()
+		p.SkinTone = st
+		m, err := g.Generate(p)
+		if err != nil {
+			t.Errorf("skintone=%d: %v", st, err)
+			continue
+		}
+		// Verify vertices have non-gray color
+		if len(m.Vertices) > 0 {
+			c := m.Vertices[0].Color
+			if c[0] == 0.5 && c[1] == 0.5 && c[2] == 0.5 {
+				t.Errorf("skintone=%d: vertex color should not be default gray", st)
+			}
+		}
+	}
+}
+
+func TestAllSkinUndertones(t *testing.T) {
+	g := unpeople.NewGenerator()
+	for ut := unpeople.SkinUndertoneNeutral; ut <= unpeople.SkinUndertoneCool; ut++ {
+		p := unpeople.DefaultParams()
+		p.SkinUndertone = ut
+		if _, err := g.Generate(p); err != nil {
+			t.Errorf("skinundertone=%d: %v", ut, err)
+		}
+	}
+}
+
+func TestSkinToneAffectsKey(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p1 := unpeople.DefaultParams()
+	p1.SkinTone = unpeople.SkinTonePale
+
+	p2 := unpeople.DefaultParams()
+	p2.SkinTone = unpeople.SkinToneDark
+
+	m1, _ := g.Generate(p1)
+	m2, _ := g.Generate(p2)
+
+	if m1.Key == m2.Key {
+		t.Error("different skin tones should produce different mesh keys")
+	}
+}
+
+func TestSkinUndertoneAffectsKey(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p1 := unpeople.DefaultParams()
+	p1.SkinUndertone = unpeople.SkinUndertoneWarm
+
+	p2 := unpeople.DefaultParams()
+	p2.SkinUndertone = unpeople.SkinUndertoneCool
+
+	m1, _ := g.Generate(p1)
+	m2, _ := g.Generate(p2)
+
+	if m1.Key == m2.Key {
+		t.Error("different skin undertones should produce different mesh keys")
+	}
+}
+
+func TestSkinToneProducesValidColor(t *testing.T) {
+	g := unpeople.NewGenerator()
+
+	// Test all combinations of skin tone and undertone
+	for st := unpeople.SkinTonePale; st <= unpeople.SkinToneDark; st++ {
+		for ut := unpeople.SkinUndertoneNeutral; ut <= unpeople.SkinUndertoneCool; ut++ {
+			p := unpeople.DefaultParams()
+			p.SkinTone = st
+			p.SkinUndertone = ut
+
+			m, err := g.Generate(p)
+			if err != nil {
+				t.Errorf("tone=%d undertone=%d: %v", st, ut, err)
+				continue
+			}
+
+			// Check that all vertices have valid color values (0-1 range)
+			for i, v := range m.Vertices {
+				if v.Color[0] < 0 || v.Color[0] > 1 ||
+					v.Color[1] < 0 || v.Color[1] > 1 ||
+					v.Color[2] < 0 || v.Color[2] > 1 ||
+					v.Color[3] < 0 || v.Color[3] > 1 {
+					t.Errorf("tone=%d undertone=%d: vertex[%d] has invalid color: %v",
+						st, ut, i, v.Color)
+					break
+				}
+			}
+		}
+	}
+}
+
 // ─── Validation ──────────────────────────────────────────────────────────────
 
 func TestValidateRejectsOutOfRange(t *testing.T) {
@@ -372,6 +466,8 @@ func TestValidateRejectsOutOfRange(t *testing.T) {
 		{"bad Phenotype", func(p *unpeople.Params) { p.Phenotype = 99 }},
 		{"bad Age", func(p *unpeople.Params) { p.Age = -5 }},
 		{"bad Posture", func(p *unpeople.Params) { p.Posture = 10 }},
+		{"bad SkinTone", func(p *unpeople.Params) { p.SkinTone = 99 }},
+		{"bad SkinUndertone", func(p *unpeople.Params) { p.SkinUndertone = 50 }},
 	}
 	for _, tc := range tests {
 		p := unpeople.DefaultParams()

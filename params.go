@@ -236,6 +236,33 @@ const (
 	FootSizeSmall
 )
 
+// ─── SkinTone ────────────────────────────────────────────────────────────────
+
+// SkinTone describes the base skin colour of the character.
+type SkinTone int
+
+const (
+	SkinTonePale SkinTone = iota
+	SkinToneFair
+	SkinToneLight
+	SkinToneMedium
+	SkinToneOlive
+	SkinToneTan
+	SkinToneBrown
+	SkinToneDark
+)
+
+// ─── SkinUndertone ───────────────────────────────────────────────────────────
+
+// SkinUndertone describes the warm/cool tint of the skin colour.
+type SkinUndertone int
+
+const (
+	SkinUndertoneNeutral SkinUndertone = iota
+	SkinUndertoneWarm
+	SkinUndertoneCool
+)
+
 // ─── Params ──────────────────────────────────────────────────────────────────
 
 // Params is the complete set of inputs to the Generator. Every field has a
@@ -272,6 +299,10 @@ type Params struct {
 	FingerLength FingerLength
 	FootSize     FootSize
 
+	// Appearance
+	SkinTone      SkinTone      // Base skin colour (Pale → Dark)
+	SkinUndertone SkinUndertone // Warm/cool tint
+
 	// Optional mesh components
 	HasHairSlot bool // If true, generate skull cap placeholder for hair attachment
 }
@@ -299,6 +330,8 @@ func DefaultParams() Params {
 		HandSize:      HandSizeMedium,
 		FingerLength:  FingerLengthAverage,
 		FootSize:      FootSizeMedium,
+		SkinTone:      SkinToneMedium,
+		SkinUndertone: SkinUndertoneNeutral,
 		HasHairSlot:   true,
 	}
 }
@@ -330,6 +363,8 @@ func (p *Params) Validate() error {
 		{int(p.HandSize), int(HandSizeLarge), int(HandSizeSmall), "HandSize"},
 		{int(p.FingerLength), int(FingerLengthLong), int(FingerLengthShort), "FingerLength"},
 		{int(p.FootSize), int(FootSizeLarge), int(FootSizeSmall), "FootSize"},
+		{int(p.SkinTone), int(SkinTonePale), int(SkinToneDark), "SkinTone"},
+		{int(p.SkinUndertone), int(SkinUndertoneNeutral), int(SkinUndertoneCool), "SkinUndertone"},
 	}
 	for _, c := range checks {
 		if c.val < c.min || c.val > c.max {

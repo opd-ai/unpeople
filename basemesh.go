@@ -441,5 +441,17 @@ func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 	v, i = generateEar(layout.earAttachR, layout.earScale, false)
 	builder.append(v, i)
 
-	return builder.build(key)
+	mesh := builder.build(key)
+
+	// Apply skin color to all vertices
+	applySkinColor(mesh.Vertices, opts.skinColor)
+
+	return mesh
+}
+
+// applySkinColor sets the Color field of all vertices to the given skin color.
+func applySkinColor(vertices []Vertex, color Color) {
+	for i := range vertices {
+		vertices[i].Color = color
+	}
 }

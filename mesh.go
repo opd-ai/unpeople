@@ -28,6 +28,53 @@ type Color [4]float32
 // ColorGray is the default material colour: mid-grey, fully opaque.
 var ColorGray = Color{0.5, 0.5, 0.5, 1.0}
 
+// ─── Skin Tone Colors ────────────────────────────────────────────────────────
+
+// skinToneBase defines the base RGB values for each skin tone level.
+// Values are designed to span a realistic range from very pale to very dark.
+// All colors are in linear RGB space for proper blending.
+var skinToneBase = [8]Color{
+	{0.96, 0.90, 0.85, 1.0}, // SkinTonePale - very light, almost porcelain
+	{0.91, 0.82, 0.74, 1.0}, // SkinToneFair - light with slight warmth
+	{0.85, 0.73, 0.62, 1.0}, // SkinToneLight - light beige
+	{0.76, 0.62, 0.50, 1.0}, // SkinToneMedium - medium beige
+	{0.67, 0.53, 0.40, 1.0}, // SkinToneOlive - olive/tan
+	{0.58, 0.44, 0.32, 1.0}, // SkinToneTan - warm tan
+	{0.45, 0.32, 0.22, 1.0}, // SkinToneBrown - brown
+	{0.30, 0.20, 0.14, 1.0}, // SkinToneDark - deep brown
+}
+
+// undertoneShift defines the RGB shift applied for warm/cool undertones.
+var undertoneShift = [3]Color{
+	{0.0, 0.0, 0.0, 0.0},   // SkinUndertoneNeutral - no shift
+	{0.04, 0.01, -0.03, 0}, // SkinUndertoneWarm - slightly more red/yellow
+	{-0.02, 0.01, 0.04, 0}, // SkinUndertoneCool - slightly more pink/blue
+}
+
+// ComputeSkinColor returns the vertex color for the given skin tone and undertone.
+func ComputeSkinColor(tone SkinTone, undertone SkinUndertone) Color {
+	base := skinToneBase[tone]
+	shift := undertoneShift[undertone]
+
+	// Apply undertone shift and clamp to valid range
+	r := clampFloat32(base[0]+shift[0], 0.0, 1.0)
+	g := clampFloat32(base[1]+shift[1], 0.0, 1.0)
+	b := clampFloat32(base[2]+shift[2], 0.0, 1.0)
+
+	return Color{r, g, b, 1.0}
+}
+
+// clampFloat32 restricts a float32 value to the given range.
+func clampFloat32(v, minV, maxV float32) float32 {
+	if v < minV {
+		return minV
+	}
+	if v > maxV {
+		return maxV
+	}
+	return v
+}
+
 // ─── Vertex ──────────────────────────────────────────────────────────────────
 
 // Vertex is layout-compatible with kaiju's rendering.Vertex (same field order

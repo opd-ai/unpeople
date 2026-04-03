@@ -18,6 +18,7 @@ type buildOptions struct {
 	faceShape   FaceShape
 	jaw         Jaw
 	brow        Brow
+	skinColor   Color // Computed skin color for all vertices
 }
 
 // Generate produces a humanoid Mesh from the supplied parameters.
@@ -48,15 +49,17 @@ func (g *Generator) Generate(p Params) (*Mesh, error) {
 
 	// Mesh key encodes all geometry-affecting parameters so that the Kaiju
 	// engine's mesh cache never reuses a mesh for a different parameter set.
+	// Skin tone affects vertex colors, so it must be part of the key.
 	key := fmt.Sprintf(
 		"humanoid_sp%d_ht%d_bl%d_pr%d_ph%d_ag%d_po%d"+
 			"_fs%d_jw%d_br%d_er%d"+
 			"_sw%d_hw%d_ll%d_nl%d"+
-			"_hs%d_fl%d_ft%d_hr%d_se%d",
+			"_hs%d_fl%d_ft%d_hr%d_sk%d_ut%d_se%d",
 		p.Species, p.Height, p.Build, p.Proportions, p.Phenotype, p.Age, p.Posture,
 		p.FaceShape, p.Jaw, p.Brow, p.Ears,
 		p.ShoulderWidth, p.HipWidth, p.LimbLength, p.NeckLength,
-		p.HandSize, p.FingerLength, p.FootSize, hairSlot, p.Seed,
+		p.HandSize, p.FingerLength, p.FootSize, hairSlot,
+		p.SkinTone, p.SkinUndertone, p.Seed,
 	)
 
 	opts := buildOptions{
@@ -64,6 +67,7 @@ func (g *Generator) Generate(p Params) (*Mesh, error) {
 		faceShape:   p.FaceShape,
 		jaw:         p.Jaw,
 		brow:        p.Brow,
+		skinColor:   ComputeSkinColor(p.SkinTone, p.SkinUndertone),
 	}
 
 	return buildMesh(layout, key, opts), nil

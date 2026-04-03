@@ -93,7 +93,7 @@
 - **Validation**: `go test ./... -v`
 
 ### Step 8: Add Age × Species Interaction for Child Proportions
-- [ ] **Pending**
+- [x] **Resolved**
 - **Deliverable**: Modify `applyAge()` in `transforms.go` to add species-aware head scaling for `AgeChild` and `AgeToddler`
 - **Dependencies**: Step 1 (TestAllAges covers this)
 - **Goal Impact**: Addresses GAPS.md "Age × Species Interaction Missing"

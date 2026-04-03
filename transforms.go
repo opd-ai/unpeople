@@ -12,7 +12,7 @@ func computeBodyLayout(p *Params, rng *splitmix64) bodyLayout {
 	applyBuild(&l, p.Build)
 	applyProportions(&l, p.Proportions)
 	applyPhenotype(&l, p.Phenotype)
-	applyAge(&l, p.Age)
+	applyAge(&l, p.Age, p.Species)
 	applyShoulderWidth(&l, p.ShoulderWidth)
 	applyHipWidth(&l, p.HipWidth)
 	applyLimbLength(&l, p.LimbLength)
@@ -20,7 +20,7 @@ func computeBodyLayout(p *Params, rng *splitmix64) bodyLayout {
 	applyHandSize(&l, p.HandSize, p.FingerLength)
 	applyFootSize(&l, p.FootSize)
 	applyFacialFeatures(&l, p.FaceShape, p.Jaw, p.Brow, p.Ears)
-	applyPosture(&l, p.Posture, rng)
+	applyPosture(&l, p.Posture, p.Age, rng)
 
 	return l
 }
@@ -204,7 +204,22 @@ func applyPhenotype(l *bodyLayout, p Phenotype) {
 
 // ─── Age ─────────────────────────────────────────────────────────────────────
 
-func applyAge(l *bodyLayout, a Age) {
+// applyAge modifies the body layout based on the character's age stage.
+// Species-specific head scaling is applied for AgeChild and AgeToddler.
+func applyAge(l *bodyLayout, a Age, s Species) {
+	// Species-specific head scale multiplier for child proportions.
+	// Smaller species (Gnome, Halfling, Kobold, Goblin) have proportionally
+	// larger heads as children to match real-world neoteny patterns.
+	childHeadMult := float32(1.0)
+	switch s {
+	case SpeciesGnome, SpeciesHalfling:
+		childHeadMult = 1.08
+	case SpeciesKobold, SpeciesGoblin:
+		childHeadMult = 1.06
+	case SpeciesOgre, SpeciesTroll:
+		childHeadMult = 0.95 // Large species have proportionally smaller child heads
+	}
+
 	switch a {
 	case AgeDecrepit:
 		scaleAll(l, 0.94)
@@ -229,14 +244,14 @@ func applyAge(l *bodyLayout, a Age) {
 		l.headRY *= 1.07
 	case AgeChild:
 		scaleAll(l, 0.70)
-		l.headRX *= 1.15
-		l.headRY *= 1.18
-		l.headRZ *= 1.15
+		l.headRX *= 1.15 * childHeadMult
+		l.headRY *= 1.18 * childHeadMult
+		l.headRZ *= 1.15 * childHeadMult
 	case AgeToddler:
 		scaleAll(l, 0.45)
-		l.headRX *= 1.35
-		l.headRY *= 1.40
-		l.headRZ *= 1.35
+		l.headRX *= 1.35 * childHeadMult
+		l.headRY *= 1.40 * childHeadMult
+		l.headRZ *= 1.35 * childHeadMult
 	}
 }
 

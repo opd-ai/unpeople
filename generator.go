@@ -12,6 +12,14 @@ func NewGenerator() *Generator {
 	return &Generator{}
 }
 
+// buildOptions bundles optional mesh generation flags
+type buildOptions struct {
+	hasHairSlot bool
+	faceShape   FaceShape
+	jaw         Jaw
+	brow        Brow
+}
+
 // Generate produces a humanoid Mesh from the supplied parameters.
 //
 // Determinism guarantee: given the same Params (including Seed), Generate
@@ -51,5 +59,12 @@ func (g *Generator) Generate(p Params) (*Mesh, error) {
 		p.HandSize, p.FingerLength, p.FootSize, hairSlot, p.Seed,
 	)
 
-	return buildMesh(layout, key, p.HasHairSlot), nil
+	opts := buildOptions{
+		hasHairSlot: p.HasHairSlot,
+		faceShape:   p.FaceShape,
+		jaw:         p.Jaw,
+		brow:        p.Brow,
+	}
+
+	return buildMesh(layout, key, opts), nil
 }

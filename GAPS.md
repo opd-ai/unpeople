@@ -89,26 +89,17 @@
 
 ## Individual Finger and Toe Geometry Missing
 
+**Status: ✅ RESOLVED**
+
 - **Stated Goal**: Hand size and finger length parameters affecting geometry.
-- **Current State**: `basemesh.go:211-215` generates hands as flat boxes; `FingerLength` parameter only adjusts the box's half-height (`handHH`), not actual finger geometry. Toes are completely absent.
-- **Impact**: Characters have mitten-like hands without visible fingers. The `FingerLength` parameter has minimal visual effect.
-- **Closing the Gap**: Phase 2 "Finger geometry" and "Toe geometry" per ROADMAP:
-  1. Replace hand box with palm + 5 finger segments (proximal/middle/distal phalanges)
-  2. Drive finger segment lengths from `FingerLength` parameter
-  3. Add toe segments to foot mesh
+- **Resolution**: Implemented `generateFinger()`, `generateHand()`, and `generateFoot()` primitives in `primitive.go`. Hands now have a palm box with 5 fingers (4 regular + thumb), each with 3 or 2 phalanges. Feet have a foot box with 5 toes. The `FingerLength` parameter scales all finger segment lengths via `fingerLengthMult`.
 
 ## Species × Build Interaction Untuned
 
+**Status: ✅ RESOLVED**
+
 - **Stated Goal**: Species and Build parameters combine to produce varied body types.
-- **Current State**: `transforms.go:30-150` applies Species scaling first, then Build scaling. These multiply together without blending, so `SpeciesOrc + BuildFragile` produces a result where the species' bulk and the frail build partially cancel out in ways that may not look natural.
-- **Impact**: Certain Species × Build combinations produce awkward proportions because the scaling factors were tuned independently rather than as an interaction matrix.
-- **Closing the Gap**: Implement species-specific build scaling multipliers:
-  ```go
-  // Example: Orcs should have a less extreme fragile reduction
-  if s == SpeciesOrc && build == BuildFragile {
-      // Use 0.90 instead of 0.80 for chest reduction
-  }
-  ```
+- **Resolution**: Implemented `speciesBuildInteraction()` function in `transforms.go` that returns species-aware multipliers for build effects. Bulky species (Orc, Troll, Ogre, Dwarf) have moderated Fragile and Lean reductions; already-bulky species have reduced Muscular expansion to prevent extreme proportions.
 
 ## Age × Species Interaction Missing
 

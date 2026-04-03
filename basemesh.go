@@ -318,8 +318,8 @@ func defaultBodyLayout() bodyLayout {
 
 // buildMesh assembles the full humanoid mesh from the given body layout.
 // The mesh key is used by the Kaiju engine's mesh cache.
-// hasHairSlot controls whether the skull cap placeholder is generated.
-func buildMesh(layout bodyLayout, key string, hasHairSlot bool) *Mesh {
+// opts controls optional features like skull cap and face mesh parameters.
+func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
 	var builder meshBuilder
 
 	const (
@@ -333,8 +333,14 @@ func buildMesh(layout bodyLayout, key string, hasHairSlot bool) *Mesh {
 		layout.headRX, layout.headRY, layout.headRZ, latSegs, lonSegs)
 	builder.append(v, i)
 
+	// Face mesh (overlaid on head with distinct facial regions)
+	v, i = generateFaceMesh(layout.headCenter,
+		layout.headRX, layout.headRY, layout.headRZ,
+		opts.faceShape, opts.jaw, opts.brow)
+	builder.append(v, i)
+
 	// Skull cap (hair slot placeholder)
-	if hasHairSlot {
+	if opts.hasHairSlot {
 		v, i = generateSkullCap(layout.headCenter, layout.headRX, layout.headRY, layout.headRZ)
 		builder.append(v, i)
 	}

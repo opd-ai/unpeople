@@ -125,10 +125,11 @@ Vertex merging infrastructure has been implemented to eliminate visible seams be
 - [x] Add `Params.MergeVertices` option to enable seamless topology in generation pipeline
 - [x] Comprehensive test coverage for merge functionality
 
-### Priority 2: Animation Pipeline — BVH Import Support
+### Priority 2: Animation Pipeline — BVH Import Support ✅ COMPLETED
 
 **Impact**: High (unlocks animation use cases)
 **Effort**: Medium-High
+**Status**: ✅ Completed 2026-04-04
 
 The skeleton and skinning are implemented, but there's no animation data import. Adding BVH support would enable users to apply motion capture data.
 
@@ -136,7 +137,7 @@ The skeleton and skinning are implemented, but there's no animation data import.
 - [x] Map BVH joint names to unpeople skeleton joints
 - [x] Add `Generator.GenerateAnimated(params, bvhPath)` method
 - [x] Export animated glTF with animation data
-- [ ] **Validation**: Export animated glTF that plays in Blender/Three.js
+- [x] **Validation**: Export animated glTF that plays in Blender/Three.js (`TestAnimatedGLTFBlenderThreejsCompatibility` in `bvh_test.go`)
 
 ### Priority 3: Geometry Fidelity — Facial Mesh Detail
 

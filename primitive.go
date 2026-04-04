@@ -686,6 +686,12 @@ type faceVertexIndices struct {
 	cheekLowLeft, cheekLowRight                                         int
 	jawCornerLeft, jawCornerRight, mandibleLeft, mandibleRight          int
 	chinCenter, chinLeft, chinRight, mouthLeft, mouthRight, mouthCenter int
+	// Eye socket vertices
+	eyeInnerLeft, eyeInnerRight   int // Inner corner (near nose)
+	eyeOuterLeft, eyeOuterRight   int // Outer corner (near temple)
+	eyeUpperLeft, eyeUpperRight   int // Upper eyelid center
+	eyeLowerLeft, eyeLowerRight   int // Lower eyelid center
+	eyeSocketLeft, eyeSocketRight int // Socket depth (recessed center)
 }
 
 // faceBuilder helps build face mesh vertices.
@@ -721,6 +727,36 @@ func (fb *faceBuilder) buildBrowVertices(disp faceDisplacement, idx *faceVertexI
 	idx.browRight = fb.addVertex(0.045, 0.038+disp.browRidgeY, 0.075+disp.browRidgeZ, 0.2, 0.3, 1)
 	idx.browOuterLeft = fb.addVertex(-0.065, 0.030+disp.browRidgeY, 0.060+disp.browRidgeZ, -0.4, 0.2, 0.8)
 	idx.browOuterRight = fb.addVertex(0.065, 0.030+disp.browRidgeY, 0.060+disp.browRidgeZ, 0.4, 0.2, 0.8)
+}
+
+// buildEyeSocketVertices creates eye socket geometry with eyelid shapes.
+// Eyes are positioned below the brow ridge, creating recessed orbital cavities.
+func (fb *faceBuilder) buildEyeSocketVertices(idx *faceVertexIndices) {
+	// Left eye socket
+	// Eye center is roughly at (±0.035, 0.015, 0.075) with orbital depth
+	const eyeCenterX = 0.035
+	const eyeCenterY = 0.015
+	const eyeCenterZ = 0.070
+
+	// Inner corner (near nose bridge) - slightly recessed
+	idx.eyeInnerLeft = fb.addVertex(-eyeCenterX+0.015, eyeCenterY, eyeCenterZ-0.010, -0.1, 0, 0.9)
+	idx.eyeInnerRight = fb.addVertex(eyeCenterX-0.015, eyeCenterY, eyeCenterZ-0.010, 0.1, 0, 0.9)
+
+	// Outer corner (near temple) - more exposed
+	idx.eyeOuterLeft = fb.addVertex(-eyeCenterX-0.018, eyeCenterY-0.003, eyeCenterZ-0.005, -0.3, -0.1, 0.9)
+	idx.eyeOuterRight = fb.addVertex(eyeCenterX+0.018, eyeCenterY-0.003, eyeCenterZ-0.005, 0.3, -0.1, 0.9)
+
+	// Upper eyelid center - prominent, rounded edge
+	idx.eyeUpperLeft = fb.addVertex(-eyeCenterX, eyeCenterY+0.012, eyeCenterZ+0.005, 0, 0.4, 0.9)
+	idx.eyeUpperRight = fb.addVertex(eyeCenterX, eyeCenterY+0.012, eyeCenterZ+0.005, 0, 0.4, 0.9)
+
+	// Lower eyelid center - subtle ridge
+	idx.eyeLowerLeft = fb.addVertex(-eyeCenterX, eyeCenterY-0.010, eyeCenterZ, 0, -0.3, 0.9)
+	idx.eyeLowerRight = fb.addVertex(eyeCenterX, eyeCenterY-0.010, eyeCenterZ, 0, -0.3, 0.9)
+
+	// Socket depth center - recessed orbital cavity for eye placement
+	idx.eyeSocketLeft = fb.addVertex(-eyeCenterX, eyeCenterY, eyeCenterZ-0.015, 0, 0, 0.8)
+	idx.eyeSocketRight = fb.addVertex(eyeCenterX, eyeCenterY, eyeCenterZ-0.015, 0, 0, 0.8)
 }
 
 // buildNoseVertices creates the nose region vertices.

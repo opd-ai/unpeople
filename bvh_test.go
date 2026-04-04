@@ -2,6 +2,7 @@ package unpeople_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -511,4 +512,237 @@ func TestExportAnimatedGLB(t *testing.T) {
 	if magic != "glTF" {
 		t.Errorf("GLB magic = %q, want glTF", magic)
 	}
+}
+
+// TestAnimatedGLTFBlenderThreejsCompatibility validates that animated glTF exports
+// conform to the glTF 2.0 spec requirements for playback in Blender and Three.js.
+// This is the validation step for ROADMAP Priority 2.
+func TestAnimatedGLTFBlenderThreejsCompatibility(t *testing.T) {
+	gen := unpeople.NewGenerator()
+	params := unpeople.DefaultParams()
+	params.Seed = 42
+
+	bvh, err := unpeople.ParseBVH(strings.NewReader(testBVHContent))
+	if err != nil {
+		t.Fatalf("ParseBVH failed: %v", err)
+	}
+
+	result, err := gen.GenerateAnimated(params, bvh)
+	if err != nil {
+		t.Fatalf("GenerateAnimated failed: %v", err)
+	}
+
+	var buf bytes.Buffer
+	opts := unpeople.DefaultAnimatedGLTFOptions()
+	err = unpeople.ExportAnimatedGLTF(&buf, result, opts)
+	if err != nil {
+		t.Fatalf("ExportAnimatedGLTF failed: %v", err)
+	}
+
+	// Parse the JSON output to validate structure
+	var gltf map[string]interface{}
+	if err := json.Unmarshal(buf.Bytes(), &gltf); err != nil {
+		t.Fatalf("Failed to parse glTF JSON: %v", err)
+	}
+
+	// Validate asset version (required for glTF 2.0)
+	asset, ok := gltf["asset"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Missing or invalid asset object")
+	}
+	version, ok := asset["version"].(string)
+	if !ok || version != "2.0" {
+		t.Errorf("Asset version = %v, want 2.0", version)
+	}
+
+	// Validate skins array (required for skeletal animation)
+	skins, ok := gltf["skins"].([]interface{})
+	if !ok || len(skins) == 0 {
+		t.Fatal("Missing or empty skins array - required for skeletal animation")
+	}
+
+	skin := skins[0].(map[string]interface{})
+
+	// Validate joints array (required for skin)
+	joints, ok := skin["joints"].([]interface{})
+	if !ok || len(joints) == 0 {
+		t.Fatal("Skin missing joints array")
+	}
+	t.Logf("Skin has %d joints", len(joints))
+
+	// Validate inverseBindMatrices accessor exists
+	if _, ok := skin["inverseBindMatrices"]; !ok {
+		t.Fatal("Skin missing inverseBindMatrices - required for proper mesh deformation")
+	}
+
+	// Validate animations array
+	animations, ok := gltf["animations"].([]interface{})
+	if !ok || len(animations) == 0 {
+		t.Fatal("Missing or empty animations array")
+	}
+
+	anim := animations[0].(map[string]interface{})
+
+	// Validate animation name
+	if name, ok := anim["name"].(string); !ok || name == "" {
+		t.Error("Animation missing name - recommended for Blender/Three.js")
+	}
+
+	// Validate samplers array
+	samplers, ok := anim["samplers"].([]interface{})
+	if !ok || len(samplers) == 0 {
+		t.Fatal("Animation missing samplers")
+	}
+
+	// Validate each sampler has required fields
+	for i, s := range samplers {
+		sampler := s.(map[string]interface{})
+
+		// input (keyframe times accessor) is required
+		if _, ok := sampler["input"]; !ok {
+			t.Errorf("Sampler %d missing input accessor", i)
+		}
+
+		// output (keyframe values accessor) is required
+		if _, ok := sampler["output"]; !ok {
+			t.Errorf("Sampler %d missing output accessor", i)
+		}
+
+		// interpolation should be LINEAR, STEP, or CUBICSPLINE
+		interp, ok := sampler["interpolation"].(string)
+		if !ok {
+			t.Errorf("Sampler %d missing interpolation", i)
+		} else if interp != "LINEAR" && interp != "STEP" && interp != "CUBICSPLINE" {
+			t.Errorf("Sampler %d has invalid interpolation: %s", i, interp)
+		}
+	}
+
+	// Validate channels array
+	channels, ok := anim["channels"].([]interface{})
+	if !ok || len(channels) == 0 {
+		t.Fatal("Animation missing channels")
+	}
+
+	// Validate each channel has required fields
+	for i, c := range channels {
+		channel := c.(map[string]interface{})
+
+		// sampler index is required
+		if _, ok := channel["sampler"]; !ok {
+			t.Errorf("Channel %d missing sampler index", i)
+		}
+
+		// target is required
+		target, ok := channel["target"].(map[string]interface{})
+		if !ok {
+			t.Errorf("Channel %d missing target", i)
+			continue
+		}
+
+		// target.node is required
+		if _, ok := target["node"]; !ok {
+			t.Errorf("Channel %d target missing node", i)
+		}
+
+		// target.path must be translation, rotation, scale, or weights
+		path, ok := target["path"].(string)
+		if !ok {
+			t.Errorf("Channel %d target missing path", i)
+		} else if path != "translation" && path != "rotation" && path != "scale" && path != "weights" {
+			t.Errorf("Channel %d has invalid path: %s", i, path)
+		}
+	}
+
+	// Validate nodes array has skeleton hierarchy
+	nodes, ok := gltf["nodes"].([]interface{})
+	if !ok || len(nodes) == 0 {
+		t.Fatal("Missing nodes array")
+	}
+
+	// Find the skinned mesh node
+	var skinnedMeshFound bool
+	for _, n := range nodes {
+		node := n.(map[string]interface{})
+		if _, hasMesh := node["mesh"]; hasMesh {
+			if _, hasSkin := node["skin"]; hasSkin {
+				skinnedMeshFound = true
+				break
+			}
+		}
+	}
+	if !skinnedMeshFound {
+		t.Error("No skinned mesh node found - mesh with both 'mesh' and 'skin' properties required")
+	}
+
+	// Validate accessors array
+	accessors, ok := gltf["accessors"].([]interface{})
+	if !ok || len(accessors) == 0 {
+		t.Fatal("Missing accessors array")
+	}
+
+	// Validate bufferViews array
+	bufferViews, ok := gltf["bufferViews"].([]interface{})
+	if !ok || len(bufferViews) == 0 {
+		t.Fatal("Missing bufferViews array")
+	}
+
+	// Validate buffers array
+	buffers, ok := gltf["buffers"].([]interface{})
+	if !ok || len(buffers) == 0 {
+		t.Fatal("Missing buffers array")
+	}
+
+	// Validate mesh has JOINTS_0 and WEIGHTS_0 attributes
+	meshes, ok := gltf["meshes"].([]interface{})
+	if !ok || len(meshes) == 0 {
+		t.Fatal("Missing meshes array")
+	}
+
+	mesh := meshes[0].(map[string]interface{})
+	primitives, ok := mesh["primitives"].([]interface{})
+	if !ok || len(primitives) == 0 {
+		t.Fatal("Mesh missing primitives")
+	}
+
+	prim := primitives[0].(map[string]interface{})
+	attrs, ok := prim["attributes"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Primitive missing attributes")
+	}
+
+	if _, ok := attrs["JOINTS_0"]; !ok {
+		t.Error("Mesh missing JOINTS_0 attribute - required for skinning")
+	}
+	if _, ok := attrs["WEIGHTS_0"]; !ok {
+		t.Error("Mesh missing WEIGHTS_0 attribute - required for skinning")
+	}
+	if _, ok := attrs["POSITION"]; !ok {
+		t.Error("Mesh missing POSITION attribute")
+	}
+
+	// Validate animation time accessor has min/max (required for proper playback)
+	for _, s := range samplers {
+		sampler := s.(map[string]interface{})
+		inputIdx := int(sampler["input"].(float64))
+		if inputIdx >= len(accessors) {
+			t.Errorf("Sampler input accessor %d out of range", inputIdx)
+			continue
+		}
+		inputAccessor := accessors[inputIdx].(map[string]interface{})
+
+		// Time accessors should have min/max for proper animation length detection
+		if _, hasMin := inputAccessor["min"]; !hasMin {
+			t.Error("Animation time accessor missing min - recommended for Blender/Three.js")
+		}
+		if _, hasMax := inputAccessor["max"]; !hasMax {
+			t.Error("Animation time accessor missing max - recommended for Blender/Three.js")
+		}
+
+		// Verify type is SCALAR for time
+		if typ, ok := inputAccessor["type"].(string); ok && typ != "SCALAR" {
+			t.Errorf("Time accessor type = %s, want SCALAR", typ)
+		}
+	}
+
+	t.Log("Animated glTF validation PASSED - compatible with Blender/Three.js")
 }

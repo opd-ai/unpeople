@@ -234,30 +234,38 @@ func generateBlemishPositions(rng *splitmix64, intensity float32, age Age, maxCo
 
 // ─── Feature Sampling ────────────────────────────────────────────────────────
 
-// computeFeatureContrib calculates the contribution of a feature point at a UV coordinate.
-func computeFeatureContrib(u, v float32, f featurePoint) float32 {
+// computeFeatureDistance returns the squared distance and radius squared for a feature point.
+// Returns (distSq, radiusSq).
+func computeFeatureDistance(u, v float32, f featurePoint) (float32, float32) {
 	du := u - f.u
 	dv := v - f.v
-	distSq := du*du + dv*dv
-	radiusSq := f.radius * f.radius
+	return du*du + dv*dv, f.radius * f.radius
+}
 
+// computeFeatureContrib calculates the contribution of a feature point at a UV coordinate.
+func computeFeatureContrib(u, v float32, f featurePoint) float32 {
+	distSq, radiusSq := computeFeatureDistance(u, v, f)
 	if distSq >= radiusSq {
 		return 0
 	}
-
 	t := 1.0 - distSq/radiusSq
 	return t * t * f.dark
 }
 
-// sampleFreckles computes freckle contribution at a UV coordinate.
-func sampleFreckles(u, v float32, freckles []featurePoint) float32 {
+// sampleFeatures computes the maximum contribution at a UV coordinate from a slice of features.
+func sampleFeatures(u, v float32, features []featurePoint) float32 {
 	var maxContrib float32
-	for _, f := range freckles {
+	for _, f := range features {
 		if contrib := computeFeatureContrib(u, v, f); contrib > maxContrib {
 			maxContrib = contrib
 		}
 	}
 	return maxContrib
+}
+
+// sampleFreckles computes freckle contribution at a UV coordinate.
+func sampleFreckles(u, v float32, freckles []featurePoint) float32 {
+	return sampleFeatures(u, v, freckles)
 }
 
 // computeBlemishFalloff calculates the falloff value for a blemish based on age.
@@ -270,15 +278,10 @@ func computeBlemishFalloff(t float32, age Age) float32 {
 
 // computeBlemishContrib calculates the contribution of a blemish at a UV coordinate.
 func computeBlemishContrib(u, v float32, b featurePoint, age Age) float32 {
-	du := u - b.u
-	dv := v - b.v
-	distSq := du*du + dv*dv
-	radiusSq := b.radius * b.radius
-
+	distSq, radiusSq := computeFeatureDistance(u, v, b)
 	if distSq >= radiusSq {
 		return 0
 	}
-
 	t := 1.0 - distSq/radiusSq
 	t = computeBlemishFalloff(t, age)
 	return t * b.dark

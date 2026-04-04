@@ -498,7 +498,8 @@ func ExportGLB(w io.Writer, mesh *Mesh, opts GLTFExportOptions) error {
 }
 
 // writeGLBBinary writes the GLB file format with JSON and binary chunks.
-func writeGLBBinary(w io.Writer, gltf *gltfRoot, binBuf []byte) error {
+// The gltf parameter can be any JSON-serializable glTF root structure.
+func writeGLBBinary(w io.Writer, gltf any, binBuf []byte) error {
 	jsonBytes, err := json.Marshal(gltf)
 	if err != nil {
 		return err

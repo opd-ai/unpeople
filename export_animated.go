@@ -468,22 +468,5 @@ func buildAnimations(br *animatedBuildResult, anim *Animation, firstJointNode in
 
 // writeAnimatedGLBBinary writes the GLB file format for animated glTF.
 func writeAnimatedGLBBinary(w io.Writer, gltf *gltfAnimatedRoot, binBuf []byte) error {
-	jsonBytes, err := json.Marshal(gltf)
-	if err != nil {
-		return err
-	}
-	// Pad JSON to 4 bytes with spaces
-	for len(jsonBytes)%4 != 0 {
-		jsonBytes = append(jsonBytes, ' ')
-	}
-
-	totalSize := 12 + 8 + len(jsonBytes) + 8 + len(binBuf)
-
-	if err := writeGLBHeader(w, totalSize); err != nil {
-		return err
-	}
-	if err := writeGLBChunk(w, "JSON", jsonBytes); err != nil {
-		return err
-	}
-	return writeGLBChunk(w, "BIN\x00", binBuf)
+	return writeGLBBinary(w, gltf, binBuf)
 }

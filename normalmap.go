@@ -187,9 +187,9 @@ var musclePatternTable = map[MusculatureBodyPart]musclePattern{
 
 func chestMusclePattern() musclePattern {
 	return musclePattern{groups: []muscleGroup{
-		{0.35, 0.55, 0.20, 0.18, -0.3, 0.2, 1.0},  // Pectoralis major (left)
-		{0.65, 0.55, 0.20, 0.18, 0.3, 0.2, 1.0},   // Pectoralis major (right)
-		{0.50, 0.55, 0.05, 0.30, 0.0, 0.0, -0.3},  // Sternum (depression)
+		{0.35, 0.55, 0.20, 0.18, -0.3, 0.2, 1.0}, // Pectoralis major (left)
+		{0.65, 0.55, 0.20, 0.18, 0.3, 0.2, 1.0},  // Pectoralis major (right)
+		{0.50, 0.55, 0.05, 0.30, 0.0, 0.0, -0.3}, // Sternum (depression)
 	}}
 }
 
@@ -217,8 +217,8 @@ func upperArmMusclePattern() musclePattern {
 
 func forearmMusclePattern() musclePattern {
 	return musclePattern{groups: []muscleGroup{
-		{0.40, 0.30, 0.15, 0.20, -0.2, 0.15, 0.8},  // Brachioradialis
-		{0.60, 0.40, 0.18, 0.25, 0.2, 0.1, 0.7},    // Extensor group
+		{0.40, 0.30, 0.15, 0.20, -0.2, 0.15, 0.8},   // Brachioradialis
+		{0.60, 0.40, 0.18, 0.25, 0.2, 0.1, 0.7},     // Extensor group
 		{0.40, 0.60, 0.18, 0.30, -0.15, -0.1, 0.75}, // Flexor group
 	}}
 }

@@ -80,25 +80,23 @@ func ParseBVH(r io.Reader) (*BVHFile, error) {
 	return bvh, nil
 }
 
-// parseHierarchy parses the HIERARCHY section of a BVH file.
-func parseHierarchy(scanner *bufio.Scanner, bvh *BVHFile) error {
-	// Skip whitespace and find HIERARCHY keyword
+// scanToHierarchyKeyword scans until the HIERARCHY keyword is found.
+func scanToHierarchyKeyword(scanner *bufio.Scanner) error {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
 		if line == "HIERARCHY" {
-			break
+			return nil
 		}
 		return fmt.Errorf("expected HIERARCHY, got %q", line)
 	}
+	return scanner.Err()
+}
 
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	// Parse ROOT joint
+// parseRootJoint parses the ROOT joint and initializes the BVH structure.
+func parseRootJoint(scanner *bufio.Scanner, bvh *BVHFile) error {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -117,8 +115,81 @@ func parseHierarchy(scanner *bufio.Scanner, bvh *BVHFile) error {
 		}
 		return fmt.Errorf("expected ROOT, got %q", line)
 	}
-
 	return errors.New("unexpected end of file in hierarchy")
+}
+
+// parseHierarchy parses the HIERARCHY section of a BVH file.
+func parseHierarchy(scanner *bufio.Scanner, bvh *BVHFile) error {
+	if err := scanToHierarchyKeyword(scanner); err != nil {
+		return err
+	}
+	return parseRootJoint(scanner, bvh)
+}
+
+// expectOpenBrace scans for and validates an opening brace.
+func expectOpenBrace(scanner *bufio.Scanner, context string) error {
+	if !scanNonEmpty(scanner) {
+		return fmt.Errorf("unexpected end of file after %s", context)
+	}
+	if strings.TrimSpace(scanner.Text()) != "{" {
+		return fmt.Errorf("expected '{', got %q", scanner.Text())
+	}
+	return nil
+}
+
+// parseJointOffset parses an OFFSET line into a Vec3.
+func parseJointOffset(fields []string) (Vec3, error) {
+	if len(fields) < 4 {
+		return Vec3{}, fmt.Errorf("OFFSET requires 3 values, got %d", len(fields)-1)
+	}
+	offset, err := parseVec3(fields[1:4])
+	if err != nil {
+		return Vec3{}, fmt.Errorf("OFFSET parse: %w", err)
+	}
+	return offset, nil
+}
+
+// handleJointKeyword processes a single keyword within a joint block.
+// Returns (done, error) where done=true signals the block is complete.
+func handleJointKeyword(scanner *bufio.Scanner, joint *BVHJoint, fields []string) (bool, error) {
+	switch fields[0] {
+	case "OFFSET":
+		offset, err := parseJointOffset(fields)
+		if err != nil {
+			return false, err
+		}
+		joint.Offset = offset
+
+	case "CHANNELS":
+		channels, err := parseChannels(fields)
+		if err != nil {
+			return false, err
+		}
+		joint.Channels = channels
+
+	case "JOINT":
+		if len(fields) < 2 {
+			return false, errors.New("JOINT requires a name")
+		}
+		child, err := parseJoint(scanner, fields[1], joint)
+		if err != nil {
+			return false, err
+		}
+		joint.Children = append(joint.Children, child)
+
+	case "End":
+		if len(fields) >= 2 && fields[1] == "Site" {
+			endSite, err := parseEndSite(scanner, joint)
+			if err != nil {
+				return false, err
+			}
+			joint.Children = append(joint.Children, endSite)
+		}
+
+	case "}":
+		return true, nil
+	}
+	return false, nil
 }
 
 // parseJoint recursively parses a joint and its children.
@@ -128,12 +199,8 @@ func parseJoint(scanner *bufio.Scanner, name string, parent *BVHJoint) (*BVHJoin
 		Parent: parent,
 	}
 
-	// Expect opening brace
-	if !scanNonEmpty(scanner) {
-		return nil, errors.New("unexpected end of file after joint name")
-	}
-	if strings.TrimSpace(scanner.Text()) != "{" {
-		return nil, fmt.Errorf("expected '{', got %q", scanner.Text())
+	if err := expectOpenBrace(scanner, "joint name"); err != nil {
+		return nil, err
 	}
 
 	for scanner.Scan() {
@@ -146,44 +213,11 @@ func parseJoint(scanner *bufio.Scanner, name string, parent *BVHJoint) (*BVHJoin
 			continue
 		}
 
-		switch fields[0] {
-		case "OFFSET":
-			if len(fields) < 4 {
-				return nil, fmt.Errorf("OFFSET requires 3 values, got %d", len(fields)-1)
-			}
-			offset, err := parseVec3(fields[1:4])
-			if err != nil {
-				return nil, fmt.Errorf("OFFSET parse: %w", err)
-			}
-			joint.Offset = offset
-
-		case "CHANNELS":
-			channels, err := parseChannels(fields)
-			if err != nil {
-				return nil, err
-			}
-			joint.Channels = channels
-
-		case "JOINT":
-			if len(fields) < 2 {
-				return nil, errors.New("JOINT requires a name")
-			}
-			child, err := parseJoint(scanner, fields[1], joint)
-			if err != nil {
-				return nil, err
-			}
-			joint.Children = append(joint.Children, child)
-
-		case "End":
-			if len(fields) >= 2 && fields[1] == "Site" {
-				endSite, err := parseEndSite(scanner, joint)
-				if err != nil {
-					return nil, err
-				}
-				joint.Children = append(joint.Children, endSite)
-			}
-
-		case "}":
+		done, err := handleJointKeyword(scanner, joint, fields)
+		if err != nil {
+			return nil, err
+		}
+		if done {
 			return joint, nil
 		}
 	}
@@ -202,12 +236,8 @@ func parseEndSite(scanner *bufio.Scanner, parent *BVHJoint) (*BVHJoint, error) {
 		IsEndSite: true,
 	}
 
-	// Expect opening brace
-	if !scanNonEmpty(scanner) {
-		return nil, errors.New("unexpected end of file after End Site")
-	}
-	if strings.TrimSpace(scanner.Text()) != "{" {
-		return nil, fmt.Errorf("expected '{' after End Site, got %q", scanner.Text())
+	if err := expectOpenBrace(scanner, "End Site"); err != nil {
+		return nil, err
 	}
 
 	for scanner.Scan() {
@@ -222,15 +252,11 @@ func parseEndSite(scanner *bufio.Scanner, parent *BVHJoint) (*BVHJoint, error) {
 
 		switch fields[0] {
 		case "OFFSET":
-			if len(fields) < 4 {
-				return nil, fmt.Errorf("OFFSET requires 3 values, got %d", len(fields)-1)
-			}
-			offset, err := parseVec3(fields[1:4])
+			offset, err := parseJointOffset(fields)
 			if err != nil {
-				return nil, fmt.Errorf("OFFSET parse: %w", err)
+				return nil, err
 			}
 			endSite.Offset = offset
-
 		case "}":
 			return endSite, nil
 		}
@@ -283,73 +309,98 @@ func parseChannelType(name string) (BVHChannelType, error) {
 	}
 }
 
-// parseMotion parses the MOTION section of a BVH file.
-func parseMotion(scanner *bufio.Scanner, bvh *BVHFile) error {
-	// Find MOTION keyword
+// scanToMotionKeyword scans until the MOTION keyword is found.
+func scanToMotionKeyword(scanner *bufio.Scanner) error {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
 		if line == "MOTION" {
-			break
+			return nil
 		}
 	}
+	return scanner.Err()
+}
 
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	// Parse Frames: count
+// parseFrameCount parses the "Frames:" line and returns the count.
+func parseFrameCount(scanner *bufio.Scanner) (int, error) {
 	if !scanNonEmpty(scanner) {
-		return errors.New("missing Frames line")
+		return 0, errors.New("missing Frames line")
 	}
 	framesLine := strings.TrimSpace(scanner.Text())
 	if !strings.HasPrefix(framesLine, "Frames:") {
-		return fmt.Errorf("expected 'Frames:', got %q", framesLine)
+		return 0, fmt.Errorf("expected 'Frames:', got %q", framesLine)
 	}
-	frameCount, err := strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(framesLine, "Frames:")))
+	count, err := strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(framesLine, "Frames:")))
 	if err != nil {
-		return fmt.Errorf("invalid frame count: %w", err)
+		return 0, fmt.Errorf("invalid frame count: %w", err)
 	}
-	bvh.FrameCount = frameCount
+	return count, nil
+}
 
-	// Parse Frame Time: value
+// parseFrameTime parses the "Frame Time:" line and returns the value.
+func parseFrameTime(scanner *bufio.Scanner) (float32, error) {
 	if !scanNonEmpty(scanner) {
-		return errors.New("missing Frame Time line")
+		return 0, errors.New("missing Frame Time line")
 	}
 	frameTimeLine := strings.TrimSpace(scanner.Text())
 	if !strings.HasPrefix(frameTimeLine, "Frame Time:") {
-		return fmt.Errorf("expected 'Frame Time:', got %q", frameTimeLine)
+		return 0, fmt.Errorf("expected 'Frame Time:', got %q", frameTimeLine)
 	}
 	frameTime, err := strconv.ParseFloat(strings.TrimSpace(strings.TrimPrefix(frameTimeLine, "Frame Time:")), 32)
 	if err != nil {
-		return fmt.Errorf("invalid frame time: %w", err)
+		return 0, fmt.Errorf("invalid frame time: %w", err)
 	}
-	bvh.FrameTime = float32(frameTime)
+	return float32(frameTime), nil
+}
 
-	// Parse frame data
-	bvh.Frames = make([]BVHFrame, 0, frameCount)
+// parseAllFrames parses all frame data lines from the BVH file.
+func parseAllFrames(scanner *bufio.Scanner, frameCount, channelCount int) ([]BVHFrame, error) {
+	frames := make([]BVHFrame, 0, frameCount)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
-
-		frame, err := parseFrameData(line, bvh.channelCount)
+		frame, err := parseFrameData(line, channelCount)
 		if err != nil {
-			return fmt.Errorf("frame %d: %w", len(bvh.Frames)+1, err)
+			return nil, fmt.Errorf("frame %d: %w", len(frames)+1, err)
 		}
-		bvh.Frames = append(bvh.Frames, frame)
-
-		if len(bvh.Frames) >= frameCount {
+		frames = append(frames, frame)
+		if len(frames) >= frameCount {
 			break
 		}
 	}
-
-	if len(bvh.Frames) < frameCount {
-		return fmt.Errorf("expected %d frames, got %d", frameCount, len(bvh.Frames))
+	if len(frames) < frameCount {
+		return nil, fmt.Errorf("expected %d frames, got %d", frameCount, len(frames))
 	}
+	return frames, nil
+}
+
+// parseMotion parses the MOTION section of a BVH file.
+func parseMotion(scanner *bufio.Scanner, bvh *BVHFile) error {
+	if err := scanToMotionKeyword(scanner); err != nil {
+		return err
+	}
+
+	frameCount, err := parseFrameCount(scanner)
+	if err != nil {
+		return err
+	}
+	bvh.FrameCount = frameCount
+
+	frameTime, err := parseFrameTime(scanner)
+	if err != nil {
+		return err
+	}
+	bvh.FrameTime = frameTime
+
+	frames, err := parseAllFrames(scanner, frameCount, bvh.channelCount)
+	if err != nil {
+		return err
+	}
+	bvh.Frames = frames
 
 	return scanner.Err()
 }
@@ -705,78 +756,84 @@ func buildJointMappings(bvh *BVHFile) []jointMapping {
 	return mappings
 }
 
-// extractJointAnimationData extracts animation data for a single joint.
-func extractJointAnimationData(bvh *BVHFile, m jointMapping) *JointAnimationData {
-	jad := &JointAnimationData{
-		JointID: m.unpeopleID,
-	}
+// channelLayout holds the parsed channel information for a joint.
+type channelLayout struct {
+	posChans    [3]int // Index of X,Y,Z position channels
+	rotChans    [3]int // Index of X,Y,Z rotation channels
+	hasPosition bool
+	hasRotation bool
+}
 
-	hasPosition := false
-	hasRotation := false
-	var posChans [3]int // Index of X,Y,Z position channels
-	var rotChans [3]int // Index of X,Y,Z rotation channels
-	var rotOrder [3]int // Order of rotation channels (for Euler conversion)
-
-	// Determine which channels are present and their positions
-	rotIdx := 0
-	for i, ch := range m.bvhJoint.Channels {
+// parseChannelLayout determines which channels are present and their positions.
+func parseChannelLayout(channels []BVHChannelType) channelLayout {
+	var layout channelLayout
+	for i, ch := range channels {
 		switch ch {
 		case BVHChannelXPosition:
-			posChans[0] = i
-			hasPosition = true
+			layout.posChans[0] = i
+			layout.hasPosition = true
 		case BVHChannelYPosition:
-			posChans[1] = i
-			hasPosition = true
+			layout.posChans[1] = i
+			layout.hasPosition = true
 		case BVHChannelZPosition:
-			posChans[2] = i
-			hasPosition = true
+			layout.posChans[2] = i
+			layout.hasPosition = true
 		case BVHChannelXRotation:
-			rotChans[0] = i
-			rotOrder[rotIdx] = 0
-			rotIdx++
-			hasRotation = true
+			layout.rotChans[0] = i
+			layout.hasRotation = true
 		case BVHChannelYRotation:
-			rotChans[1] = i
-			rotOrder[rotIdx] = 1
-			rotIdx++
-			hasRotation = true
+			layout.rotChans[1] = i
+			layout.hasRotation = true
 		case BVHChannelZRotation:
-			rotChans[2] = i
-			rotOrder[rotIdx] = 2
-			rotIdx++
-			hasRotation = true
+			layout.rotChans[2] = i
+			layout.hasRotation = true
 		}
 	}
+	return layout
+}
 
-	// Extract position data (typically only root joint)
-	if hasPosition {
-		jad.Translations = make([]Vec3, bvh.FrameCount)
-		for f := 0; f < bvh.FrameCount; f++ {
-			jad.Translations[f] = Vec3{
-				bvh.Frames[f].ChannelValues[m.channelIdx+posChans[0]],
-				bvh.Frames[f].ChannelValues[m.channelIdx+posChans[1]],
-				bvh.Frames[f].ChannelValues[m.channelIdx+posChans[2]],
-			}
+// extractTranslations extracts position data from frames for a joint.
+func extractTranslations(bvh *BVHFile, channelIdx int, posChans [3]int) []Vec3 {
+	translations := make([]Vec3, bvh.FrameCount)
+	for f := 0; f < bvh.FrameCount; f++ {
+		translations[f] = Vec3{
+			bvh.Frames[f].ChannelValues[channelIdx+posChans[0]],
+			bvh.Frames[f].ChannelValues[channelIdx+posChans[1]],
+			bvh.Frames[f].ChannelValues[channelIdx+posChans[2]],
 		}
 	}
+	return translations
+}
 
-	// Extract rotation data
-	if hasRotation {
-		jad.Rotations = make([]Vec4, bvh.FrameCount)
-		for f := 0; f < bvh.FrameCount; f++ {
-			// Get Euler angles in degrees
-			angles := Vec3{
-				bvh.Frames[f].ChannelValues[m.channelIdx+rotChans[0]],
-				bvh.Frames[f].ChannelValues[m.channelIdx+rotChans[1]],
-				bvh.Frames[f].ChannelValues[m.channelIdx+rotChans[2]],
-			}
-			// Convert to quaternion (BVH typically uses ZXY order)
-			jad.Rotations[f] = eulerToQuaternionZXY(angles)
+// extractRotations extracts rotation data from frames for a joint.
+func extractRotations(bvh *BVHFile, channelIdx int, rotChans [3]int) []Vec4 {
+	rotations := make([]Vec4, bvh.FrameCount)
+	for f := 0; f < bvh.FrameCount; f++ {
+		angles := Vec3{
+			bvh.Frames[f].ChannelValues[channelIdx+rotChans[0]],
+			bvh.Frames[f].ChannelValues[channelIdx+rotChans[1]],
+			bvh.Frames[f].ChannelValues[channelIdx+rotChans[2]],
 		}
+		rotations[f] = eulerToQuaternionZXY(angles)
 	}
+	return rotations
+}
 
-	if !hasPosition && !hasRotation {
+// extractJointAnimationData extracts animation data for a single joint.
+func extractJointAnimationData(bvh *BVHFile, m jointMapping) *JointAnimationData {
+	layout := parseChannelLayout(m.bvhJoint.Channels)
+
+	if !layout.hasPosition && !layout.hasRotation {
 		return nil
+	}
+
+	jad := &JointAnimationData{JointID: m.unpeopleID}
+
+	if layout.hasPosition {
+		jad.Translations = extractTranslations(bvh, m.channelIdx, layout.posChans)
+	}
+	if layout.hasRotation {
+		jad.Rotations = extractRotations(bvh, m.channelIdx, layout.rotChans)
 	}
 
 	return jad

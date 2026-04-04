@@ -379,6 +379,7 @@ func generateEar(attachPoint Vec3, scale float32, isLeftEar bool) ([]Vertex, []u
 // base is the attachment point, direction is the finger pointing direction,
 // segments is a slice of segment lengths [proximal, middle, distal],
 // radius is the finger cylinder radius. Returns vertices and indices.
+// Includes knuckle bulges at joints and nail geometry at fingertip.
 func generateFinger(base, direction Vec3, segments []float32, radius float32) ([]Vertex, []uint32) {
 	if len(segments) == 0 {
 		return nil, nil
@@ -395,14 +396,59 @@ func generateFinger(base, direction Vec3, segments []float32, radius float32) ([
 		bottomR := radius * taperMult
 		topR := radius * taperMult * 0.90
 
+		// Add knuckle bulge at joint start (except for first segment)
+		if i > 0 {
+			knuckleR := bottomR * 1.15 // 15% bulge at knuckle
+			knuckleLen := length * 0.12
+			knuckleEnd := vec3Add(pos, vec3Scale(dir, knuckleLen))
+			kv, kidx := generateCylinder(pos, knuckleEnd, bottomR, knuckleR, segSegs, false, false)
+			builder.append(kv, kidx)
+			// Second part tapers back down
+			kv2, kidx2 := generateCylinder(knuckleEnd, vec3Add(knuckleEnd, vec3Scale(dir, knuckleLen)), knuckleR, bottomR, segSegs, false, false)
+			builder.append(kv2, kidx2)
+			pos = vec3Add(pos, vec3Scale(dir, knuckleLen*2))
+			length -= knuckleLen * 2
+		}
+
 		endPos := vec3Add(pos, vec3Scale(dir, length))
-		v, idx := generateCylinder(pos, endPos, bottomR, topR, segSegs, i == 0, i == len(segments)-1)
+		isLast := i == len(segments)-1
+		v, idx := generateCylinder(pos, endPos, bottomR, topR, segSegs, i == 0, isLast)
 		builder.append(v, idx)
 		pos = endPos
+
+		// Add nail at fingertip
+		if isLast {
+			nailV, nailIdx := generateNail(pos, dir, topR)
+			builder.append(nailV, nailIdx)
+		}
 	}
 
 	m := builder.build("")
 	return m.Vertices, m.Indices
+}
+
+// generateNail creates a small nail plate at the fingertip.
+// pos is the fingertip center, dir is the finger direction, radius is the finger radius.
+func generateNail(pos, dir Vec3, radius float32) ([]Vertex, []uint32) {
+	// Nail is a flattened oval on the dorsal (top) side of the fingertip
+	nailLength := radius * 0.8
+	nailWidth := radius * 0.7
+	nailHeight := radius * 0.15
+
+	// Compute perpendicular axes for nail orientation
+	// Assume Y-up world, nail sits on top of finger
+	up := Vec3{0, 1, 0}
+	if absFloat32(vec3Dot(dir, up)) > 0.9 {
+		up = Vec3{1, 0, 0}
+	}
+	side := vec3Normalize(vec3Cross(dir, up))
+	top := vec3Normalize(vec3Cross(side, dir))
+
+	// Nail center is slightly offset up from finger center
+	nailCenter := vec3Add(pos, vec3Scale(top, radius*0.5))
+
+	// Create nail as a flat box
+	return generateBox(nailCenter, nailWidth, nailHeight, nailLength)
 }
 
 // handConfig holds configuration for hand generation.
@@ -794,23 +840,55 @@ func (fb *faceBuilder) buildJawAndMouthVertices(disp faceDisplacement, idx *face
 // buildFaceTriangles creates the face triangle topology from vertex indices.
 func buildFaceTriangles(idx faceVertexIndices) []uint32 {
 	triangles := [][3]int{
-		// Brow region
-		{idx.browCenter, idx.browLeft, idx.noseBridge},
-		{idx.browCenter, idx.noseBridge, idx.browRight},
-		{idx.browLeft, idx.browOuterLeft, idx.cheekHighLeft},
-		{idx.browLeft, idx.cheekHighLeft, idx.noseBridge},
-		{idx.browRight, idx.noseBridge, idx.cheekHighRight},
-		{idx.browRight, idx.cheekHighRight, idx.browOuterRight},
+		// Brow region - connects brow to eye sockets
+		{idx.browCenter, idx.browLeft, idx.eyeUpperLeft},
+		{idx.browCenter, idx.eyeUpperLeft, idx.eyeUpperRight},
+		{idx.browCenter, idx.eyeUpperRight, idx.browRight},
+		{idx.browLeft, idx.browOuterLeft, idx.eyeOuterLeft},
+		{idx.browLeft, idx.eyeOuterLeft, idx.eyeUpperLeft},
+		{idx.browRight, idx.eyeUpperRight, idx.eyeOuterRight},
+		{idx.browRight, idx.eyeOuterRight, idx.browOuterRight},
+
+		// Left eye socket - orbital ring around recessed socket
+		{idx.eyeUpperLeft, idx.eyeOuterLeft, idx.eyeSocketLeft},
+		{idx.eyeOuterLeft, idx.eyeLowerLeft, idx.eyeSocketLeft},
+		{idx.eyeLowerLeft, idx.eyeInnerLeft, idx.eyeSocketLeft},
+		{idx.eyeInnerLeft, idx.eyeUpperLeft, idx.eyeSocketLeft},
+
+		// Right eye socket - orbital ring around recessed socket
+		{idx.eyeUpperRight, idx.eyeSocketRight, idx.eyeOuterRight},
+		{idx.eyeOuterRight, idx.eyeSocketRight, idx.eyeLowerRight},
+		{idx.eyeLowerRight, idx.eyeSocketRight, idx.eyeInnerRight},
+		{idx.eyeInnerRight, idx.eyeSocketRight, idx.eyeUpperRight},
+
+		// Bridge between eyes and nose
+		{idx.eyeInnerLeft, idx.noseBridge, idx.eyeUpperLeft},
+		{idx.eyeInnerRight, idx.eyeUpperRight, idx.noseBridge},
+		{idx.eyeInnerLeft, idx.eyeLowerLeft, idx.noseBridge},
+		{idx.eyeInnerRight, idx.noseBridge, idx.eyeLowerRight},
+
+		// Eye outer corners to cheeks
+		{idx.eyeOuterLeft, idx.browOuterLeft, idx.cheekHighLeft},
+		{idx.eyeOuterLeft, idx.cheekHighLeft, idx.eyeLowerLeft},
+		{idx.eyeOuterRight, idx.cheekHighRight, idx.browOuterRight},
+		{idx.eyeOuterRight, idx.eyeLowerRight, idx.cheekHighRight},
+
+		// Under-eye to nose region
+		{idx.eyeLowerLeft, idx.cheekHighLeft, idx.noseLeft},
+		{idx.eyeLowerLeft, idx.noseLeft, idx.noseBridge},
+		{idx.eyeLowerRight, idx.noseBridge, idx.noseRight},
+		{idx.eyeLowerRight, idx.noseRight, idx.cheekHighRight},
+
 		// Nose region
-		{idx.noseBridge, idx.cheekHighLeft, idx.noseLeft},
 		{idx.noseBridge, idx.noseLeft, idx.noseTip},
 		{idx.noseBridge, idx.noseTip, idx.noseRight},
-		{idx.noseBridge, idx.noseRight, idx.cheekHighRight},
+
 		// Cheek region
 		{idx.cheekHighLeft, idx.cheekMidLeft, idx.noseLeft},
 		{idx.noseLeft, idx.cheekMidLeft, idx.cheekLowLeft},
 		{idx.cheekHighRight, idx.noseRight, idx.cheekMidRight},
 		{idx.noseRight, idx.cheekLowRight, idx.cheekMidRight},
+
 		// Mouth area
 		{idx.noseLeft, idx.cheekLowLeft, idx.mouthLeft},
 		{idx.noseLeft, idx.mouthLeft, idx.noseTip},
@@ -818,6 +896,7 @@ func buildFaceTriangles(idx faceVertexIndices) []uint32 {
 		{idx.noseTip, idx.mouthCenter, idx.mouthRight},
 		{idx.noseTip, idx.mouthRight, idx.noseRight},
 		{idx.noseRight, idx.mouthRight, idx.cheekLowRight},
+
 		// Jaw region
 		{idx.cheekMidLeft, idx.jawCornerLeft, idx.cheekLowLeft},
 		{idx.cheekLowLeft, idx.jawCornerLeft, idx.mandibleLeft},
@@ -869,7 +948,7 @@ func generateFaceMesh(
 	disp := combineFaceDisplacements(fs, j, br)
 
 	fb := &faceBuilder{
-		verts:         make([]Vertex, 0, 32),
+		verts:         make([]Vertex, 0, 48), // Increased capacity for eye sockets
 		headCenter:    headCenter,
 		headRX:        headRX,
 		headRY:        headRY,
@@ -881,6 +960,7 @@ func generateFaceMesh(
 
 	var idx faceVertexIndices
 	fb.buildBrowVertices(disp, &idx)
+	fb.buildEyeSocketVertices(&idx)
 	fb.buildNoseVertices(&idx)
 	fb.buildCheekVertices(disp, &idx)
 	fb.buildJawAndMouthVertices(disp, &idx)

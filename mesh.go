@@ -183,6 +183,10 @@ func vec3Len(a Vec3) float32 {
 	return float32(math.Sqrt(float64(a[0]*a[0] + a[1]*a[1] + a[2]*a[2])))
 }
 
+func vec3Dot(a, b Vec3) float32 {
+	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+}
+
 func vec3Normalize(a Vec3) Vec3 {
 	l := vec3Len(a)
 	if l < 1e-7 {

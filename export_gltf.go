@@ -30,8 +30,12 @@ type GLTFExportOptions struct {
 	IncludeTangents bool
 	// IncludeSkinning includes joint IDs and weights (default: false)
 	IncludeSkinning bool
+	// IncludeSlots includes attachment slot nodes (default: false)
+	IncludeSlots bool
 	// AssetName sets the mesh name in the glTF asset
 	AssetName string
+	// Slots provides attachment slot data when IncludeSlots is true
+	Slots *AttachmentSlots
 }
 
 // DefaultGLTFOptions returns sensible default export options.
@@ -92,8 +96,12 @@ type gltfScene struct {
 }
 
 type gltfNode struct {
-	Name string `json:"name,omitempty"`
-	Mesh int    `json:"mesh"`
+	Name        string      `json:"name,omitempty"`
+	Mesh        *int        `json:"mesh,omitempty"`
+	Translation *[3]float32 `json:"translation,omitempty"`
+	Rotation    *[4]float32 `json:"rotation,omitempty"`
+	Scale       *[3]float32 `json:"scale,omitempty"`
+	Children    []int       `json:"children,omitempty"`
 }
 
 type gltfMesh struct {
@@ -391,6 +399,33 @@ func appendVec4(buf []byte, v [4]float32) []byte {
 
 // buildGLTFBase creates the glTF root structure with asset, scene, and mesh data.
 func buildGLTFBase(br *gltfBuildResult, opts GLTFExportOptions) *gltfRoot {
+	meshIdx := 0
+	rootNode := gltfNode{
+		Name: opts.AssetName,
+		Mesh: &meshIdx,
+	}
+
+	nodes := []gltfNode{rootNode}
+	sceneNodes := []int{0}
+
+	// Add attachment slot nodes if requested
+	if opts.IncludeSlots && opts.Slots != nil {
+		for i, slot := range opts.Slots.Slots {
+			pos := [3]float32{slot.Position[0], slot.Position[1], slot.Position[2]}
+			rot := [4]float32{slot.Rotation[0], slot.Rotation[1], slot.Rotation[2], slot.Rotation[3]}
+			scale := [3]float32{slot.Scale[0], slot.Scale[1], slot.Scale[2]}
+
+			slotNode := gltfNode{
+				Name:        "Slot_" + slot.Name,
+				Translation: &pos,
+				Rotation:    &rot,
+				Scale:       &scale,
+			}
+			nodes = append(nodes, slotNode)
+			sceneNodes = append(sceneNodes, i+1)
+		}
+	}
+
 	return &gltfRoot{
 		Asset: gltfAsset{
 			Version:   "2.0",
@@ -399,12 +434,9 @@ func buildGLTFBase(br *gltfBuildResult, opts GLTFExportOptions) *gltfRoot {
 		Scene: 0,
 		Scenes: []gltfScene{{
 			Name:  "Scene",
-			Nodes: []int{0},
+			Nodes: sceneNodes,
 		}},
-		Nodes: []gltfNode{{
-			Name: opts.AssetName,
-			Mesh: 0,
-		}},
+		Nodes: nodes,
 		Meshes: []gltfMesh{{
 			Name: opts.AssetName,
 			Primitives: []gltfPrimitive{{

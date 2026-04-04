@@ -397,10 +397,10 @@ func buildAnimatedGLTFStructure(br *animatedBuildResult, result *AnimatedMeshRes
 	materialIdx := 0
 
 	return &gltfAnimatedRoot{
-		Asset:       gltfAsset{Version: "2.0", Generator: "unpeople"},
-		Scene:       0,
-		Scenes:      []gltfScene{{Name: "Scene", Nodes: sceneNodes}},
-		Nodes:       nodes,
+		Asset:  gltfAsset{Version: "2.0", Generator: "unpeople"},
+		Scene:  0,
+		Scenes: []gltfScene{{Name: "Scene", Nodes: sceneNodes}},
+		Nodes:  nodes,
 		Meshes: []gltfMesh{{
 			Name: opts.AssetName,
 			Primitives: []gltfPrimitive{{

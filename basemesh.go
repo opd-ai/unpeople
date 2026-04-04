@@ -218,102 +218,103 @@ type bodyLayout struct {
 	earScale   float32 // Overall ear size multiplier
 }
 
+// initHeadLayout initializes head and neck dimensions for the body layout.
+func initHeadLayout(l *bodyLayout) {
+	l.headCenter = Vec3{0, defaultHeadCenterY, 0}
+	l.headRX = defaultHeadRX
+	l.headRY = defaultHeadRY
+	l.headRZ = defaultHeadRZ
+	l.neckBottom = Vec3{0, defaultNeckBottomY, 0}
+	l.neckTop = Vec3{0, defaultNeckTopY, 0}
+	l.neckRadius = defaultNeckRadius
+}
+
+// initTorsoLayout initializes chest, abdomen, and hips dimensions.
+func initTorsoLayout(l *bodyLayout) {
+	l.chestBottom = Vec3{0, defaultChestBottomY, 0}
+	l.chestTop = Vec3{0, defaultChestTopY, 0}
+	l.chestRX = defaultChestRX
+	l.chestRZ = defaultChestRZ
+	l.abdomenBottom = Vec3{0, defaultAbdomenBottomY, 0}
+	l.abdomenTop = Vec3{0, defaultAbdomenTopY, 0}
+	l.abdomenRX = defaultAbdomenRX
+	l.abdomenRZ = defaultAbdomenRZ
+	l.hipsBottom = Vec3{0, defaultHipsBottomY, 0}
+	l.hipsTop = Vec3{0, defaultHipsTopY, 0}
+	l.hipsRX = defaultHipsRX
+	l.hipsRZ = defaultHipsRZ
+}
+
+// initArmLayout initializes upper arms, forearms, hands, and fingers.
+func initArmLayout(l *bodyLayout) {
+	l.upperArmTopL = Vec3{-defaultShoulderX, defaultUpperArmTopY, 0}
+	l.upperArmBottomL = Vec3{-defaultShoulderX, defaultUpperArmBottomY, 0}
+	l.upperArmTopR = Vec3{defaultShoulderX, defaultUpperArmTopY, 0}
+	l.upperArmBottomR = Vec3{defaultShoulderX, defaultUpperArmBottomY, 0}
+	l.upperArmRadius = defaultUpperArmRadius
+	l.forearmTopL = Vec3{-defaultShoulderX, defaultUpperArmBottomY, 0}
+	l.forearmBottomL = Vec3{-defaultShoulderX, defaultForearmBottomY, 0}
+	l.forearmTopR = Vec3{defaultShoulderX, defaultUpperArmBottomY, 0}
+	l.forearmBottomR = Vec3{defaultShoulderX, defaultForearmBottomY, 0}
+	l.forearmRadius = defaultForearmRadius
+	l.handCenterL = Vec3{-defaultShoulderX, defaultHandCenterY, 0}
+	l.handCenterR = Vec3{defaultShoulderX, defaultHandCenterY, 0}
+	l.handHW = defaultHandHW
+	l.handHH = defaultHandHH
+	l.handHD = defaultHandHD
+	l.fingerRadius = defaultFingerRadius
+	l.proximalLength = defaultProximalLength
+	l.middleLength = defaultMiddleLength
+	l.distalLength = defaultDistalLength
+	l.thumbProximalLength = defaultThumbProximalLength
+	l.thumbDistalLength = defaultThumbDistalLength
+	l.fingerSpacing = defaultFingerSpacing
+	l.fingerLengthMult = 1.0
+}
+
+// initLegLayout initializes upper legs, lower legs, feet, and toes.
+func initLegLayout(l *bodyLayout) {
+	l.upperLegTopL = Vec3{-defaultHipSocketX, defaultUpperLegTopY, 0}
+	l.upperLegBottomL = Vec3{-defaultHipSocketX, defaultUpperLegBottomY, 0}
+	l.upperLegTopR = Vec3{defaultHipSocketX, defaultUpperLegTopY, 0}
+	l.upperLegBottomR = Vec3{defaultHipSocketX, defaultUpperLegBottomY, 0}
+	l.upperLegRadius = defaultUpperLegRadius
+	l.lowerLegTopL = Vec3{-defaultHipSocketX, defaultUpperLegBottomY, 0}
+	l.lowerLegBottomL = Vec3{-defaultHipSocketX, defaultLowerLegBottomY, 0}
+	l.lowerLegTopR = Vec3{defaultHipSocketX, defaultUpperLegBottomY, 0}
+	l.lowerLegBottomR = Vec3{defaultHipSocketX, defaultLowerLegBottomY, 0}
+	l.lowerLegRadius = defaultLowerLegRadius
+	l.footCenterL = Vec3{-defaultHipSocketX, defaultFootCenterY, defaultFootCenterZ}
+	l.footCenterR = Vec3{defaultHipSocketX, defaultFootCenterY, defaultFootCenterZ}
+	l.footHW = defaultFootHW
+	l.footHH = defaultFootHH
+	l.footHD = defaultFootHD
+	l.toeRadius = defaultToeRadius
+	l.toeProximalLength = defaultToeProximalLength
+	l.toeMiddleLength = defaultToeMiddleLength
+	l.toeDistalLength = defaultToeDistalLength
+	l.bigToeProximal = defaultBigToeProximal
+	l.bigToeDistal = defaultBigToeDistal
+	l.toeSpacing = defaultToeSpacing
+}
+
+// initEarLayout initializes ear attachment points and scale.
+func initEarLayout(l *bodyLayout) {
+	earY := float32(defaultHeadCenterY + defaultHeadRY*defaultEarYRatio)
+	l.earAttachL = Vec3{-defaultHeadRX, earY, 0}
+	l.earAttachR = Vec3{defaultHeadRX, earY, 0}
+	l.earScale = defaultEarScale
+}
+
 // defaultBodyLayout returns a neutral 1.75 m adult humanoid in T-pose.
 func defaultBodyLayout() bodyLayout {
-	return bodyLayout{
-		totalHeight: defaultTotalHeight,
-
-		headCenter: Vec3{0, defaultHeadCenterY, 0},
-		headRX:     defaultHeadRX,
-		headRY:     defaultHeadRY,
-		headRZ:     defaultHeadRZ,
-
-		neckBottom: Vec3{0, defaultNeckBottomY, 0},
-		neckTop:    Vec3{0, defaultNeckTopY, 0},
-		neckRadius: defaultNeckRadius,
-
-		chestBottom: Vec3{0, defaultChestBottomY, 0},
-		chestTop:    Vec3{0, defaultChestTopY, 0},
-		chestRX:     defaultChestRX,
-		chestRZ:     defaultChestRZ,
-
-		abdomenBottom: Vec3{0, defaultAbdomenBottomY, 0},
-		abdomenTop:    Vec3{0, defaultAbdomenTopY, 0},
-		abdomenRX:     defaultAbdomenRX,
-		abdomenRZ:     defaultAbdomenRZ,
-
-		hipsBottom: Vec3{0, defaultHipsBottomY, 0},
-		hipsTop:    Vec3{0, defaultHipsTopY, 0},
-		hipsRX:     defaultHipsRX,
-		hipsRZ:     defaultHipsRZ,
-
-		upperArmTopL:    Vec3{-defaultShoulderX, defaultUpperArmTopY, 0},
-		upperArmBottomL: Vec3{-defaultShoulderX, defaultUpperArmBottomY, 0},
-		upperArmTopR:    Vec3{defaultShoulderX, defaultUpperArmTopY, 0},
-		upperArmBottomR: Vec3{defaultShoulderX, defaultUpperArmBottomY, 0},
-		upperArmRadius:  defaultUpperArmRadius,
-
-		forearmTopL:    Vec3{-defaultShoulderX, defaultUpperArmBottomY, 0},
-		forearmBottomL: Vec3{-defaultShoulderX, defaultForearmBottomY, 0},
-		forearmTopR:    Vec3{defaultShoulderX, defaultUpperArmBottomY, 0},
-		forearmBottomR: Vec3{defaultShoulderX, defaultForearmBottomY, 0},
-		forearmRadius:  defaultForearmRadius,
-
-		handCenterL: Vec3{-defaultShoulderX, defaultHandCenterY, 0},
-		handCenterR: Vec3{defaultShoulderX, defaultHandCenterY, 0},
-		handHW:      defaultHandHW,
-		handHH:      defaultHandHH,
-		handHD:      defaultHandHD,
-
-		fingerRadius:        defaultFingerRadius,
-		proximalLength:      defaultProximalLength,
-		middleLength:        defaultMiddleLength,
-		distalLength:        defaultDistalLength,
-		thumbProximalLength: defaultThumbProximalLength,
-		thumbDistalLength:   defaultThumbDistalLength,
-		fingerSpacing:       defaultFingerSpacing,
-		fingerLengthMult:    1.0,
-
-		upperLegTopL:    Vec3{-defaultHipSocketX, defaultUpperLegTopY, 0},
-		upperLegBottomL: Vec3{-defaultHipSocketX, defaultUpperLegBottomY, 0},
-		upperLegTopR:    Vec3{defaultHipSocketX, defaultUpperLegTopY, 0},
-		upperLegBottomR: Vec3{defaultHipSocketX, defaultUpperLegBottomY, 0},
-		upperLegRadius:  defaultUpperLegRadius,
-
-		lowerLegTopL:    Vec3{-defaultHipSocketX, defaultUpperLegBottomY, 0},
-		lowerLegBottomL: Vec3{-defaultHipSocketX, defaultLowerLegBottomY, 0},
-		lowerLegTopR:    Vec3{defaultHipSocketX, defaultUpperLegBottomY, 0},
-		lowerLegBottomR: Vec3{defaultHipSocketX, defaultLowerLegBottomY, 0},
-		lowerLegRadius:  defaultLowerLegRadius,
-
-		footCenterL: Vec3{-defaultHipSocketX, defaultFootCenterY, defaultFootCenterZ},
-		footCenterR: Vec3{defaultHipSocketX, defaultFootCenterY, defaultFootCenterZ},
-		footHW:      defaultFootHW,
-		footHH:      defaultFootHH,
-		footHD:      defaultFootHD,
-
-		// Toe dimensions
-		toeRadius:         defaultToeRadius,
-		toeProximalLength: defaultToeProximalLength,
-		toeMiddleLength:   defaultToeMiddleLength,
-		toeDistalLength:   defaultToeDistalLength,
-		bigToeProximal:    defaultBigToeProximal,
-		bigToeDistal:      defaultBigToeDistal,
-		toeSpacing:        defaultToeSpacing,
-
-		// Ears attach to the sides of the head at roughly eye level
-		earAttachL: Vec3{
-			-defaultHeadRX,
-			defaultHeadCenterY + defaultHeadRY*defaultEarYRatio,
-			0,
-		},
-		earAttachR: Vec3{
-			defaultHeadRX,
-			defaultHeadCenterY + defaultHeadRY*defaultEarYRatio,
-			0,
-		},
-		earScale: defaultEarScale,
-	}
+	l := bodyLayout{totalHeight: defaultTotalHeight}
+	initHeadLayout(&l)
+	initTorsoLayout(&l)
+	initArmLayout(&l)
+	initLegLayout(&l)
+	initEarLayout(&l)
+	return l
 }
 
 // meshBuildContext holds state for mesh assembly operations.

@@ -170,49 +170,73 @@ func speciesBuildInteraction(s Species, b Build) (chestMult, limbMult float32) {
 	return 1.0, 1.0
 }
 
+// applyMuscularBuild applies muscular body proportions with species adjustments.
+func applyMuscularBuild(l *bodyLayout, chestMult, limbMult float32) {
+	l.chestRX *= 1.28 * chestMult
+	l.chestRZ *= 1.20 * chestMult
+	l.abdomenRX *= 1.10 * chestMult
+	l.upperArmRadius *= 1.30 * limbMult
+	l.forearmRadius *= 1.20 * limbMult
+	l.upperLegRadius *= 1.25 * limbMult
+	l.lowerLegRadius *= 1.20 * limbMult
+	l.neckRadius *= 1.15 * chestMult
+}
+
+// applyAthleticBuild applies athletic body proportions.
+func applyAthleticBuild(l *bodyLayout) {
+	l.chestRX *= 1.12
+	l.upperArmRadius *= 1.12
+	l.upperLegRadius *= 1.10
+}
+
+// applyLeanBuild applies lean body proportions with species adjustments.
+func applyLeanBuild(l *bodyLayout, chestMult, limbMult float32) {
+	l.chestRX *= 0.90 * chestMult
+	l.abdomenRX *= 0.88 * chestMult
+	l.hipsRX *= 0.92 * chestMult
+	l.upperArmRadius *= 0.88 * limbMult
+	l.upperLegRadius *= 0.88 * limbMult
+	l.lowerLegRadius *= 0.90 * limbMult
+}
+
+// applyStockyBuild applies stocky body proportions.
+func applyStockyBuild(l *bodyLayout) {
+	l.chestRX *= 1.15
+	l.abdomenRX *= 1.15
+	l.hipsRX *= 1.18
+	l.upperLegRadius *= 1.15
+	l.lowerLegRadius *= 1.10
+}
+
+// applyFragileBuild applies fragile body proportions with species adjustments.
+func applyFragileBuild(l *bodyLayout, chestMult, limbMult float32) {
+	l.chestRX *= 0.80 * chestMult
+	l.chestRZ *= 0.85 * chestMult
+	l.abdomenRX *= 0.82 * chestMult
+	l.hipsRX *= 0.85 * chestMult
+	l.upperArmRadius *= 0.75 * limbMult
+	l.forearmRadius *= 0.72 * limbMult
+	l.upperLegRadius *= 0.78 * limbMult
+	l.lowerLegRadius *= 0.75 * limbMult
+	l.neckRadius *= 0.85 * chestMult
+}
+
 func applyBuild(l *bodyLayout, b Build, s Species) {
-	// Get species-aware adjustment multipliers
 	chestMult, limbMult := speciesBuildInteraction(s, b)
 
 	switch b {
 	case BuildMuscular:
-		l.chestRX *= 1.28 * chestMult
-		l.chestRZ *= 1.20 * chestMult
-		l.abdomenRX *= 1.10 * chestMult
-		l.upperArmRadius *= 1.30 * limbMult
-		l.forearmRadius *= 1.20 * limbMult
-		l.upperLegRadius *= 1.25 * limbMult
-		l.lowerLegRadius *= 1.20 * limbMult
-		l.neckRadius *= 1.15 * chestMult
+		applyMuscularBuild(l, chestMult, limbMult)
 	case BuildAthletic:
-		l.chestRX *= 1.12
-		l.upperArmRadius *= 1.12
-		l.upperLegRadius *= 1.10
+		applyAthleticBuild(l)
 	case BuildAverage:
-		// default
+		// default - no modifications
 	case BuildLean:
-		l.chestRX *= 0.90 * chestMult
-		l.abdomenRX *= 0.88 * chestMult
-		l.hipsRX *= 0.92 * chestMult
-		l.upperArmRadius *= 0.88 * limbMult
-		l.upperLegRadius *= 0.88 * limbMult
-		l.lowerLegRadius *= 0.90 * limbMult
+		applyLeanBuild(l, chestMult, limbMult)
 	case BuildStocky:
-		l.chestRX *= 1.15
-		l.abdomenRX *= 1.15
-		l.hipsRX *= 1.18
-		l.upperLegRadius *= 1.15
-		l.lowerLegRadius *= 1.10
+		applyStockyBuild(l)
 	case BuildFragile:
-		l.chestRX *= 0.80 * chestMult
-		l.chestRZ *= 0.85 * chestMult
-		l.abdomenRX *= 0.82 * chestMult
-		l.hipsRX *= 0.85 * chestMult
-		l.upperArmRadius *= 0.75 * limbMult
-		l.forearmRadius *= 0.72 * limbMult
-		l.upperLegRadius *= 0.78 * limbMult
-		l.lowerLegRadius *= 0.75 * limbMult
-		l.neckRadius *= 0.85 * chestMult
+		applyFragileBuild(l, chestMult, limbMult)
 	}
 }
 

@@ -321,6 +321,9 @@ type Params struct {
 
 	// Skeleton options
 	SkeletonPose SkeletonPose // Bind pose for skeleton export (T-pose or A-pose)
+
+	// Mesh processing options
+	MergeVertices bool // If true, merge boundary vertices to eliminate seams
 }
 
 // DefaultParams returns a Params representing a generic Adult Human with

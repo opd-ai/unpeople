@@ -117,13 +117,30 @@ type meshBuilder struct {
 	indices  []uint32
 }
 
+// meshBuilderEstimatedCapacity provides initial capacity hints based on typical
+// humanoid mesh sizes (~700 vertices, ~3500 indices).
+const (
+	meshBuilderVertexCapacity = 800
+	meshBuilderIndexCapacity  = 4000
+)
+
+// newMeshBuilder creates a meshBuilder with pre-allocated capacity to reduce
+// allocations during mesh assembly.
+func newMeshBuilder() meshBuilder {
+	return meshBuilder{
+		vertices: make([]Vertex, 0, meshBuilderVertexCapacity),
+		indices:  make([]uint32, 0, meshBuilderIndexCapacity),
+	}
+}
+
 func (b *meshBuilder) append(verts []Vertex, idxs []uint32) {
 	base := uint32(len(b.vertices))
 	b.vertices = append(b.vertices, verts...)
 
 	// Pre-grow the indices slice to avoid repeated allocations in the loop
 	if cap(b.indices)-len(b.indices) < len(idxs) {
-		newIndices := make([]uint32, len(b.indices), len(b.indices)+len(idxs))
+		newCap := len(b.indices) + len(idxs)*2 // Double the extra capacity
+		newIndices := make([]uint32, len(b.indices), newCap)
 		copy(newIndices, b.indices)
 		b.indices = newIndices
 	}

@@ -419,7 +419,7 @@ func (ctx *meshBuildContext) buildEars(layout bodyLayout) {
 // The mesh key is used by the Kaiju engine's mesh cache.
 // opts controls optional features like skull cap and face mesh parameters.
 func buildMesh(layout bodyLayout, key string, opts buildOptions) *Mesh {
-	var builder meshBuilder
+	builder := newMeshBuilder()
 	ctx := &meshBuildContext{
 		builder:  &builder,
 		atlas:    defaultUVAtlas(),

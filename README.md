@@ -71,7 +71,7 @@ Human, Elf, Dwarf, Gnome, Halfling, Goblin, Kobold, Orc, Troll, Ogre
 - **Binary** — Compact UNPM format for fast loading
 
 ### Advanced Features
-- **Skeleton** — 56-joint hierarchy for animation
+- **Skeleton** — 52-joint hierarchy for animation
 - **Skinning** — Vertex weights for skeletal deformation
 - **Morph Targets** — 19 blend shapes (facial expressions, body morphs)
 - **LOD Generation** — 3 detail levels (100%/50%/25%)

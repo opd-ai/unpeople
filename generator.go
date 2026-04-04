@@ -41,10 +41,14 @@ func (g *Generator) Generate(p Params) (*Mesh, error) {
 
 	layout := computeBodyLayout(&p, rng)
 
-	// Convert bool to int for key encoding
+	// Convert bools to int for key encoding
 	hairSlot := 0
 	if p.HasHairSlot {
 		hairSlot = 1
+	}
+	mergeVerts := 0
+	if p.MergeVertices {
+		mergeVerts = 1
 	}
 
 	// Mesh key encodes all geometry-affecting parameters so that the Kaiju
@@ -54,12 +58,12 @@ func (g *Generator) Generate(p Params) (*Mesh, error) {
 		"humanoid_sp%d_ht%d_bl%d_pr%d_ph%d_ag%d_po%d"+
 			"_fs%d_jw%d_br%d_er%d"+
 			"_sw%d_hw%d_ll%d_nl%d"+
-			"_hs%d_fl%d_ft%d_hr%d_sk%d_ut%d_se%d",
+			"_hs%d_fl%d_ft%d_hr%d_sk%d_ut%d_se%d_mv%d",
 		p.Species, p.Height, p.Build, p.Proportions, p.Phenotype, p.Age, p.Posture,
 		p.FaceShape, p.Jaw, p.Brow, p.Ears,
 		p.ShoulderWidth, p.HipWidth, p.LimbLength, p.NeckLength,
 		p.HandSize, p.FingerLength, p.FootSize, hairSlot,
-		p.SkinTone, p.SkinUndertone, p.Seed,
+		p.SkinTone, p.SkinUndertone, p.Seed, mergeVerts,
 	)
 
 	opts := buildOptions{
@@ -70,5 +74,13 @@ func (g *Generator) Generate(p Params) (*Mesh, error) {
 		skinColor:   ComputeSkinColor(p.SkinTone, p.SkinUndertone),
 	}
 
-	return buildMesh(layout, key, opts), nil
+	mesh := buildMesh(layout, key, opts)
+
+	// Apply vertex merging if requested
+	if p.MergeVertices {
+		epsilon := scaledEpsilon(layout.totalHeight)
+		mesh = MergeNearbyVertices(mesh, epsilon)
+	}
+
+	return mesh, nil
 }

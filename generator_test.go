@@ -2923,3 +2923,276 @@ func TestDefaultGLTFOptions(t *testing.T) {
 		t.Error("IncludeSkinning should be false by default")
 	}
 }
+
+// ─── Vertex Merging Tests ────────────────────────────────────────────────────
+
+func TestFindBoundaryVertices(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Seed = 42
+
+	mesh, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Find vertices within 5mm threshold
+	pairs := unpeople.FindBoundaryVertices(mesh, 0.005)
+
+	// Should find some boundary pairs in a multi-part mesh
+	if len(pairs) == 0 {
+		t.Error("expected to find boundary vertex pairs, got 0")
+	}
+
+	// Verify all pairs have IndexA < IndexB
+	for i, pair := range pairs {
+		if pair.IndexA >= pair.IndexB {
+			t.Errorf("pair[%d]: IndexA (%d) >= IndexB (%d)", i, pair.IndexA, pair.IndexB)
+		}
+		if pair.Dist >= 0.005 {
+			t.Errorf("pair[%d]: distance %f >= threshold 0.005", i, pair.Dist)
+		}
+	}
+}
+
+func TestMergeNearbyVertices(t *testing.T) {
+	g := unpeople.NewGenerator()
+	p := unpeople.DefaultParams()
+	p.Seed = 42
+
+	mesh, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	originalVertCount := len(mesh.Vertices)
+	originalIdxCount := len(mesh.Indices)
+
+	merged := unpeople.MergeNearbyVertices(mesh, 0.002)
+
+	// Merged mesh should have fewer or equal vertices
+	if len(merged.Vertices) > originalVertCount {
+		t.Errorf("merged vertex count %d > original %d", len(merged.Vertices), originalVertCount)
+	}
+
+	// Index count should stay the same
+	if len(merged.Indices) != originalIdxCount {
+		t.Errorf("index count changed: %d -> %d", originalIdxCount, len(merged.Indices))
+	}
+
+	// All indices should be valid
+	for i, idx := range merged.Indices {
+		if int(idx) >= len(merged.Vertices) {
+			t.Errorf("invalid index at position %d: %d >= %d vertices", i, idx, len(merged.Vertices))
+		}
+	}
+
+	// Key should indicate merging
+	if !strings.Contains(merged.Key, "_merged") {
+		t.Errorf("merged mesh key should contain '_merged': got %q", merged.Key)
+	}
+}
+
+func TestGenerateWithMerge(t *testing.T) {
+	g := unpeople.NewGenerator()
+
+	// Generate without merge
+	p1 := unpeople.DefaultParams()
+	p1.Seed = 42
+	p1.MergeVertices = false
+
+	mesh1, err := g.Generate(p1)
+	if err != nil {
+		t.Fatalf("Generate without merge failed: %v", err)
+	}
+
+	// Generate with merge
+	p2 := unpeople.DefaultParams()
+	p2.Seed = 42
+	p2.MergeVertices = true
+
+	mesh2, err := g.Generate(p2)
+	if err != nil {
+		t.Fatalf("Generate with merge failed: %v", err)
+	}
+
+	// Merged mesh should have fewer or equal vertices
+	if len(mesh2.Vertices) > len(mesh1.Vertices) {
+		t.Errorf("merged mesh has more vertices: %d > %d", len(mesh2.Vertices), len(mesh1.Vertices))
+	}
+
+	// Keys should differ based on merge flag
+	if mesh1.Key == mesh2.Key {
+		t.Error("mesh keys should differ based on MergeVertices flag")
+	}
+}
+
+func TestMergedMeshPreservesDeterminism(t *testing.T) {
+	g := unpeople.NewGenerator()
+
+	p := unpeople.DefaultParams()
+	p.Seed = 12345
+	p.MergeVertices = true
+
+	mesh1, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("first Generate failed: %v", err)
+	}
+
+	mesh2, err := g.Generate(p)
+	if err != nil {
+		t.Fatalf("second Generate failed: %v", err)
+	}
+
+	if len(mesh1.Vertices) != len(mesh2.Vertices) {
+		t.Fatalf("vertex count mismatch: %d vs %d", len(mesh1.Vertices), len(mesh2.Vertices))
+	}
+
+	if len(mesh1.Indices) != len(mesh2.Indices) {
+		t.Fatalf("index count mismatch: %d vs %d", len(mesh1.Indices), len(mesh2.Indices))
+	}
+
+	for i := range mesh1.Vertices {
+		if mesh1.Vertices[i] != mesh2.Vertices[i] {
+			t.Errorf("vertex[%d] differs between two calls with same params", i)
+		}
+	}
+
+	for i := range mesh1.Indices {
+		if mesh1.Indices[i] != mesh2.Indices[i] {
+			t.Errorf("index[%d] differs between two calls with same params", i)
+		}
+	}
+}
+
+func TestMergedMeshIsValid(t *testing.T) {
+	g := unpeople.NewGenerator()
+
+	// Test with multiple species to ensure merging works across different body types
+	species := []unpeople.Species{
+		unpeople.SpeciesHuman,
+		unpeople.SpeciesElf,
+		unpeople.SpeciesDwarf,
+		unpeople.SpeciesOrc,
+	}
+
+	speciesNames := []string{"Human", "Elf", "Dwarf", "Orc"}
+
+	for i, sp := range species {
+		t.Run(speciesNames[i], func(t *testing.T) {
+			p := unpeople.DefaultParams()
+			p.Species = sp
+			p.MergeVertices = true
+
+			mesh, err := g.Generate(p)
+			if err != nil {
+				t.Fatalf("Generate failed for %v: %v", sp, err)
+			}
+
+			// Verify mesh validity
+			if len(mesh.Vertices) == 0 {
+				t.Error("mesh has no vertices")
+			}
+			if len(mesh.Indices) == 0 {
+				t.Error("mesh has no indices")
+			}
+			if len(mesh.Indices)%3 != 0 {
+				t.Errorf("index count %d not divisible by 3", len(mesh.Indices))
+			}
+
+			// Verify all indices are valid
+			maxIdx := uint32(len(mesh.Vertices))
+			for i, idx := range mesh.Indices {
+				if idx >= maxIdx {
+					t.Errorf("index[%d] = %d out of bounds (max: %d)", i, idx, maxIdx-1)
+				}
+			}
+
+			// Verify normals are normalized
+			for i, v := range mesh.Vertices {
+				n := v.Normal
+				lenSq := n[0]*n[0] + n[1]*n[1] + n[2]*n[2]
+				if lenSq < 0.99 || lenSq > 1.01 {
+					t.Errorf("vertex[%d] normal not normalized: length² = %f", i, lenSq)
+				}
+			}
+		})
+	}
+}
+
+func TestStitchEdgeLoops(t *testing.T) {
+	// Create a simple test mesh with two edge loops
+	vertices := make([]unpeople.Vertex, 8)
+	for i := 0; i < 4; i++ {
+		// First loop at y=0
+		vertices[i] = unpeople.Vertex{
+			Position: unpeople.Vec3{float32(i), 0, 0},
+			Normal:   unpeople.Vec3{0, 1, 0},
+		}
+		// Second loop at y=1
+		vertices[i+4] = unpeople.Vertex{
+			Position: unpeople.Vec3{float32(i), 1, 0},
+			Normal:   unpeople.Vec3{0, 1, 0},
+		}
+	}
+
+	mesh := &unpeople.Mesh{
+		Key:      "test",
+		Vertices: vertices,
+		Indices:  []uint32{},
+	}
+
+	loop1 := []uint32{0, 1, 2, 3}
+	loop2 := []uint32{4, 5, 6, 7}
+
+	err := unpeople.StitchEdgeLoops(mesh, loop1, loop2)
+	if err != nil {
+		t.Fatalf("StitchEdgeLoops failed: %v", err)
+	}
+
+	// Should have 8 triangles (2 per edge segment, 4 segments in a quad loop)
+	expectedTriangles := 8
+	expectedIndices := expectedTriangles * 3
+	if len(mesh.Indices) != expectedIndices {
+		t.Errorf("expected %d indices, got %d", expectedIndices, len(mesh.Indices))
+	}
+
+	// Verify all indices are valid
+	for i, idx := range mesh.Indices {
+		if int(idx) >= len(mesh.Vertices) {
+			t.Errorf("invalid index at position %d: %d", i, idx)
+		}
+	}
+}
+
+func TestStitchEdgeLoopsErrors(t *testing.T) {
+	mesh := &unpeople.Mesh{
+		Key:      "test",
+		Vertices: make([]unpeople.Vertex, 10),
+		Indices:  []uint32{},
+	}
+
+	// Test mismatched loop lengths
+	err := unpeople.StitchEdgeLoops(mesh, []uint32{0, 1, 2}, []uint32{3, 4})
+	if err == nil {
+		t.Error("expected error for mismatched loop lengths")
+	}
+
+	// Test loop too short
+	err = unpeople.StitchEdgeLoops(mesh, []uint32{0, 1}, []uint32{2, 3})
+	if err == nil {
+		t.Error("expected error for loops shorter than 3 vertices")
+	}
+
+	// Test out of bounds indices
+	err = unpeople.StitchEdgeLoops(mesh, []uint32{0, 1, 100}, []uint32{3, 4, 5})
+	if err == nil {
+		t.Error("expected error for out of bounds index")
+	}
+
+	// Test nil mesh
+	err = unpeople.StitchEdgeLoops(nil, []uint32{0, 1, 2}, []uint32{3, 4, 5})
+	if err == nil {
+		t.Error("expected error for nil mesh")
+	}
+}

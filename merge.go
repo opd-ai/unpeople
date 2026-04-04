@@ -131,6 +131,46 @@ func vec3Dist(a, b Vec3) float32 {
 	return float32(math.Sqrt(float64(dx*dx + dy*dy + dz*dz)))
 }
 
+// buildBoundaryGrid builds a spatial grid from mesh vertices.
+func buildBoundaryGrid(vertices []Vertex, threshold float32) *spatialGrid {
+	grid := newSpatialGrid(threshold*2, len(vertices))
+	for i, v := range vertices {
+		grid.insert(v.Position, i)
+	}
+	return grid
+}
+
+// pairKey creates a unique key for a vertex pair where i < j.
+func pairKey(i, j int) uint64 {
+	return uint64(i)<<32 | uint64(j)
+}
+
+// collectNearbyPairs finds and collects unique vertex pairs within threshold.
+func collectNearbyPairs(grid *spatialGrid, vertices []Vertex, threshold float32) []VertexPair {
+	var pairs []VertexPair
+	seen := make(map[uint64]bool)
+
+	for i, v := range vertices {
+		nearby := grid.findWithinEpsilon(v.Position, threshold, vertices)
+		for _, j := range nearby {
+			if j <= i {
+				continue
+			}
+			key := pairKey(i, j)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+
+			dist := vec3Dist(v.Position, vertices[j].Position)
+			if dist < threshold {
+				pairs = append(pairs, VertexPair{IndexA: i, IndexB: j, Dist: dist})
+			}
+		}
+	}
+	return pairs
+}
+
 // FindBoundaryVertices identifies vertex pairs at body part boundaries that are
 // within the given distance threshold. These are candidates for merging to
 // eliminate visible seams.
@@ -142,41 +182,8 @@ func FindBoundaryVertices(mesh *Mesh, threshold float32) []VertexPair {
 		return nil
 	}
 
-	// Build spatial grid for efficient neighbor lookup
-	grid := newSpatialGrid(threshold*2, len(mesh.Vertices))
-	for i, v := range mesh.Vertices {
-		grid.insert(v.Position, i)
-	}
-
-	var pairs []VertexPair
-	seen := make(map[uint64]bool)
-
-	// Find vertex pairs within threshold distance
-	for i, v := range mesh.Vertices {
-		nearby := grid.findWithinEpsilon(v.Position, threshold, mesh.Vertices)
-		for _, j := range nearby {
-			if j <= i {
-				continue // Only keep pairs where j > i
-			}
-			// Create unique key for the pair
-			key := uint64(i)<<32 | uint64(j)
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-
-			dist := vec3Dist(v.Position, mesh.Vertices[j].Position)
-			if dist < threshold {
-				pairs = append(pairs, VertexPair{
-					IndexA: i,
-					IndexB: j,
-					Dist:   dist,
-				})
-			}
-		}
-	}
-
-	return pairs
+	grid := buildBoundaryGrid(mesh.Vertices, threshold)
+	return collectNearbyPairs(grid, mesh.Vertices, threshold)
 }
 
 // initMergeState initializes the merge mapping and normal accumulation arrays.
@@ -365,14 +372,8 @@ func MergeNearbyVertices(mesh *Mesh, threshold float32) *Mesh {
 	}
 }
 
-// stitchEdgeLoops generates triangles connecting two edge loops to close gaps
-// at major body part connections (e.g., shoulder socket to upper arm end-cap).
-//
-// Each loop is a list of vertex indices that form a closed ring. The loops must
-// have the same number of vertices for proper stitching.
-//
-// Returns an error if the loops have different lengths or contain invalid indices.
-func StitchEdgeLoops(mesh *Mesh, loop1, loop2 []uint32) error {
+// validateEdgeLoops validates that edge loops are suitable for stitching.
+func validateEdgeLoops(mesh *Mesh, loop1, loop2 []uint32) error {
 	if mesh == nil {
 		return fmt.Errorf("mesh is nil")
 	}
@@ -382,36 +383,54 @@ func StitchEdgeLoops(mesh *Mesh, loop1, loop2 []uint32) error {
 	if len(loop1) < 3 {
 		return fmt.Errorf("edge loops must have at least 3 vertices, got %d", len(loop1))
 	}
+	return nil
+}
 
-	// Validate all indices are within bounds
-	vertexCount := uint32(len(mesh.Vertices))
-	for i, idx := range loop1 {
+// validateLoopIndices checks all indices in a loop are within vertex bounds.
+func validateLoopIndices(loop []uint32, vertexCount uint32, loopName string) error {
+	for i, idx := range loop {
 		if idx >= vertexCount {
-			return fmt.Errorf("loop1[%d] = %d is out of bounds (vertex count: %d)", i, idx, vertexCount)
+			return fmt.Errorf("%s[%d] = %d is out of bounds (vertex count: %d)", loopName, i, idx, vertexCount)
 		}
 	}
-	for i, idx := range loop2 {
-		if idx >= vertexCount {
-			return fmt.Errorf("loop2[%d] = %d is out of bounds (vertex count: %d)", i, idx, vertexCount)
-		}
-	}
+	return nil
+}
 
+// generateStitchIndices creates triangle indices connecting two edge loops.
+func generateStitchIndices(loop1, loop2 []uint32) []uint32 {
 	n := len(loop1)
 	newIndices := make([]uint32, 0, n*6)
 
-	// Generate two triangles for each pair of adjacent vertices in the loops
 	for i := 0; i < n; i++ {
 		next := (i + 1) % n
-
 		// First triangle: loop1[i], loop2[i], loop1[next]
 		newIndices = append(newIndices, loop1[i], loop2[i], loop1[next])
-
 		// Second triangle: loop1[next], loop2[i], loop2[next]
 		newIndices = append(newIndices, loop1[next], loop2[i], loop2[next])
 	}
+	return newIndices
+}
 
-	// Append stitching triangles to mesh indices
-	mesh.Indices = append(mesh.Indices, newIndices...)
+// stitchEdgeLoops generates triangles connecting two edge loops to close gaps
+// at major body part connections (e.g., shoulder socket to upper arm end-cap).
+//
+// Each loop is a list of vertex indices that form a closed ring. The loops must
+// have the same number of vertices for proper stitching.
+//
+// Returns an error if the loops have different lengths or contain invalid indices.
+func StitchEdgeLoops(mesh *Mesh, loop1, loop2 []uint32) error {
+	if err := validateEdgeLoops(mesh, loop1, loop2); err != nil {
+		return err
+	}
 
+	vertexCount := uint32(len(mesh.Vertices))
+	if err := validateLoopIndices(loop1, vertexCount, "loop1"); err != nil {
+		return err
+	}
+	if err := validateLoopIndices(loop2, vertexCount, "loop2"); err != nil {
+		return err
+	}
+
+	mesh.Indices = append(mesh.Indices, generateStitchIndices(loop1, loop2)...)
 	return nil
 }

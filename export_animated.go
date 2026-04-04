@@ -307,70 +307,85 @@ func (r *animatedBuildResult) appendAnimationData(anim *Animation) {
 	}
 }
 
-func buildAnimatedGLTFStructure(br *animatedBuildResult, result *AnimatedMeshResult, opts AnimatedGLTFOptions) *gltfAnimatedRoot {
-	skel := result.Skeleton
-
-	// Build node hierarchy
-	// Node 0 = mesh node, nodes 1..N = skeleton joints
-	meshNodeIdx := 0
-	firstJointNode := 1
-
-	nodes := make([]gltfAnimNode, 1+len(skel.Joints))
-
-	// Mesh node
+// buildMeshNode creates the glTF node for the mesh with skin binding.
+func buildMeshNode(assetName string) gltfAnimNode {
 	skinIdx := 0
 	meshIdx := 0
-	nodes[meshNodeIdx] = gltfAnimNode{
-		Name: opts.AssetName,
+	return gltfAnimNode{
+		Name: assetName,
 		Mesh: &meshIdx,
 		Skin: &skinIdx,
 	}
+}
 
-	// Joint nodes
-	for i, j := range skel.Joints {
-		nodeIdx := firstJointNode + i
-		node := gltfAnimNode{
-			Name: j.Name,
+// buildJointNode creates a glTF node for a skeleton joint.
+func buildJointNode(joint *Joint, firstJointNode int, allJoints []Joint) gltfAnimNode {
+	node := gltfAnimNode{Name: joint.Name}
+
+	pos := [3]float32(joint.Position)
+	node.Translation = &pos
+	rot := [4]float32(joint.Rotation)
+	node.Rotation = &rot
+
+	// Build children list
+	for ci, cj := range allJoints {
+		if cj.ParentID == joint.ID {
+			node.Children = append(node.Children, firstJointNode+ci)
 		}
-
-		// Set local transform
-		pos := [3]float32(j.Position)
-		node.Translation = &pos
-		rot := [4]float32(j.Rotation)
-		node.Rotation = &rot
-
-		// Build children list
-		for ci, cj := range skel.Joints {
-			if cj.ParentID == j.ID {
-				node.Children = append(node.Children, firstJointNode+ci)
-			}
-		}
-
-		nodes[nodeIdx] = node
 	}
+	return node
+}
 
-	// Find root joint nodes (parent == -1 or parent == JointRoot)
-	var rootJointNodes []int
+// buildSkeletonNodes creates all glTF nodes for the skeleton hierarchy.
+func buildSkeletonNodes(skel *Skeleton, firstJointNode int) []gltfAnimNode {
+	nodes := make([]gltfAnimNode, 1+len(skel.Joints))
+	for i := range skel.Joints {
+		nodes[firstJointNode+i] = buildJointNode(&skel.Joints[i], firstJointNode, skel.Joints)
+	}
+	return nodes
+}
+
+// findRootJointNodes returns indices of joints with no parent.
+func findRootJointNodes(skel *Skeleton, firstJointNode int) []int {
+	var rootNodes []int
 	for i, j := range skel.Joints {
 		if j.ParentID == -1 {
-			rootJointNodes = append(rootJointNodes, firstJointNode+i)
+			rootNodes = append(rootNodes, firstJointNode+i)
 		}
 	}
+	return rootNodes
+}
 
-	// Build joint list for skin
-	joints := make([]int, len(skel.Joints))
-	for i := range skel.Joints {
+// buildSkinJointList creates the ordered list of joint node indices.
+func buildSkinJointList(jointCount, firstJointNode int) []int {
+	joints := make([]int, jointCount)
+	for i := range joints {
 		joints[i] = firstJointNode + i
 	}
+	return joints
+}
 
-	// Build skin
-	rootSkelNode := firstJointNode // Root joint is typically first
-	skins := []gltfSkin{{
+// buildGLTFSkin creates the skin definition for the skeleton.
+func buildGLTFSkin(jointCount, firstJointNode, ibmAccessor int) gltfSkin {
+	rootSkelNode := firstJointNode
+	return gltfSkin{
 		Name:                "skeleton",
-		Joints:              joints,
-		InverseBindMatrices: br.skinIBMAccessor,
+		Joints:              buildSkinJointList(jointCount, firstJointNode),
+		InverseBindMatrices: ibmAccessor,
 		Skeleton:            &rootSkelNode,
-	}}
+	}
+}
+
+func buildAnimatedGLTFStructure(br *animatedBuildResult, result *AnimatedMeshResult, opts AnimatedGLTFOptions) *gltfAnimatedRoot {
+	skel := result.Skeleton
+	meshNodeIdx := 0
+	firstJointNode := 1
+
+	// Build nodes
+	nodes := buildSkeletonNodes(skel, firstJointNode)
+	nodes[meshNodeIdx] = buildMeshNode(opts.AssetName)
+
+	rootJointNodes := findRootJointNodes(skel, firstJointNode)
 
 	// Build animations
 	var animations []gltfAnimation
@@ -378,100 +393,76 @@ func buildAnimatedGLTFStructure(br *animatedBuildResult, result *AnimatedMeshRes
 		animations = buildAnimations(br, result.Animation, firstJointNode, skel)
 	}
 
-	// Build scene with mesh node and root joint nodes
-	sceneNodes := []int{meshNodeIdx}
-	sceneNodes = append(sceneNodes, rootJointNodes...)
-
+	sceneNodes := append([]int{meshNodeIdx}, rootJointNodes...)
 	materialIdx := 0
 
 	return &gltfAnimatedRoot{
-		Asset: gltfAsset{
-			Version:   "2.0",
-			Generator: "unpeople",
-		},
-		Scene: 0,
-		Scenes: []gltfScene{{
-			Name:  "Scene",
-			Nodes: sceneNodes,
-		}},
-		Nodes: nodes,
+		Asset:       gltfAsset{Version: "2.0", Generator: "unpeople"},
+		Scene:       0,
+		Scenes:      []gltfScene{{Name: "Scene", Nodes: sceneNodes}},
+		Nodes:       nodes,
 		Meshes: []gltfMesh{{
 			Name: opts.AssetName,
 			Primitives: []gltfPrimitive{{
 				Attributes: br.attributes,
 				Indices:    br.indicesIdx,
-				Mode:       4, // TRIANGLES
+				Mode:       4,
 				Material:   &materialIdx,
 			}},
 		}},
 		Accessors:   br.accessors,
 		BufferViews: br.bufferViews,
-		Buffers: []gltfBuffer{{
-			ByteLength: len(br.buffer),
-		}},
-		Materials:  []gltfMaterial{buildDefaultSkinMaterial()},
-		Skins:      skins,
-		Animations: animations,
+		Buffers:     []gltfBuffer{{ByteLength: len(br.buffer)}},
+		Materials:   []gltfMaterial{buildDefaultSkinMaterial()},
+		Skins:       []gltfSkin{buildGLTFSkin(len(skel.Joints), firstJointNode, br.skinIBMAccessor)},
+		Animations:  animations,
 	}
 }
 
-func buildAnimations(br *animatedBuildResult, anim *Animation, firstJointNode int, skel *Skeleton) []gltfAnimation {
-	gltfAnim := gltfAnimation{
-		Name: anim.Name,
+// findJointNodeIndex locates the glTF node index for a joint ID.
+func findJointNodeIndex(jointID JointID, skel *Skeleton, firstJointNode int) int {
+	for i, j := range skel.Joints {
+		if j.ID == jointID {
+			return firstJointNode + i
+		}
 	}
+	return -1
+}
+
+// addAnimationChannel appends a sampler and channel to the animation.
+func addAnimationChannel(gltfAnim *gltfAnimation, timeAccessor, outputAccessor, nodeIdx int, path string) {
+	samplerIdx := len(gltfAnim.Samplers)
+	gltfAnim.Samplers = append(gltfAnim.Samplers, gltfSampler{
+		Input:         timeAccessor,
+		Output:        outputAccessor,
+		Interpolation: "LINEAR",
+	})
+	gltfAnim.Channels = append(gltfAnim.Channels, gltfChannel{
+		Sampler: samplerIdx,
+		Target:  gltfChannelTarget{Node: nodeIdx, Path: path},
+	})
+}
+
+func buildAnimations(br *animatedBuildResult, anim *Animation, firstJointNode int, skel *Skeleton) []gltfAnimation {
+	gltfAnim := gltfAnimation{Name: anim.Name}
 
 	for jointID, ja := range br.jointAccessors {
-		// Find the node index for this joint
-		nodeIdx := -1
-		for i, j := range skel.Joints {
-			if j.ID == jointID {
-				nodeIdx = firstJointNode + i
-				break
-			}
-		}
+		nodeIdx := findJointNodeIndex(jointID, skel, firstJointNode)
 		if nodeIdx == -1 {
 			continue
 		}
 
-		// Add translation channel if present
 		if ja.translationAccessor >= 0 {
-			samplerIdx := len(gltfAnim.Samplers)
-			gltfAnim.Samplers = append(gltfAnim.Samplers, gltfSampler{
-				Input:         br.animTimeAccessor,
-				Output:        ja.translationAccessor,
-				Interpolation: "LINEAR",
-			})
-			gltfAnim.Channels = append(gltfAnim.Channels, gltfChannel{
-				Sampler: samplerIdx,
-				Target: gltfChannelTarget{
-					Node: nodeIdx,
-					Path: "translation",
-				},
-			})
+			addAnimationChannel(&gltfAnim, br.animTimeAccessor, ja.translationAccessor, nodeIdx, "translation")
 		}
-
-		// Add rotation channel if present
 		if ja.rotationAccessor >= 0 {
-			samplerIdx := len(gltfAnim.Samplers)
-			gltfAnim.Samplers = append(gltfAnim.Samplers, gltfSampler{
-				Input:         br.animTimeAccessor,
-				Output:        ja.rotationAccessor,
-				Interpolation: "LINEAR",
-			})
-			gltfAnim.Channels = append(gltfAnim.Channels, gltfChannel{
-				Sampler: samplerIdx,
-				Target: gltfChannelTarget{
-					Node: nodeIdx,
-					Path: "rotation",
-				},
-			})
+			addAnimationChannel(&gltfAnim, br.animTimeAccessor, ja.rotationAccessor, nodeIdx, "rotation")
 		}
 	}
 
 	if len(gltfAnim.Samplers) == 0 {
 		return nil
 	}
-
 	return []gltfAnimation{gltfAnim}
 }
 
